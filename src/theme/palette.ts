@@ -1,0 +1,35 @@
+export const greenRootPalette = {
+  primary: {
+    900: '#0B3D1C',
+    800: '#11552A',
+    700: '#166B35',
+    600: '#1F7A3A',
+    500: '#2E8B47',
+    400: '#4CAF64',
+    300: '#81C784',
+    100: '#E8F5EB',
+    50: '#F0F9F2',
+  },
+  accent: {
+    lime: '#A3D65C',
+    mint: '#6EE7B7',
+    amber: '#F5B942',
+    blue: '#3B82F6',
+    red: '#EF4444',
+  },
+  neutral: {
+    background: '#F6F8F7',
+    surface: '#FFFFFF',
+    surfaceSoft: '#F9FBFA',
+    border: '#DFE7E2',
+    text: '#111827',
+    textSecondary: '#667085',
+    textMuted: '#98A2B3',
+  },
+  semantic: {
+    success: '#17803D',
+    warning: '#B7791F',
+    error: '#C2410C',
+    info: '#2563EB',
+  },
+};

@@ -1,0 +1,804 @@
+import AddIcon from '@mui/icons-material/Add';
+import BlockIcon from '@mui/icons-material/Block';
+import EditIcon from '@mui/icons-material/Edit';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  IconButton,
+  MenuItem,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import type { ColumnDef } from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
+import {
+  resourceConfigs,
+  type ResourceConfig,
+  useCreateDispatchMutation,
+  useCreateDriverMutation,
+  useCreateInventoryMutation,
+  useCreateManualPaymentMutation,
+  useCreateNurseryMutation,
+  useCreatePlantMutation,
+  useCreateVehicleMutation,
+  useDeactivateDriverMutation,
+  useDeleteInventoryMutation,
+  useDeletePlantMutation,
+  useListResourceQuery,
+  useRetireVehicleMutation,
+  useUpdateDispatchStatusMutation,
+  useUpdateDriverMutation,
+  useUpdateInventoryMutation,
+  useUpdatePaymentStatusMutation,
+  useUpdateVehicleMutation,
+} from '../../api/adminResources';
+import { AppDataTable } from '../../components/data-table/AppDataTable';
+import { TableAvatar } from '../../components/data-table/TableAvatar';
+import { ErrorState } from '../../components/feedback/ErrorState';
+import { LoadingState, TableSkeleton } from '../../components/feedback/LoadingState';
+import { useToast } from '../../components/feedback/ToastProvider';
+import { FormDrawer } from '../../components/forms/FormDrawer';
+import { SearchInput } from '../../components/forms/SearchInput';
+import { PageHeader } from '../../components/page/PageHeader';
+import { StatusChip } from '../../components/status/StatusChip';
+import { DispatchForm } from '../dispatches/DispatchForm';
+import { DispatchStatusForm } from '../dispatches/DispatchStatusForm';
+import { DispatchDetailPanel } from '../dispatches/DispatchDetailPanel';
+import { DriverForm } from '../drivers/DriverForm';
+import { DriverDetailPanel } from '../drivers/DriverDetailPanel';
+import { InventoryForm } from '../inventory/InventoryForm';
+import { NurseryDetailPanel } from '../nurseries/NurseryDetailPanel';
+import { NurseryForm } from '../nurseries/NurseryForm';
+import { OrderDetailPanel } from '../orders/OrderDetailPanel';
+import { OrderCreateDrawer } from '../orders/OrderCreateDrawer';
+import { UserDetailPanel } from '../users/UserDetailPanel';
+import { PaymentForm } from '../payments/PaymentForm';
+import { PaymentStatusForm } from '../payments/PaymentStatusForm';
+import { PlantDetailPanel } from '../plants/PlantDetailPanel';
+import { PlantForm } from '../plants/PlantForm';
+import { RequestDetailPanel } from '../requests/RequestDetailPanel';
+import { SubscriptionDetailPanel } from '../subscriptions/SubscriptionDetailPanel';
+import { SubscriptionCreateDrawer } from '../subscriptions/SubscriptionCreateDrawer';
+import { VehicleDetailPanel } from '../vehicles/VehicleDetailPanel';
+import { VehicleForm } from '../vehicles/VehicleForm';
+import { normalizeApiError } from '../../utils/apiError';
+import { formatCurrency, formatDate, toLabel } from '../../utils/labels';
+
+type ResourceKey = keyof typeof resourceConfigs;
+
+const meta: Record<ResourceKey, { title: string; description: string; searchable?: boolean }> = {
+  users:                 { title: 'Users',                  description: 'Inspect platform users, roles, and access.' },
+  plants:                { title: 'Plants',                 description: 'Manage GreenRoot plant catalog and care data.', searchable: true },
+  nurseries:             { title: 'Nurseries',              description: 'Manage nursery partners and operational status.', searchable: true },
+  inventory:             { title: 'Inventory',              description: 'Monitor nursery stock and availability.' },
+  requests:              { title: 'Plant Requests',         description: 'Track plant demand and supplier responses.' },
+  orders:                { title: 'Orders',                 description: 'Review customer and nursery orders.' },
+  payments:              { title: 'Payments',               description: 'Review manual and subscription payment records.' },
+  dispatches:            { title: 'Dispatches',             description: 'Monitor dispatch workflows and status.' },
+  vehicles:              { title: 'Vehicles',               description: 'Manage fleet records.' },
+  drivers:               { title: 'Drivers',                description: 'Manage driver records and location readiness.' },
+  plantCategories:       { title: 'Plant Categories',       description: 'Manage plant classification categories.' },
+  tracking:              { title: 'Tracking',               description: 'Tracking search will be expanded with map views.' },
+  notifications:         { title: 'Notifications',          description: 'Review notifications and templates.' },
+  notificationDevices:   { title: 'Notification Devices',   description: 'Inspect registered FCM-capable devices.' },
+  notificationTemplates: { title: 'Notification Templates', description: 'Manage reusable notification message templates.' },
+  subscriptions:         { title: 'Subscriptions',          description: 'Monitor user subscription lifecycle.' },
+  subscriptionPlans:     { title: 'Subscription Plans',     description: 'Review active subscription catalog plans.' },
+  attachments:           { title: 'Attachments',            description: 'Inspect uploaded metadata and linked entities.' },
+  audit:                 { title: 'Audit Logs',             description: 'Read-only platform audit activity.' },
+};
+
+// ─── Cell renderers ───────────────────────────────────────────────────────────
+function CellValue({ value, colKey }: { value: unknown; colKey: string }) {
+  if (value === null || value === undefined || value === '') {
+    return <Typography color="text.disabled" fontSize={13.5}>—</Typography>;
+  }
+
+  // Status columns
+  if (colKey.includes('status')) return <StatusChip value={value} />;
+
+  // Currency
+  if (colKey === 'amount' || colKey === 'total_amount' || colKey === 'unit_price') {
+    return <Typography fontSize={13.5} fontWeight={500}>{formatCurrency(value)}</Typography>;
+  }
+
+  // Date columns
+  if (colKey.endsWith('_at') || colKey === 'order_date') {
+    return <Typography fontSize={13} color="text.secondary">{formatDate(value)}</Typography>;
+  }
+
+  // Enum fields that should be human-readable
+  if (
+    colKey === 'plant_type' ||
+    colKey === 'light_requirement' ||
+    colKey === 'water_requirement' ||
+    colKey === 'payment_for' ||
+    colKey === 'payment_method' ||
+    colKey === 'vehicle_type'
+  ) {
+    return <Typography fontSize={13.5}>{toLabel(String(value))}</Typography>;
+  }
+
+  // Roles array
+  if (colKey === 'roles' && Array.isArray(value)) {
+    return (
+      <Stack direction="row" spacing={0.5} flexWrap="wrap">
+        {value.length > 0
+          ? value.map((r) => (
+              <Chip
+                key={String(r)}
+                label={toLabel(String(r))}
+                size="small"
+                sx={{ height: 18, fontSize: 10, fontWeight: 600, '& .MuiChip-label': { px: 0.75 } }}
+              />
+            ))
+          : <Typography color="text.disabled" fontSize={13.5}>—</Typography>}
+      </Stack>
+    );
+  }
+
+  // Code badges (compact monospace identifiers)
+  if (
+    colKey.endsWith('_code') ||
+    colKey === 'order_number' ||
+    colKey === 'dispatch_number' ||
+    colKey === 'vehicle_number' ||
+    colKey === 'license_number'
+  ) {
+    return (
+      <Typography
+        fontSize={11.5}
+        fontFamily="monospace"
+        sx={{
+          display: 'inline-block',
+          bgcolor: 'background.default',
+          px: 0.75,
+          py: 0.3,
+          borderRadius: 1,
+          border: '1px solid',
+          borderColor: 'divider',
+          letterSpacing: '0.02em',
+        }}
+      >
+        {String(value)}
+      </Typography>
+    );
+  }
+
+  if (Array.isArray(value)) {
+    return <Typography fontSize={13.5}>{value.join(', ') || '—'}</Typography>;
+  }
+
+  return <Typography fontSize={13.5}>{String(value)}</Typography>;
+}
+
+// ─── Column definitions per resource ─────────────────────────────────────────
+function columnsFor(
+  resource: ResourceKey,
+  rows: Record<string, unknown>[],
+  actions: {
+    onEdit?: (row: Record<string, unknown>) => void;
+    onDeactivate?: (row: Record<string, unknown>) => void;
+  } = {},
+): ColumnDef<Record<string, unknown>>[] {
+  const first = rows[0] ?? {};
+
+  // Virtual user-name+avatar column
+  const userCol: ColumnDef<Record<string, unknown>> = {
+    id: '_user',
+    header: 'User',
+    cell: ({ row }) => {
+      const first_name = String(row.original.first_name ?? '');
+      const last_name = String(row.original.last_name ?? '');
+      const name = `${first_name} ${last_name}`.trim() || '—';
+      return (
+        <Stack direction="row" spacing={1.25} alignItems="center">
+          <TableAvatar name={name} size={28} />
+          <Box>
+            <Typography fontSize={13.5} fontWeight={500}>{name}</Typography>
+            {Boolean(row.original.email) && (
+              <Typography fontSize={11} color="text.secondary">{String(row.original.email)}</Typography>
+            )}
+          </Box>
+        </Stack>
+      );
+    },
+  };
+
+  // Virtual plant thumbnail column
+  const plantThumbCol: ColumnDef<Record<string, unknown>> = {
+    id: '_thumb',
+    header: '',
+    cell: ({ row }) => (
+      <TableAvatar
+        src={String(row.original.primary_image_url ?? '')}
+        name={String(row.original.common_name ?? row.original.scientific_name ?? '')}
+        size={32}
+        variant="rounded"
+      />
+    ),
+  };
+
+  const dataKeys =
+    resource === 'users'
+      ? ['mobile', 'status', 'roles']
+      : resource === 'plants'
+        ? ['common_name', 'scientific_name', 'plant_type', 'light_requirement']
+        : resource === 'nurseries'
+          ? ['nursery_code', 'name', 'mobile', 'email', 'status']
+          : resource === 'orders'
+            ? ['order_number', 'buyer_name', 'seller_nursery', 'total_amount', 'order_status']
+            : resource === 'inventory'
+              ? ['common_name', 'nursery_name', 'size_code', 'available_quantity', 'inventory_status']
+              : resource === 'requests'
+                ? ['request_code', 'requesting_nursery', 'scientific_name', 'quantity_required', 'status']
+                : resource === 'payments'
+                  ? ['payment_code', 'payer_name', 'payment_for', 'amount', 'payment_method', 'payment_status']
+                  : resource === 'dispatches'
+                    ? ['dispatch_number', 'order_number', 'vehicle_number', 'driver_name', 'dispatch_status']
+                    : resource === 'vehicles'
+                      ? ['vehicle_number', 'vehicle_type', 'capacity_kg', 'owner_name', 'status']
+                      : resource === 'drivers'
+                        ? ['driver_code', 'driver_name', 'mobile', 'license_number', 'status']
+                        : resource === 'attachments'
+                          ? ['attachment_code', 'entity_type', 'file_name', 'uploaded_by']
+                          : resource === 'notifications'
+                            ? ['notification_type', 'title', 'channel', 'notification_status']
+                            : resource === 'subscriptions'
+                              ? ['subscription_code', 'plan_name', 'subscription_status']
+                              : Object.keys(first)
+                                  .filter((k) => !['created_at', 'updated_at', 'deleted_at', 'id'].includes(k))
+                                  .slice(0, 6);
+
+  const dataCols: ColumnDef<Record<string, unknown>>[] = dataKeys.map((key) => ({
+    accessorKey: key,
+    header: toLabel(key),
+    cell: ({ getValue }) => <CellValue value={getValue()} colKey={key} />,
+  }));
+
+  // Prepend virtual columns
+  const leadCols: ColumnDef<Record<string, unknown>>[] =
+    resource === 'users'
+      ? [userCol]
+      : resource === 'plants'
+        ? [plantThumbCol]
+        : [];
+
+  const hasActions =
+    resource === 'users' ||
+    resource === 'plants' ||
+    resource === 'orders' ||
+    resource === 'inventory' ||
+    resource === 'payments' ||
+    resource === 'drivers' ||
+    resource === 'vehicles' ||
+    resource === 'dispatches' ||
+    resource === 'nurseries' ||
+    resource === 'requests' ||
+    resource === 'subscriptions';
+
+  const isViewOnly =
+    resource === 'orders' ||
+    resource === 'plants' ||
+    resource === 'users' ||
+    resource === 'nurseries' ||
+    resource === 'requests' ||
+    resource === 'subscriptions' ||
+    resource === 'vehicles' ||
+    resource === 'drivers' ||
+    resource === 'dispatches';
+
+  const hasDeactivate =
+    resource !== 'dispatches' &&
+    resource !== 'payments' &&
+    resource !== 'orders';
+
+  const deactivateLabel =
+    resource === 'drivers'
+      ? 'Deactivate driver'
+      : resource === 'inventory'
+        ? 'Delete entry'
+        : resource === 'plants'
+          ? 'Delete plant'
+          : 'Retire vehicle';
+
+  const actionCol: ColumnDef<Record<string, unknown>> = {
+    id: 'actions',
+    header: '',
+    cell: ({ row }) =>
+      hasActions ? (
+        <Stack direction="row" spacing={0.25} justifyContent="flex-end">
+          <Tooltip title={isViewOnly ? 'View details' : 'Edit'}>
+            <IconButton onClick={() => actions.onEdit?.(row.original)} size="small">
+              {isViewOnly ? (
+                <VisibilityIcon sx={{ fontSize: 16 }} />
+              ) : (
+                <EditIcon sx={{ fontSize: 16 }} />
+              )}
+            </IconButton>
+          </Tooltip>
+          {hasDeactivate && (
+            <Tooltip title={deactivateLabel}>
+              <IconButton
+                onClick={() => actions.onDeactivate?.(row.original)}
+                size="small"
+                sx={{ color: 'error.main', opacity: 0.7, '&:hover': { opacity: 1 } }}
+              >
+                <BlockIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Stack>
+      ) : (
+        <IconButton size="small">
+          <MoreVertIcon sx={{ fontSize: 16 }} />
+        </IconButton>
+      ),
+  };
+
+  return [...leadCols, ...dataCols, actionCol];
+}
+
+// ─── Filter option sets ───────────────────────────────────────────────────────
+const PLANT_TYPES = ['TREE', 'SHRUB', 'HERB', 'CLIMBER', 'GRASS', 'SUCCULENT', 'AQUATIC', 'OTHER'];
+const LIGHT_OPTS = ['FULL_SUN', 'PARTIAL_SUN', 'SHADE', 'INDIRECT_LIGHT'];
+const WATER_OPTS = ['LOW', 'MEDIUM', 'HIGH', 'DAILY', 'WEEKLY'];
+const PAYMENT_FOR_OPTS = ['ORDER', 'SUBSCRIPTION'];
+const PAYMENT_METHOD_OPTS = ['UPI', 'CARD', 'CASH', 'BANK_TRANSFER', 'NET_BANKING', 'WALLET', 'COD', 'CHEQUE', 'OTHER'];
+const USER_ROLES = ['ADMIN', 'BUYER', 'NURSERY_OWNER', 'DRIVER'];
+const USER_STATUSES = ['ACTIVE', 'INACTIVE', 'BANNED'];
+const DRIVER_STATUSES = ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'DELETED'];
+const VEHICLE_STATUSES = ['ACTIVE', 'INACTIVE', 'MAINTENANCE', 'RETIRED'];
+const INVENTORY_STATUSES = ['AVAILABLE', 'LOW_STOCK', 'OUT_OF_STOCK', 'RESERVED', 'DISCONTINUED'];
+const ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'PARTIALLY_FULFILLED', 'COMPLETED', 'CANCELLED'];
+const PAYMENT_STATUSES = ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED', 'CANCELLED'];
+const DISPATCH_STATUSES = ['PENDING', 'DISPATCHED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'];
+
+// ─── Add button labels ────────────────────────────────────────────────────────
+const addLabel: Partial<Record<ResourceKey, string>> = {
+  plants: 'Plant',
+  nurseries: 'Nursery',
+  inventory: 'Inventory',
+  orders: 'Order',
+  payments: 'Payment',
+  dispatches: 'Dispatch',
+  drivers: 'Driver',
+  vehicles: 'Vehicle',
+  subscriptions: 'Subscription',
+};
+
+// ─── Main component ───────────────────────────────────────────────────────────
+export function ResourceListPage({ resource }: { resource: ResourceKey }) {
+  const { showToast } = useToast();
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
+  const [userRole, setUserRole] = useState('');
+  const [paymentFor, setPaymentFor] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [plantType, setPlantType] = useState('');
+  const [lightRequirement, setLightRequirement] = useState('');
+  const [waterRequirement, setWaterRequirement] = useState('');
+  const [sortBy, setSortBy] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [orderCreateOpen, setOrderCreateOpen] = useState(false);
+  const [subscriptionCreateOpen, setSubscriptionCreateOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState<Record<string, unknown> | null>(null);
+
+  const [createPlant, plantState] = useCreatePlantMutation();
+  const [createNursery, nurseryState] = useCreateNurseryMutation();
+  const [createDispatch, createDispatchState] = useCreateDispatchMutation();
+  const [updateDispatchStatus, updateDispatchStatusState] = useUpdateDispatchStatusMutation();
+  const [createDriver, createDriverState] = useCreateDriverMutation();
+  const [updateDriver, updateDriverState] = useUpdateDriverMutation();
+  const [deactivateDriver, deactivateDriverState] = useDeactivateDriverMutation();
+  const [createVehicle, createVehicleState] = useCreateVehicleMutation();
+  const [updateVehicle, updateVehicleState] = useUpdateVehicleMutation();
+  const [retireVehicle, retireVehicleState] = useRetireVehicleMutation();
+  const [createInventory, createInventoryState] = useCreateInventoryMutation();
+  const [updateInventory, updateInventoryState] = useUpdateInventoryMutation();
+  const [deleteInventory, deleteInventoryState] = useDeleteInventoryMutation();
+  const [deletePlant, deletePlantState] = useDeletePlantMutation();
+  const [createManualPayment, createManualPaymentState] = useCreateManualPaymentMutation();
+  const [updatePaymentStatus, updatePaymentStatusState] = useUpdatePaymentStatusMutation();
+
+  const config: ResourceConfig = resourceConfigs[resource];
+
+  const { data, error, isFetching, refetch } = useListResourceQuery(
+    {
+      resource,
+      params: {
+        page: page + 1,
+        per_page: rowsPerPage,
+        search,
+        plant_type: resource === 'plants' ? plantType : undefined,
+        light_requirement: resource === 'plants' ? lightRequirement : undefined,
+        water_requirement: resource === 'plants' ? waterRequirement : undefined,
+        status:
+          resource === 'drivers' || resource === 'vehicles' || resource === 'users'
+            ? status
+            : undefined,
+        role: resource === 'users' ? userRole : undefined,
+        inventory_status: resource === 'inventory' ? status : undefined,
+        order_status: resource === 'orders' ? status : undefined,
+        payment_status: resource === 'payments' ? status : undefined,
+        payment_for: resource === 'payments' ? paymentFor : undefined,
+        payment_method: resource === 'payments' ? paymentMethod : undefined,
+        dispatch_status: resource === 'dispatches' ? status : undefined,
+        sort_by: sortBy || undefined,
+        sort_order: sortBy ? sortOrder : undefined,
+      },
+    },
+    { skip: !config.path },
+  );
+
+  const rows = useMemo(() => data?.rows ?? [], [data?.rows]);
+  const columns = useMemo(
+    () =>
+      columnsFor(resource, rows, {
+        onEdit: (row) => {
+          setEditingRow(row);
+          setDrawerOpen(true);
+        },
+        onDeactivate: async (row) => {
+          const id = Number(row.id);
+          if (resource === 'drivers' && id > 0) { await deactivateDriver(id).unwrap(); showToast('Driver deactivated'); }
+          if (resource === 'vehicles' && id > 0) { await retireVehicle(id).unwrap(); showToast('Vehicle retired'); }
+          if (resource === 'inventory' && id > 0) { await deleteInventory(id).unwrap(); showToast('Inventory item removed'); }
+          if (resource === 'plants' && id > 0) { await deletePlant(id).unwrap(); showToast('Plant deleted'); }
+        },
+      }),
+    [deactivateDriver, deleteInventory, deletePlant, resource, retireVehicle, rows],
+  );
+
+  const canCreate = resource in addLabel;
+
+  async function submitForm(values: Record<string, unknown>) {
+    const isEdit = Number(editingRow?.id) > 0;
+    const resourceLabel = meta[resource]?.title.replace(/s$/, '') ?? 'Record';
+    if (resource === 'plants') await createPlant(values).unwrap();
+    if (resource === 'nurseries') await createNursery(values).unwrap();
+    if (resource === 'inventory') {
+      const id = Number(editingRow?.id);
+      if (id > 0) await updateInventory({ id, body: values }).unwrap();
+      else await createInventory(values).unwrap();
+    }
+    if (resource === 'dispatches') {
+      const id = Number(editingRow?.id);
+      if (id > 0) await updateDispatchStatus({ id, body: values }).unwrap();
+      else await createDispatch(values).unwrap();
+    }
+    if (resource === 'payments') {
+      const id = Number(editingRow?.id);
+      if (id > 0) await updatePaymentStatus({ id, body: values }).unwrap();
+      else await createManualPayment(values).unwrap();
+    }
+    if (resource === 'drivers') {
+      const id = Number(editingRow?.id);
+      if (id > 0) await updateDriver({ id, body: values }).unwrap();
+      else await createDriver(values).unwrap();
+    }
+    if (resource === 'vehicles') {
+      const id = Number(editingRow?.id);
+      if (id > 0) await updateVehicle({ id, body: values }).unwrap();
+      else await createVehicle(values).unwrap();
+    }
+    showToast(isEdit ? `${resourceLabel} updated` : `${resourceLabel} created`);
+    setDrawerOpen(false);
+    setEditingRow(null);
+  }
+
+  function openCreateDrawer() {
+    setEditingRow(null);
+    if (resource === 'orders') {
+      setOrderCreateOpen(true);
+    } else if (resource === 'subscriptions') {
+      setSubscriptionCreateOpen(true);
+    } else {
+      setDrawerOpen(true);
+    }
+  }
+
+  function handleSort(column: string) {
+    setPage(0);
+    if (sortBy !== column) {
+      setSortBy(column);
+      setSortOrder('asc');
+      return;
+    }
+    if (sortOrder === 'asc') {
+      setSortOrder('desc');
+      return;
+    }
+    setSortBy('');
+    setSortOrder('asc');
+  }
+
+  function drawerTitle() {
+    const code = editingRow?.user_code ?? editingRow?.nursery_code ?? editingRow?.plant_code ?? null;
+    const name =
+      editingRow?.common_name ??
+      editingRow?.driver_name ??
+      editingRow?.first_name ??
+      editingRow?.name ??
+      editingRow?.order_number ??
+      editingRow?.dispatch_number ??
+      editingRow?.vehicle_number ??
+      editingRow?.plan_name ??
+      null;
+    const label = addLabel[resource] ?? resource;
+
+    if (!editingRow) return `Add ${label}`;
+    return code ? String(code) : name ? String(name) : `${label} details`;
+  }
+
+  const statusOptions =
+    resource === 'users'
+      ? USER_STATUSES
+      : resource === 'drivers'
+        ? DRIVER_STATUSES
+        : resource === 'vehicles'
+          ? VEHICLE_STATUSES
+          : resource === 'inventory'
+            ? INVENTORY_STATUSES
+            : resource === 'orders'
+              ? ORDER_STATUSES
+              : resource === 'payments'
+                ? PAYMENT_STATUSES
+                : resource === 'dispatches'
+                  ? DISPATCH_STATUSES
+                  : [];
+
+  const showStatusFilter =
+    resource === 'users' ||
+    resource === 'orders' ||
+    resource === 'inventory' ||
+    resource === 'payments' ||
+    resource === 'drivers' ||
+    resource === 'vehicles' ||
+    resource === 'dispatches';
+
+  // Determine drawer width
+  const wideDrawer =
+    resource === 'orders' ||
+    resource === 'plants' ||
+    resource === 'users' ||
+    resource === 'nurseries' ||
+    resource === 'requests' ||
+    resource === 'subscriptions' ||
+    resource === 'vehicles' ||
+    resource === 'drivers' ||
+    resource === 'dispatches';
+
+  return (
+    <Box>
+      <PageHeader
+        title={meta[resource].title}
+        description={meta[resource].description}
+        action={
+          canCreate ? (
+            <Button onClick={openCreateDrawer} startIcon={<AddIcon />} variant="contained" size="small">
+              Add {addLabel[resource]}
+            </Button>
+          ) : undefined
+        }
+      />
+
+      {/* ── Filters ── */}
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} flexWrap="wrap" sx={{ mb: 2.5 }}>
+        {config.path && (
+          <SearchInput
+            value={search}
+            onChange={(value) => { setSearch(value); setPage(0); }}
+            placeholder={`Search ${meta[resource].title.toLowerCase()}…`}
+          />
+        )}
+
+        {resource === 'plants' && (
+          <>
+            <TextField select label="Type" value={plantType} size="small" sx={{ minWidth: 150 }}
+              onChange={(e) => { setPlantType(e.target.value); setPage(0); }}>
+              <MenuItem value="">All types</MenuItem>
+              {PLANT_TYPES.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+            </TextField>
+            <TextField select label="Light" value={lightRequirement} size="small" sx={{ minWidth: 150 }}
+              onChange={(e) => { setLightRequirement(e.target.value); setPage(0); }}>
+              <MenuItem value="">All light</MenuItem>
+              {LIGHT_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+            </TextField>
+            <TextField select label="Water" value={waterRequirement} size="small" sx={{ minWidth: 150 }}
+              onChange={(e) => { setWaterRequirement(e.target.value); setPage(0); }}>
+              <MenuItem value="">All water</MenuItem>
+              {WATER_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+            </TextField>
+          </>
+        )}
+
+        {resource === 'payments' && (
+          <>
+            <TextField select label="Type" value={paymentFor} size="small" sx={{ minWidth: 150 }}
+              onChange={(e) => { setPaymentFor(e.target.value); setPage(0); }}>
+              <MenuItem value="">All types</MenuItem>
+              {PAYMENT_FOR_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+            </TextField>
+            <TextField select label="Method" value={paymentMethod} size="small" sx={{ minWidth: 160 }}
+              onChange={(e) => { setPaymentMethod(e.target.value); setPage(0); }}>
+              <MenuItem value="">All methods</MenuItem>
+              {PAYMENT_METHOD_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+            </TextField>
+          </>
+        )}
+
+        {resource === 'users' && (
+          <TextField select label="Role" value={userRole} size="small" sx={{ minWidth: 170 }}
+            onChange={(e) => { setUserRole(e.target.value); setPage(0); }}>
+            <MenuItem value="">All roles</MenuItem>
+            {USER_ROLES.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+          </TextField>
+        )}
+
+        {showStatusFilter && (
+          <TextField select label="Status" value={status} size="small" sx={{ minWidth: 170 }}
+            onChange={(e) => { setStatus(e.target.value); setPage(0); }}>
+            <MenuItem value="">All statuses</MenuItem>
+            {statusOptions.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+          </TextField>
+        )}
+      </Stack>
+
+      {/* ── Error alerts ── */}
+      {(createDriverState.isError || updateDriverState.isError || deactivateDriverState.isError) && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {normalizeApiError(createDriverState.error || updateDriverState.error || deactivateDriverState.error).message}
+        </Alert>
+      )}
+      {(plantState.isError || deletePlantState.isError) && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {normalizeApiError(plantState.error || deletePlantState.error).message}
+        </Alert>
+      )}
+      {(createDispatchState.isError || updateDispatchStatusState.isError) && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {normalizeApiError(createDispatchState.error || updateDispatchStatusState.error).message}
+        </Alert>
+      )}
+      {(createInventoryState.isError || updateInventoryState.isError || deleteInventoryState.isError) && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {normalizeApiError(createInventoryState.error || updateInventoryState.error || deleteInventoryState.error).message}
+        </Alert>
+      )}
+      {(createManualPaymentState.isError || updatePaymentStatusState.isError) && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {normalizeApiError(createManualPaymentState.error || updatePaymentStatusState.error).message}
+        </Alert>
+      )}
+      {(createVehicleState.isError || updateVehicleState.isError || retireVehicleState.isError) && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {normalizeApiError(createVehicleState.error || updateVehicleState.error || retireVehicleState.error).message}
+        </Alert>
+      )}
+      {!config.path && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          {config.integrationNote ?? 'This module needs a dedicated admin screen.'}
+        </Alert>
+      )}
+
+      {/* ── Table ── */}
+      {config.path && isFetching && <TableSkeleton rows={8} cols={columns.length || 5} />}
+      {config.path && error && <ErrorState message={normalizeApiError(error).message} onRetry={refetch} />}
+      {config.path && !isFetching && !error && (
+        <AppDataTable
+          columns={columns}
+          data={rows}
+          count={data?.pagination?.total ?? rows.length}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setPage}
+          onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(0); }}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={handleSort}
+        />
+      )}
+
+      {/* ── Detail / form drawer ── */}
+      <FormDrawer
+        open={drawerOpen}
+        title={drawerTitle()}
+        onClose={() => { setDrawerOpen(false); setEditingRow(null); }}
+        width={wideDrawer ? { xs: '100%', sm: 760 } : undefined}
+      >
+        {resource === 'users' && editingRow ? (
+          <UserDetailPanel userId={Number(editingRow.id)} />
+        ) : resource === 'plants' ? (
+          editingRow ? (
+            <PlantDetailPanel plantId={Number(editingRow.id)} />
+          ) : (
+            <PlantForm loading={plantState.isLoading} onSubmit={submitForm} />
+          )
+        ) : resource === 'nurseries' ? (
+          editingRow ? (
+            <NurseryDetailPanel
+              nurseryId={Number(editingRow.id)}
+              onDeleted={() => { setDrawerOpen(false); setEditingRow(null); }}
+            />
+          ) : (
+            <NurseryForm loading={nurseryState.isLoading} onSubmit={submitForm} />
+          )
+        ) : resource === 'inventory' ? (
+          <InventoryForm
+            initial={editingRow ?? undefined}
+            loading={createInventoryState.isLoading || updateInventoryState.isLoading}
+            onSubmit={submitForm}
+          />
+        ) : resource === 'requests' && editingRow ? (
+          <RequestDetailPanel requestId={Number(editingRow.id)} />
+        ) : resource === 'subscriptions' && editingRow ? (
+          <SubscriptionDetailPanel subscriptionId={Number(editingRow.id)} />
+        ) : resource === 'orders' && editingRow ? (
+          <OrderDetailPanel
+            orderId={Number(editingRow.id)}
+            onDeleted={() => { setDrawerOpen(false); setEditingRow(null); }}
+          />
+        ) : resource === 'payments' ? (
+          editingRow ? (
+            <PaymentStatusForm
+              initial={editingRow}
+              loading={updatePaymentStatusState.isLoading}
+              onSubmit={submitForm}
+            />
+          ) : (
+            <PaymentForm loading={createManualPaymentState.isLoading} onSubmit={submitForm} />
+          )
+        ) : resource === 'vehicles' ? (
+          editingRow ? (
+            <VehicleDetailPanel vehicleId={Number(editingRow.id)} />
+          ) : (
+            <VehicleForm initial={undefined} loading={createVehicleState.isLoading} onSubmit={submitForm} />
+          )
+        ) : resource === 'drivers' ? (
+          editingRow ? (
+            <DriverDetailPanel driverId={Number(editingRow.id)} />
+          ) : (
+            <DriverForm initial={undefined} loading={createDriverState.isLoading} onSubmit={submitForm} />
+          )
+        ) : resource === 'dispatches' ? (
+          editingRow ? (
+            <DispatchDetailPanel dispatchId={Number(editingRow.id)} />
+          ) : (
+            <DispatchForm loading={createDispatchState.isLoading} onSubmit={submitForm} />
+          )
+        ) : (
+          <DriverForm
+            initial={editingRow ?? undefined}
+            loading={createDriverState.isLoading || updateDriverState.isLoading}
+            onSubmit={submitForm}
+          />
+        )}
+      </FormDrawer>
+
+      {resource === 'orders' && (
+        <OrderCreateDrawer
+          open={orderCreateOpen}
+          onClose={() => setOrderCreateOpen(false)}
+          onCreated={() => refetch()}
+        />
+      )}
+      {resource === 'subscriptions' && (
+        <SubscriptionCreateDrawer
+          open={subscriptionCreateOpen}
+          onClose={() => setSubscriptionCreateOpen(false)}
+          onCreated={() => refetch()}
+        />
+      )}
+    </Box>
+  );
+}
