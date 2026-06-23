@@ -327,6 +327,17 @@ function SidebarFull({
           );
         })}
       </Box>
+
+      {/* Copyright */}
+      <Divider sx={{ borderColor: 'rgba(255,255,255,0.07)', flexShrink: 0 }} />
+      <Box sx={{ px: 2, py: 1.5, flexShrink: 0 }}>
+        <Typography fontSize={10} color="rgba(255,255,255,0.25)" lineHeight={1.6}>
+          © {new Date().getFullYear()} GreenRoot Pvt. Ltd.
+        </Typography>
+        <Typography fontSize={10} color="rgba(255,255,255,0.18)" lineHeight={1.4}>
+          All rights reserved.
+        </Typography>
+      </Box>
     </Stack>
   );
 }
@@ -585,6 +596,30 @@ export function AdminLayout() {
 
         <Box component="main" sx={{ flex: 1, px: { xs: 2, md: 3 }, py: 3 }}>
           <Outlet />
+        </Box>
+
+        {/* Footer */}
+        <Box
+          component="footer"
+          sx={{
+            borderTop: 1,
+            borderColor: 'divider',
+            px: { xs: 2, md: 3 },
+            py: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 1,
+            bgcolor: 'background.default',
+          }}
+        >
+          <Typography fontSize={12} color="text.disabled">
+            © {new Date().getFullYear()} GreenRoot Pvt. Ltd. All rights reserved.
+          </Typography>
+          <Typography fontSize={12} color="text.disabled">
+            Admin Console v1.0
+          </Typography>
         </Box>
       </Box>
     </Box>

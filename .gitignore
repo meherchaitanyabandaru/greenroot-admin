@@ -1,0 +1,31 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Generated logs
+logs/**
+!logs/.gitkeep
+test-log/**
+!test-log/.gitkeep
+*.log
+
+# Editor and OS noise
+.DS_Store
+.DS_Store?
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/
+.tmp/

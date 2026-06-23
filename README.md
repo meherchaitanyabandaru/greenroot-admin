@@ -1,269 +1,55 @@
 # GreenRoot Admin
 
-GreenRoot Admin is the internal administration portal used to manage nurseries, users, subscriptions, dispatch operations, support requests, and platform analytics.
+React + TypeScript admin portal for GreenRoot platform operators.
 
----
+## Run Locally
 
-## Overview
+```bash
+npm install
+cp .env.example .env
+npm run dev
+```
 
-The Admin Portal provides operational visibility and management capabilities for the GreenRoot platform.
+Portal: `http://localhost:5173`  
+Login: mobile `9000000777` · OTP `123456`
 
-The portal is used by:
+## Commands
 
-* Super Administrators
-* Support Team
-* Operations Team
-* Business Team
+```bash
+npm run dev       # Dev server
+npm run build     # Production build
+npm run lint      # Lint
+npm run test      # Unit tests
+npm run test:e2e  # Playwright E2E tests
+npm run format    # Format
+```
 
----
+## Stack
 
-## Responsibilities
+React 18 · TypeScript · Vite · Material UI · Redux Toolkit · RTK Query · React Hook Form · Zod · TanStack Table · Recharts
 
-### Nursery Management
+## Design System
 
-* Approve Nurseries
-* Suspend Nurseries
-* Activate Nurseries
-* View Nursery Details
-* Subscription Monitoring
+| Token | Value |
+|---|---|
+| Primary 900 | `#0B3D1C` |
+| Primary 600 | `#1F7A3A` |
+| Primary 500 | `#2E8B47` |
+| Accent Lime | `#A3D65C` |
+| Accent Amber | `#F5B942` |
 
----
+## Documentation
 
-### User Management
+| Doc | Contents |
+|---|---|
+| [`docs/development-status.md`](docs/development-status.md) | Module status, priority queue, key files |
+| [`docs/api-integration-matrix.md`](docs/api-integration-matrix.md) | Detailed API-to-UI coverage per module |
 
-Manage:
+## Backend Contract
 
-* Owners
-* Gumastas
-* Drivers
+API spec: `../greenroot-api/docs/swagger/openapi.yaml`  
+RBAC policy: `../greenroot-api/docs/rbac-matrix.md`
 
-Features:
+## Full Project Context
 
-* User Search
-* User Status
-* User Activity
-* Device Information
-
----
-
-### Dispatch Monitoring
-
-View:
-
-* Active Dispatches
-* In Transit Trips
-* Delivered Trips
-* Cancelled Trips
-
----
-
-### Trip Tracking
-
-Monitor:
-
-* Driver Locations
-* Vehicle Movement
-* Trip Progress
-* GPS Activity
-
----
-
-### Subscription Management
-
-Manage:
-
-* Free Plans
-* Basic Plans
-* Premium Plans
-* Enterprise Plans
-
-Features:
-
-* Plan Assignment
-* Renewal Tracking
-* Payment Status
-
----
-
-### Analytics Dashboard
-
-Metrics:
-
-* Total Nurseries
-* Active Users
-* Active Trips
-* Delivered Trips
-* Daily Dispatch Count
-* Monthly Growth
-
----
-
-### Support Tools
-
-Support Team can:
-
-* Search Users
-* Search Trips
-* View Audit Logs
-* Investigate Issues
-* Resolve Customer Requests
-
----
-
-### Audit Monitoring
-
-Track:
-
-* Login Activity
-* User Actions
-* Dispatch Changes
-* Subscription Changes
-* Security Events
-
----
-
-## Technology Stack
-
-### Frontend
-
-Next.js
-
-### Language
-
-TypeScript
-
-### UI Framework
-
-Tailwind CSS
-
-### State Management
-
-TanStack Query
-
-### Authentication
-
-JWT
-
-### Charts
-
-Recharts
-
----
-
-## Architecture
-
-Admin Portal
-↓
-GreenRoot API
-↓
-PostgreSQL
-
----
-
-## Project Structure
-
-src/
-
-├── app/
-├── components/
-├── modules/
-│
-├── dashboard/
-├── nurseries/
-├── users/
-├── dispatches/
-├── trips/
-├── subscriptions/
-├── analytics/
-├── support/
-├── audit/
-│
-├── services/
-├── hooks/
-├── utils/
-└── types/
-
----
-
-## Dashboard Modules
-
-### Operations Dashboard
-
-Displays:
-
-* Active Trips
-* Pending Deliveries
-* GPS Status
-* Dispatch Activity
-
----
-
-### Business Dashboard
-
-Displays:
-
-* Revenue
-* Subscription Growth
-* Active Nurseries
-* Monthly Metrics
-
----
-
-### Support Dashboard
-
-Displays:
-
-* Open Tickets
-* User Issues
-* Driver Issues
-* Dispatch Issues
-
----
-
-## Security
-
-* Role Based Access Control
-* JWT Authentication
-* Audit Logging
-* IP Tracking
-* Session Management
-
----
-
-## Environments
-
-### Development
-
-DEV
-
-### Production
-
-PROD
-
----
-
-## Future Roadmap
-
-### V1
-
-* Nursery Management
-* User Management
-* Dispatch Monitoring
-
-### V2
-
-* Business Analytics
-* Customer Insights
-* Growth Metrics
-
-### V3
-
-* Marketplace Operations
-* AI Analytics
-* Demand Forecasting
-
----
-
-## Product Vision
-
-GreenRoot Admin provides operational control and visibility across the entire GreenRoot ecosystem.
+See [`../AI_CONTEXT.md`](../AI_CONTEXT.md) for cross-repo master context.
