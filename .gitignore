@@ -29,3 +29,8 @@ test-log/**
 tmp/
 temp/
 .tmp/
+
+# Runtime logs and local test scripts
+test-log/
+test-orders.mjs
+test-ui.mjs
