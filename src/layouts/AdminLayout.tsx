@@ -30,7 +30,7 @@ import {
   Typography,
   useMediaQuery,
 } from '@mui/material';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { baseApi } from '../api/baseApi';
 import { getStoredAuth } from '../api/authStorage';
@@ -38,11 +38,27 @@ import { navigationGroups, type NavGroup } from '../components/navigation/naviga
 import { useLogoutMutation } from '../features/auth/authApi';
 import { clearAuth } from '../features/auth/authSlice';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
+import { tokens } from '../theme/tokens';
 
-const DRAWER_FULL = 252;
-const DRAWER_MINI = 60;
+const { sidebar: sb, semantic, shadow, transition, radius } = tokens;
+
+const DRAWER_FULL = 256;
+const DRAWER_MINI = 58;
 const EXPANDED_KEY = 'gr_nav_expanded';
 
+// ── Emoji map for group headers ───────────────────────────────────────────────
+const GROUP_EMOJI: Record<string, string> = {
+  'User Management': '👥',
+  'Plant Catalog':   '🌱',
+  'Nursery Network': '🏡',
+  'Commerce':        '🛒',
+  'Logistics':       '🚚',
+  'Notifications':   '🔔',
+  'Billing':         '💳',
+  'Platform':        '⚙️',
+};
+
+// ── Logo mark ─────────────────────────────────────────────────────────────────
 function GrLogo({ size = 30 }: { size?: number }) {
   return (
     <Box
@@ -50,14 +66,16 @@ function GrLogo({ size = 30 }: { size?: number }) {
         width: size,
         height: size,
         borderRadius: 1.5,
-        bgcolor: '#A3D65C',
+        bgcolor: sb.logoBg,
         display: 'grid',
         placeItems: 'center',
         flexShrink: 0,
         fontWeight: 900,
-        fontSize: size * 0.4,
-        color: '#0B3D1C',
-        letterSpacing: '-0.02em',
+        fontSize: size * 0.38,
+        color: sb.logoText,
+        letterSpacing: '-0.04em',
+        fontFamily: tokens.font.family,
+        userSelect: 'none',
       }}
     >
       GR
@@ -65,7 +83,7 @@ function GrLogo({ size = 30 }: { size?: number }) {
   );
 }
 
-// ─── Nav item link ─────────────────────────────────────────────────────────────
+// ── Single nav item ────────────────────────────────────────────────────────────
 function NavItem({
   item,
   indent = false,
@@ -83,37 +101,61 @@ function NavItem({
       end={item.path === '/'}
       onClick={onNavigate}
       sx={{
-        borderRadius: 1.5,
+        borderRadius: `${radius.sm}px`,
         mb: 0.25,
-        minHeight: 36,
-        pl: indent ? 4.5 : 1.25,
+        minHeight: 34,
+        pl: indent ? 4 : 1.25,
         pr: 1.25,
-        color: 'rgba(255,255,255,0.6)',
+        py: 0.625,
+        color: sb.colorText,
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          left: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: 2.5,
+          height: 0,
+          borderRadius: 2,
+          bgcolor: sb.colorActive,
+          transition: `height ${transition.fast}`,
+        },
         '&.active': {
-          bgcolor: 'rgba(163,214,92,0.18)',
-          color: '#A3D65C',
-          '& .MuiListItemIcon-root': { color: '#A3D65C' },
+          bgcolor: sb.bgActive,
+          color: sb.colorActive,
+          fontWeight: 600,
+          '&::before': { height: '60%' },
+          '& .MuiListItemIcon-root': { color: sb.colorActive },
+          '& .MuiListItemText-primary': { fontWeight: 600 },
         },
         '&:hover:not(.active)': {
-          bgcolor: 'rgba(255,255,255,0.07)',
-          color: 'rgba(255,255,255,0.9)',
+          bgcolor: sb.bgHover,
+          color: sb.colorTextHover,
+          '& .MuiListItemIcon-root': { color: sb.colorTextHover },
         },
+        transition: `all ${transition.fast}`,
       }}
     >
       {!indent && (
-        <ListItemIcon sx={{ color: 'inherit', minWidth: 32 }}>
-          <Icon sx={{ fontSize: 18 }} />
+        <ListItemIcon sx={{ color: 'inherit', minWidth: 30 }}>
+          <Icon sx={{ fontSize: 16, transition: `color ${transition.fast}` }} />
         </ListItemIcon>
       )}
       <ListItemText
         primary={item.label}
-        primaryTypographyProps={{ fontSize: 13.5, fontWeight: 500, lineHeight: 1 }}
+        primaryTypographyProps={{
+          fontSize: 13,
+          fontWeight: 500,
+          lineHeight: 1.2,
+          letterSpacing: '-0.003em',
+        }}
       />
     </ListItemButton>
   );
 }
 
-// ─── Flyout popover for collapsed mode ────────────────────────────────────────
+// ── Flyout popover for mini sidebar ───────────────────────────────────────────
 function GroupFlyout({
   group,
   anchorEl,
@@ -125,6 +167,7 @@ function GroupFlyout({
   onClose: () => void;
   onNavigate: () => void;
 }) {
+  const emoji = GROUP_EMOJI[group.section] ?? '';
   return (
     <Popover
       open={Boolean(anchorEl)}
@@ -133,22 +176,31 @@ function GroupFlyout({
       anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       PaperProps={{
-        elevation: 8,
+        elevation: 0,
         sx: {
           ml: 1,
-          bgcolor: '#0B3D1C',
+          bgcolor: sb.bg,
           color: '#fff',
           borderRadius: 2,
-          minWidth: 180,
+          minWidth: 188,
           overflow: 'hidden',
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: `1px solid ${sb.divider}`,
+          boxShadow: shadow.popover,
         },
       }}
       disableRestoreFocus
     >
       {group.section && (
-        <Box sx={{ px: 2, pt: 1.5, pb: 0.5 }}>
-          <Typography fontSize={10} fontWeight={700} textTransform="uppercase" letterSpacing="0.07em" color="rgba(255,255,255,0.4)">
+        <Box sx={{ px: 2, pt: 1.5, pb: 0.75 }}>
+          <Typography
+            fontSize={10}
+            fontWeight={700}
+            textTransform="uppercase"
+            letterSpacing="0.08em"
+            color={sb.groupLabel}
+            sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}
+          >
+            {emoji && <span style={{ fontSize: 11 }}>{emoji}</span>}
             {group.section}
           </Typography>
         </Box>
@@ -164,28 +216,25 @@ function GroupFlyout({
               end={item.path === '/'}
               onClick={() => { onNavigate(); onClose(); }}
               sx={{
-                borderRadius: 1.5,
+                borderRadius: `${radius.sm}px`,
                 mb: 0.25,
-                minHeight: 34,
+                minHeight: 32,
                 px: 1.25,
-                color: 'rgba(255,255,255,0.7)',
+                color: sb.colorText,
                 '&.active': {
-                  bgcolor: 'rgba(163,214,92,0.18)',
-                  color: '#A3D65C',
-                  '& .MuiListItemIcon-root': { color: '#A3D65C' },
+                  bgcolor: sb.bgActive,
+                  color: sb.colorActive,
+                  '& .MuiListItemIcon-root': { color: sb.colorActive },
                 },
-                '&:hover:not(.active)': {
-                  bgcolor: 'rgba(255,255,255,0.08)',
-                  color: '#fff',
-                },
+                '&:hover:not(.active)': { bgcolor: sb.bgHover, color: sb.colorTextHover },
               }}
             >
-              <ListItemIcon sx={{ color: 'inherit', minWidth: 30 }}>
-                <Icon sx={{ fontSize: 16 }} />
+              <ListItemIcon sx={{ color: 'inherit', minWidth: 28 }}>
+                <Icon sx={{ fontSize: 15 }} />
               </ListItemIcon>
               <ListItemText
                 primary={item.label}
-                primaryTypographyProps={{ fontSize: 13, fontWeight: 500 }}
+                primaryTypographyProps={{ fontSize: 12.5, fontWeight: 500, letterSpacing: '-0.003em' }}
               />
             </ListItemButton>
           );
@@ -195,7 +244,7 @@ function GroupFlyout({
   );
 }
 
-// ─── Full sidebar content (expanded or mobile) ────────────────────────────────
+// ── Full sidebar ───────────────────────────────────────────────────────────────
 function SidebarFull({
   onNavigate,
   onToggleCollapse,
@@ -205,7 +254,6 @@ function SidebarFull({
 }) {
   const location = useLocation();
 
-  // Find which group the current route belongs to
   function getActiveGroup(): string {
     for (const g of navigationGroups) {
       for (const item of g.items) {
@@ -218,101 +266,116 @@ function SidebarFull({
   }
 
   const [expanded, setExpanded] = useState<string>(() => {
-    try {
-      return localStorage.getItem(EXPANDED_KEY) ?? getActiveGroup();
-    } catch {
-      return getActiveGroup();
-    }
+    try { return localStorage.getItem(EXPANDED_KEY) ?? getActiveGroup(); }
+    catch { return getActiveGroup(); }
   });
 
-  // Keep expanded group in sync with navigation
   useEffect(() => {
     const activeGroup = getActiveGroup();
-    if (activeGroup && activeGroup !== expanded) {
-      setExpanded(activeGroup);
-    }
+    if (activeGroup && activeGroup !== expanded) setExpanded(activeGroup);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
-  function toggleGroup(section: string) {
+  const toggleGroup = useCallback((section: string) => {
     const next = expanded === section ? '' : section;
     setExpanded(next);
     try { localStorage.setItem(EXPANDED_KEY, next); } catch { /* ignore */ }
-  }
+  }, [expanded]);
 
   return (
-    <Stack sx={{ height: '100%', overflow: 'hidden' }}>
-      {/* Logo */}
+    <Stack sx={{ height: '100%', overflow: 'hidden', bgcolor: sb.bg }}>
+      {/* Logo header */}
       <Stack
         direction="row"
         alignItems="center"
         justifyContent="space-between"
-        sx={{ px: 2, minHeight: 56, flexShrink: 0 }}
+        sx={{ px: 2, minHeight: 54, flexShrink: 0 }}
       >
         <Stack direction="row" alignItems="center" spacing={1.25}>
           <GrLogo />
           <Box>
-            <Typography fontWeight={800} fontSize={14.5} color="#fff" lineHeight={1.2}>
+            <Typography
+              fontWeight={800}
+              fontSize={14}
+              color="#fff"
+              lineHeight={1.2}
+              letterSpacing="-0.03em"
+            >
               GreenRoot
             </Typography>
-            <Typography fontSize={10} sx={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1 }}>
+            <Typography fontSize={10} sx={{ color: sb.groupLabel, lineHeight: 1, letterSpacing: '0.04em' }}>
               Admin Console
             </Typography>
           </Box>
         </Stack>
         {onToggleCollapse && (
-          <IconButton
-            onClick={onToggleCollapse}
-            size="small"
-            sx={{ color: 'rgba(255,255,255,0.35)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.08)' } }}
-          >
-            <ChevronLeftIcon fontSize="small" />
-          </IconButton>
+          <Tooltip title="Collapse sidebar" placement="right">
+            <IconButton
+              onClick={onToggleCollapse}
+              size="small"
+              sx={{
+                color: 'rgba(255,255,255,0.25)',
+                '&:hover': { color: '#fff', bgcolor: sb.bgHover },
+                borderRadius: `${radius.sm}px`,
+              }}
+            >
+              <ChevronLeftIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
         )}
       </Stack>
 
-      <Divider sx={{ borderColor: 'rgba(255,255,255,0.07)', flexShrink: 0 }} />
+      <Box sx={{ borderBottom: `1px solid ${sb.divider}`, flexShrink: 0 }} />
 
       {/* Navigation */}
-      <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', py: 1 }}>
+      <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', py: 1.25, px: 1 }}>
         {navigationGroups.map((group) => {
           const isRoot = !group.section;
           const isOpen = isRoot || expanded === group.section;
+          const emoji = GROUP_EMOJI[group.section] ?? '';
 
           return (
-            <Box key={group.section || '__root'}>
-              {/* Group header */}
+            <Box key={group.section || '__root'} mb={0.25}>
+              {/* Group accordion header */}
               {!isRoot && (
                 <ListItemButton
                   onClick={() => toggleGroup(group.section)}
                   sx={{
-                    px: 2,
-                    py: 0.625,
-                    minHeight: 32,
-                    color: isOpen ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.35)',
-                    '&:hover': { color: 'rgba(255,255,255,0.75)', bgcolor: 'transparent' },
+                    px: 1.25,
+                    py: 0.5,
+                    minHeight: 30,
+                    borderRadius: `${radius.sm}px`,
+                    mb: 0.25,
+                    color: isOpen ? sb.colorTextHover : sb.groupLabel,
+                    '&:hover': { bgcolor: sb.bgHover, color: sb.colorTextHover },
+                    transition: `all ${transition.fast}`,
                   }}
                 >
+                  {emoji && (
+                    <Box component="span" sx={{ fontSize: 12, mr: 1, lineHeight: 1 }}>
+                      {emoji}
+                    </Box>
+                  )}
                   <ListItemText
                     primary={group.section}
                     primaryTypographyProps={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: '0.07em',
+                      fontSize: 10.5,
+                      fontWeight: 600,
+                      letterSpacing: '0.06em',
                       textTransform: 'uppercase',
+                      lineHeight: 1,
                     }}
                   />
-                  {isOpen ? (
-                    <ExpandLessIcon sx={{ fontSize: 14, opacity: 0.5 }} />
-                  ) : (
-                    <ExpandMoreIcon sx={{ fontSize: 14, opacity: 0.35 }} />
-                  )}
+                  {isOpen
+                    ? <ExpandLessIcon sx={{ fontSize: 13, opacity: 0.5 }} />
+                    : <ExpandMoreIcon sx={{ fontSize: 13, opacity: 0.35 }} />
+                  }
                 </ListItemButton>
               )}
 
-              {/* Group items */}
-              <Collapse in={isOpen} timeout={220} unmountOnExit>
-                <List dense disablePadding sx={{ px: 1 }}>
+              {/* Items */}
+              <Collapse in={isOpen} timeout={200} unmountOnExit>
+                <List dense disablePadding>
                   {group.items.map((item) => (
                     <NavItem
                       key={item.path}
@@ -328,13 +391,13 @@ function SidebarFull({
         })}
       </Box>
 
-      {/* Copyright */}
-      <Divider sx={{ borderColor: 'rgba(255,255,255,0.07)', flexShrink: 0 }} />
+      {/* Copyright footer */}
+      <Box sx={{ borderTop: `1px solid ${sb.divider}`, flexShrink: 0 }} />
       <Box sx={{ px: 2, py: 1.5, flexShrink: 0 }}>
-        <Typography fontSize={10} color="rgba(255,255,255,0.25)" lineHeight={1.6}>
+        <Typography fontSize={10} color={sb.copyright} lineHeight={1.6} letterSpacing="-0.01em">
           © {new Date().getFullYear()} GreenRoot Pvt. Ltd.
         </Typography>
-        <Typography fontSize={10} color="rgba(255,255,255,0.18)" lineHeight={1.4}>
+        <Typography fontSize={10} color="rgba(255,255,255,0.15)" lineHeight={1.4}>
           All rights reserved.
         </Typography>
       </Box>
@@ -342,7 +405,7 @@ function SidebarFull({
   );
 }
 
-// ─── Mini sidebar (collapsed, icons only with flyout) ─────────────────────────
+// ── Mini sidebar (icons only + flyout) ────────────────────────────────────────
 function SidebarMini({ onExpand }: { onExpand: () => void }) {
   const [flyout, setFlyout] = useState<{ group: NavGroup; el: HTMLElement } | null>(null);
   const location = useLocation();
@@ -353,16 +416,16 @@ function SidebarMini({ onExpand }: { onExpand: () => void }) {
     );
   }
 
-  // For root group (Dashboard), show the item icon directly
-  // For other groups, show a representative icon (first item's icon)
   return (
-    <Stack sx={{ height: '100%', overflow: 'hidden' }} alignItems="center">
-      {/* Logo + expand toggle */}
-      <Box sx={{ minHeight: 56, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-        <GrLogo size={30} />
+    <Stack
+      sx={{ height: '100%', overflow: 'hidden', bgcolor: sb.bg }}
+      alignItems="center"
+    >
+      <Box sx={{ minHeight: 54, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+        <GrLogo size={28} />
       </Box>
 
-      <Divider sx={{ borderColor: 'rgba(255,255,255,0.07)', width: '80%', flexShrink: 0 }} />
+      <Box sx={{ width: '70%', borderBottom: `1px solid ${sb.divider}`, flexShrink: 0 }} />
 
       <Box sx={{ flex: 1, overflowY: 'auto', width: '100%', py: 1 }}>
         {navigationGroups.map((group) => {
@@ -370,7 +433,6 @@ function SidebarMini({ onExpand }: { onExpand: () => void }) {
           const active = isGroupActive(group);
 
           if (isRoot) {
-            // Root group: show items directly (Dashboard only)
             return group.items.map((item) => {
               const Icon = item.icon;
               return (
@@ -381,16 +443,16 @@ function SidebarMini({ onExpand }: { onExpand: () => void }) {
                     end
                     sx={{
                       justifyContent: 'center',
-                      borderRadius: 1.5,
-                      mx: 0.5,
+                      borderRadius: `${radius.sm}px`,
+                      mx: 0.75,
                       mb: 0.25,
-                      minHeight: 36,
-                      color: 'rgba(255,255,255,0.6)',
-                      '&.active': { bgcolor: 'rgba(163,214,92,0.18)', color: '#A3D65C' },
-                      '&:hover:not(.active)': { bgcolor: 'rgba(255,255,255,0.07)', color: '#fff' },
+                      minHeight: 34,
+                      color: sb.colorText,
+                      '&.active': { bgcolor: sb.bgActive, color: sb.colorActive },
+                      '&:hover:not(.active)': { bgcolor: sb.bgHover, color: sb.colorTextHover },
                     }}
                   >
-                    <Icon sx={{ fontSize: 18 }} />
+                    <Icon sx={{ fontSize: 17 }} />
                   </ListItemButton>
                 </Tooltip>
               );
@@ -398,24 +460,25 @@ function SidebarMini({ onExpand }: { onExpand: () => void }) {
           }
 
           const RepIcon = group.items[0].icon;
+          const emoji = GROUP_EMOJI[group.section] ?? '';
           return (
             <Box key={group.section}>
-              <Divider sx={{ my: 0.5, mx: 1, borderColor: 'rgba(255,255,255,0.06)' }} />
-              <Tooltip title={group.section} placement="right">
+              <Box sx={{ width: '70%', mx: 'auto', my: 0.5, borderTop: `1px solid ${sb.divider}` }} />
+              <Tooltip title={`${emoji} ${group.section}`.trim()} placement="right">
                 <ListItemButton
                   onClick={(e) => setFlyout({ group, el: e.currentTarget })}
                   sx={{
                     justifyContent: 'center',
-                    borderRadius: 1.5,
-                    mx: 0.5,
+                    borderRadius: `${radius.sm}px`,
+                    mx: 0.75,
                     mb: 0.25,
-                    minHeight: 36,
-                    color: active ? '#A3D65C' : 'rgba(255,255,255,0.55)',
-                    bgcolor: active ? 'rgba(163,214,92,0.12)' : 'transparent',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.07)', color: '#fff' },
+                    minHeight: 34,
+                    color: active ? sb.colorActive : sb.colorText,
+                    bgcolor: active ? sb.bgActive : 'transparent',
+                    '&:hover': { bgcolor: sb.bgHover, color: sb.colorTextHover },
                   }}
                 >
-                  <RepIcon sx={{ fontSize: 18 }} />
+                  <RepIcon sx={{ fontSize: 17 }} />
                 </ListItemButton>
               </Tooltip>
             </Box>
@@ -423,20 +486,19 @@ function SidebarMini({ onExpand }: { onExpand: () => void }) {
         })}
       </Box>
 
-      {/* Expand chevron at bottom */}
+      <Box sx={{ width: '70%', borderTop: `1px solid ${sb.divider}`, flexShrink: 0 }} />
       <Box sx={{ py: 1, flexShrink: 0 }}>
         <Tooltip title="Expand sidebar" placement="right">
           <IconButton
             onClick={onExpand}
             size="small"
-            sx={{ color: 'rgba(255,255,255,0.35)', '&:hover': { color: '#fff' } }}
+            sx={{ color: 'rgba(255,255,255,0.3)', '&:hover': { color: '#fff', bgcolor: sb.bgHover } }}
           >
-            <ChevronRightIcon fontSize="small" />
+            <ChevronRightIcon sx={{ fontSize: 16 }} />
           </IconButton>
         </Tooltip>
       </Box>
 
-      {/* Flyout popover */}
       {flyout && (
         <GroupFlyout
           group={flyout.group}
@@ -449,7 +511,7 @@ function SidebarMini({ onExpand }: { onExpand: () => void }) {
   );
 }
 
-// ─── Main layout ──────────────────────────────────────────────────────────────
+// ── Main layout ────────────────────────────────────────────────────────────────
 export function AdminLayout() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -480,7 +542,7 @@ export function AdminLayout() {
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
         ModalProps={{ keepMounted: true }}
-        PaperProps={{ sx: { width: DRAWER_FULL, bgcolor: 'primary.dark', border: 0 } }}
+        PaperProps={{ sx: { width: DRAWER_FULL, border: 0, boxShadow: shadow.modal } }}
         sx={{ display: { xs: 'block', md: 'none' } }}
       >
         <SidebarFull onNavigate={() => setMobileOpen(false)} />
@@ -492,9 +554,9 @@ export function AdminLayout() {
         PaperProps={{
           sx: {
             width: drawerWidth,
-            bgcolor: 'primary.dark',
             border: 0,
-            transition: 'width 0.22s cubic-bezier(0.4,0,0.6,1)',
+            borderRight: `1px solid rgba(255,255,255,0.04)`,
+            transition: `width ${transition.drawer}`,
             overflow: 'visible',
           },
         }}
@@ -502,14 +564,13 @@ export function AdminLayout() {
           display: { xs: 'none', md: 'block' },
           width: drawerWidth,
           flexShrink: 0,
-          transition: 'width 0.22s cubic-bezier(0.4,0,0.6,1)',
+          transition: `width ${transition.drawer}`,
         }}
       >
-        {collapsed ? (
-          <SidebarMini onExpand={() => setCollapsed(false)} />
-        ) : (
-          <SidebarFull onToggleCollapse={() => setCollapsed(true)} />
-        )}
+        {collapsed
+          ? <SidebarMini onExpand={() => setCollapsed(false)} />
+          : <SidebarFull onToggleCollapse={() => setCollapsed(true)} />
+        }
       </Drawer>
 
       {/* Main area */}
@@ -519,57 +580,112 @@ export function AdminLayout() {
           minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
-          transition: 'margin 0.22s cubic-bezier(0.4,0,0.6,1)',
+          transition: `margin ${transition.drawer}`,
         }}
       >
+        {/* Topbar */}
         <AppBar
           color="inherit"
           elevation={0}
           position="sticky"
-          sx={{ borderBottom: 1, borderColor: 'divider', zIndex: 1100 }}
+          sx={{ zIndex: 1100 }}
         >
-          <Toolbar sx={{ gap: 1, minHeight: '56px !important', px: { xs: 2, md: 3 } }}>
+          <Toolbar sx={{ gap: 1.5, minHeight: '54px !important', px: { xs: 2, md: 3 } }}>
             {isMobile && (
-              <IconButton size="small" edge="start" onClick={() => setMobileOpen(true)}>
-                <MenuIcon fontSize="small" />
+              <IconButton
+                size="small"
+                edge="start"
+                onClick={() => setMobileOpen(true)}
+                sx={{ mr: 0.5 }}
+              >
+                <MenuIcon sx={{ fontSize: 18 }} />
               </IconButton>
             )}
 
+            {/* ⌘K Search */}
             <TextField
               placeholder="Search…"
               size="small"
-              sx={{ maxWidth: 280, flex: 1 }}
+              sx={{ maxWidth: 260, flex: 1 }}
               slotProps={{
                 input: {
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon fontSize="small" sx={{ color: 'text.disabled' }} />
+                      <SearchIcon sx={{ fontSize: 15, color: semantic.textMuted }} />
                     </InputAdornment>
                   ),
-                  sx: { fontSize: 13.5 },
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Box
+                        sx={{
+                          display: { xs: 'none', sm: 'flex' },
+                          alignItems: 'center',
+                          gap: 0.25,
+                          px: 0.75,
+                          py: 0.25,
+                          borderRadius: `${radius.xs}px`,
+                          bgcolor: semantic.bg,
+                          border: `1px solid ${semantic.border}`,
+                          color: semantic.textMuted,
+                          fontSize: 10.5,
+                          fontWeight: 500,
+                          lineHeight: 1,
+                          letterSpacing: '0.02em',
+                          whiteSpace: 'nowrap',
+                          userSelect: 'none',
+                        }}
+                      >
+                        ⌘K
+                      </Box>
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    fontSize: 13.5,
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: semantic.border },
+                  },
                 },
               }}
             />
 
             <Box sx={{ flex: 1 }} />
 
+            {/* Notification bell */}
             <Tooltip title="Notifications">
-              <IconButton size="small">
+              <IconButton
+                size="small"
+                sx={{
+                  color: semantic.textSecondary,
+                  '&:hover': { color: semantic.textPrimary, bgcolor: semantic.surfaceHover },
+                }}
+              >
                 <Badge color="error" variant="dot" invisible>
-                  <NotificationsNoneIcon fontSize="small" />
+                  <NotificationsNoneIcon sx={{ fontSize: 18 }} />
                 </Badge>
               </IconButton>
             </Tooltip>
 
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ ml: 0.5 }}>
-              <Avatar sx={{ bgcolor: 'primary.main', width: 30, height: 30, fontSize: 12, fontWeight: 700 }}>
+            {/* Divider */}
+            <Box sx={{ width: 1, height: 20, bgcolor: semantic.border, mx: 0.5 }} />
+
+            {/* User */}
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Avatar
+                sx={{
+                  bgcolor: semantic.primaryMain,
+                  width: 28,
+                  height: 28,
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em',
+                }}
+              >
                 {user?.first_name?.[0] ?? 'A'}
               </Avatar>
               <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                <Typography fontWeight={600} fontSize={13} lineHeight={1.2}>
+                <Typography fontWeight={600} fontSize={13} lineHeight={1.2} letterSpacing="-0.01em">
                   {user?.first_name ?? 'Admin'}
                 </Typography>
-                <Typography color="text.secondary" fontSize={11} lineHeight={1.2}>
+                <Typography color="text.secondary" fontSize={11} lineHeight={1.2} sx={{ opacity: 0.7 }}>
                   Super Admin
                 </Typography>
               </Box>
@@ -582,19 +698,26 @@ export function AdminLayout() {
                   disabled={logoutState.isLoading}
                   onClick={handleLogout}
                   aria-label="Sign out"
+                  sx={{
+                    color: semantic.textSecondary,
+                    '&:hover': { color: tokens.color.red[600], bgcolor: tokens.color.red[50] },
+                  }}
                 >
-                  {logoutState.isLoading ? (
-                    <CircularProgress size={16} />
-                  ) : (
-                    <LogoutIcon fontSize="small" />
-                  )}
+                  {logoutState.isLoading
+                    ? <CircularProgress size={15} />
+                    : <LogoutIcon sx={{ fontSize: 16 }} />
+                  }
                 </IconButton>
               </span>
             </Tooltip>
           </Toolbar>
         </AppBar>
 
-        <Box component="main" sx={{ flex: 1, px: { xs: 2, md: 3 }, py: 3 }}>
+        {/* Page content */}
+        <Box
+          component="main"
+          sx={{ flex: 1, px: { xs: 2, md: 3 }, py: 3 }}
+        >
           <Outlet />
         </Box>
 
@@ -602,8 +725,7 @@ export function AdminLayout() {
         <Box
           component="footer"
           sx={{
-            borderTop: 1,
-            borderColor: 'divider',
+            borderTop: `1px solid ${semantic.border}`,
             px: { xs: 2, md: 3 },
             py: 1.5,
             display: 'flex',
@@ -611,10 +733,10 @@ export function AdminLayout() {
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: 1,
-            bgcolor: 'background.default',
+            bgcolor: semantic.surface,
           }}
         >
-          <Typography fontSize={12} color="text.disabled">
+          <Typography fontSize={12} color="text.disabled" letterSpacing="-0.01em">
             © {new Date().getFullYear()} GreenRoot Pvt. Ltd. All rights reserved.
           </Typography>
           <Typography fontSize={12} color="text.disabled">
