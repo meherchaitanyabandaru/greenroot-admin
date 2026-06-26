@@ -13,7 +13,6 @@ export const theme = createTheme({
       dark:         semantic.primaryHover,
       light:        color.forest[500],
       contrastText: '#ffffff',
-      // @ts-expect-error — MUI augmentation for primary.50
       50:           color.forest[50],
     },
     success: { main: semantic.primaryMid, light: semantic.primaryLight },

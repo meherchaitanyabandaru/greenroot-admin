@@ -6,24 +6,22 @@ import { AdminLayout } from '../layouts/AdminLayout';
 import { ProtectedRoute } from '../layouts/ProtectedRoute';
 
 const LoginPage = lazy(() =>
-  import('../features/auth/LoginPage').then((module) => ({ default: module.LoginPage })),
+  import('../features/auth/LoginPage').then((m) => ({ default: m.LoginPage })),
 );
 const DashboardPage = lazy(() =>
-  import('../features/dashboard/DashboardPage').then((module) => ({ default: module.DashboardPage })),
+  import('../features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })),
 );
 const ResourceListPage = lazy(() =>
-  import('../features/shared/ResourceListPage').then((module) => ({
-    default: module.ResourceListPage,
-  })),
+  import('../features/shared/ResourceListPage').then((m) => ({ default: m.ResourceListPage })),
 );
 const CategoryManagementPage = lazy(() =>
-  import('../features/plants/CategoryManagementPage').then((module) => ({
-    default: module.CategoryManagementPage,
+  import('../features/plants/CategoryManagementPage').then((m) => ({
+    default: m.CategoryManagementPage,
   })),
 );
-const TrackingPage = lazy(() =>
-  import('../features/tracking/TrackingPage').then((module) => ({
-    default: module.TrackingPage,
+const NurseryApplicationsPage = lazy(() =>
+  import('../features/nurseries/NurseryApplicationsPage').then((m) => ({
+    default: m.NurseryApplicationsPage,
   })),
 );
 
@@ -37,24 +35,35 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AdminLayout />}>
             <Route index element={<DashboardPage />} />
+
+            {/* Platform Users */}
             <Route path="/users" element={<ResourceListPage resource="users" />} />
+            <Route path="/drivers" element={<ResourceListPage resource="drivers" />} />
+
+            {/* Approvals */}
+            <Route path="/nurseries/applications" element={<NurseryApplicationsPage />} />
+
+            {/* Nurseries */}
+            <Route path="/nurseries" element={<ResourceListPage resource="nurseries" />} />
+
+            {/* Master Data */}
             <Route path="/plants" element={<ResourceListPage resource="plants" />} />
             <Route path="/plants/categories" element={<CategoryManagementPage />} />
-            <Route path="/nurseries" element={<ResourceListPage resource="nurseries" />} />
-            <Route path="/inventory" element={<ResourceListPage resource="inventory" />} />
-            <Route path="/requests" element={<ResourceListPage resource="requests" />} />
+
+            {/* Business Monitoring (read-only for Super Admin) */}
+            <Route path="/quotations" element={<ResourceListPage resource="quotations" />} />
             <Route path="/orders" element={<ResourceListPage resource="orders" />} />
-            <Route path="/payments" element={<ResourceListPage resource="payments" />} />
             <Route path="/dispatches" element={<ResourceListPage resource="dispatches" />} />
-            <Route path="/vehicles" element={<ResourceListPage resource="vehicles" />} />
-            <Route path="/drivers" element={<ResourceListPage resource="drivers" />} />
-            <Route path="/tracking" element={<TrackingPage />} />
+            <Route path="/requests" element={<ResourceListPage resource="requests" />} />
             <Route path="/notifications" element={<ResourceListPage resource="notifications" />} />
-            <Route path="/notifications/devices" element={<ResourceListPage resource="notificationDevices" />} />
             <Route path="/notifications/templates" element={<ResourceListPage resource="notificationTemplates" />} />
+
+            {/* Commercial */}
+            <Route path="/payments" element={<ResourceListPage resource="payments" />} />
             <Route path="/subscriptions" element={<ResourceListPage resource="subscriptions" />} />
             <Route path="/subscription-plans" element={<ResourceListPage resource="subscriptionPlans" />} />
-            <Route path="/attachments" element={<ResourceListPage resource="attachments" />} />
+
+            {/* Governance */}
             <Route path="/audit" element={<ResourceListPage resource="audit" />} />
           </Route>
         </Route>

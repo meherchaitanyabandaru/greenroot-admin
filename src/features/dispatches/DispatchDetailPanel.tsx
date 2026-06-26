@@ -2,9 +2,11 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Divider,
   Grid,
+  IconButton,
   Link,
   Paper,
   Stack,
@@ -16,8 +18,12 @@ import {
   TableRow,
   Tabs,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useState } from 'react';
 import {
   useGetDispatchQuery,
@@ -103,9 +109,14 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
   if (dispatchQuery.error)
     return <ErrorState message={normalizeApiError(dispatchQuery.error).message} onRetry={dispatchQuery.refetch} />;
 
-  const dispatch = dispatchQuery.data?.dispatch ?? {};
-  const trackingPoints = trackingQuery.data?.tracking ?? [];
-  const nextStatuses = STATUS_FLOW[String(dispatch.dispatch_status)] ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dispatch: any = dispatchQuery.data?.dispatch ?? {};
+  const trackingPoints: any[] = trackingQuery.data?.tracking ?? [];
+  const nextStatuses: string[] = STATUS_FLOW[String(dispatch.dispatch_status)] ?? [];
+
+  const tripStartedAt: string | null = dispatch.trip_started_at
+    ? new Date(String(dispatch.trip_started_at)).toLocaleString()
+    : null;
 
   const infoItems: Array<[string, unknown]> = [
     ['Order', dispatch.order_number],
@@ -115,6 +126,7 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
     ['Dispatch Date', dispatch.dispatch_date],
     ['Delivery Date', dispatch.delivery_date],
     ['Destination', dispatch.destination_address],
+    ['Trip Started', dispatch.trip_started_at ? tripStartedAt : null],
     ['Notes', dispatch.notes],
   ];
 
@@ -128,20 +140,73 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
     }
   }
 
+  function copyToClipboard(value: string, label: string) {
+    navigator.clipboard.writeText(value);
+  }
+
   return (
     <Stack spacing={2}>
       {statusError && <Alert severity="error">{statusError}</Alert>}
       {updateState.isError && <Alert severity="error">{normalizeApiError(updateState.error).message}</Alert>}
+
+      {/* Trip already started warning */}
+      {tripStartedAt && (
+        <Alert
+          severity="warning"
+          icon={<WarningAmberIcon />}
+          sx={{ fontWeight: 600 }}
+        >
+          Trip already started on {tripStartedAt} — status changes are restricted.
+        </Alert>
+      )}
 
       <Paper sx={{ p: 2 }} variant="outlined">
         <Stack spacing={2}>
           <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
             <Box>
               <Typography color="text.secondary" variant="body2">Dispatch</Typography>
-              <Typography variant="h6">{text(dispatch.dispatch_code)}</Typography>
+              <Stack direction="row" alignItems="center" spacing={0.5}>
+                <Typography variant="h6">{text(dispatch.dispatch_code)}</Typography>
+                <Tooltip title="Copy dispatch code">
+                  <IconButton size="small" onClick={() => copyToClipboard(dispatch.dispatch_code, 'Dispatch code')}>
+                    <ContentCopyIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
             </Box>
             <StatusChip value={dispatch.dispatch_status} />
           </Stack>
+
+          {/* Tracking UUID row */}
+          {dispatch.tracking_uuid && (
+            <Box sx={{ bgcolor: 'grey.50', borderRadius: 1, px: 1.5, py: 1 }}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <QrCode2Icon fontSize="small" color="action" />
+                <Box flex={1}>
+                  <Typography variant="caption" color="text.secondary">Trip Tracking UUID</Typography>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: 12, wordBreak: 'break-all' }}>
+                    {dispatch.tracking_uuid}
+                  </Typography>
+                </Box>
+                <Tooltip title="Copy tracking UUID">
+                  <IconButton size="small" onClick={() => copyToClipboard(String(dispatch.tracking_uuid), 'Tracking UUID')}>
+                    <ContentCopyIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            </Box>
+          )}
+
+          {!dispatch.tracking_uuid && (
+            <Chip
+              label="No tracking UUID linked yet"
+              size="small"
+              variant="outlined"
+              color="default"
+              icon={<QrCode2Icon />}
+              sx={{ alignSelf: 'flex-start', opacity: 0.6 }}
+            />
+          )}
 
           <Grid container spacing={1.5}>
             {infoItems.map(([label, value]) => (

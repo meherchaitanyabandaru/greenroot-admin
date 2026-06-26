@@ -100,7 +100,7 @@ export function UserDetailPanel({ userId }: { userId: number }) {
                 User
               </Typography>
               <Typography variant="h6">
-                {text(user.first_name)} {text(user.last_name)}
+                {[user.first_name, user.last_name].filter(Boolean).join(' ') || '-'}
               </Typography>
               <Typography color="text.secondary" variant="body2">
                 {text(user.user_code)}

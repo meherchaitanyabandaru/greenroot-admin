@@ -48,14 +48,13 @@ const EXPANDED_KEY = 'gr_nav_expanded';
 
 // ── Emoji map for group headers ───────────────────────────────────────────────
 const GROUP_EMOJI: Record<string, string> = {
-  'User Management': '👥',
-  'Plant Catalog':   '🌱',
-  'Nursery Network': '🏡',
-  'Commerce':        '🛒',
-  'Logistics':       '🚚',
-  'Notifications':   '🔔',
-  'Billing':         '💳',
-  'Platform':        '⚙️',
+  'Approvals':            '✅',
+  'Platform Users':       '👥',
+  'Nurseries':            '🏡',
+  'Master Data':          '🌱',
+  'Business Monitoring':  '📊',
+  'Commercial':           '💳',
+  'Governance':           '⚙️',
 };
 
 // ── Logo mark ─────────────────────────────────────────────────────────────────
@@ -98,7 +97,7 @@ function NavItem({
     <ListItemButton
       component={NavLink}
       to={item.path}
-      end={item.path === '/'}
+      end
       onClick={onNavigate}
       sx={{
         borderRadius: `${radius.sm}px`,
@@ -213,7 +212,7 @@ function GroupFlyout({
               key={item.path}
               component={NavLink}
               to={item.path}
-              end={item.path === '/'}
+              end
               onClick={() => { onNavigate(); onClose(); }}
               sx={{
                 borderRadius: `${radius.sm}px`,
@@ -257,9 +256,7 @@ function SidebarFull({
   function getActiveGroup(): string {
     for (const g of navigationGroups) {
       for (const item of g.items) {
-        if (item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path)) {
-          return g.section;
-        }
+        if (location.pathname === item.path) return g.section;
       }
     }
     return '';
@@ -411,9 +408,7 @@ function SidebarMini({ onExpand }: { onExpand: () => void }) {
   const location = useLocation();
 
   function isGroupActive(group: NavGroup): boolean {
-    return group.items.some((item) =>
-      item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path),
-    );
+    return group.items.some((item) => location.pathname === item.path);
   }
 
   return (

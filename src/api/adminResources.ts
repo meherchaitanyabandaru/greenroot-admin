@@ -10,6 +10,7 @@ export type ResourceConfig = {
     | 'Inventory'
     | 'Requests'
     | 'Orders'
+    | 'Quotations'
     | 'Payments'
     | 'Dispatches'
     | 'Vehicles'
@@ -31,6 +32,14 @@ export type ResourceListResponse = {
 
 export type OrderDetailResponse = {
   order: Record<string, unknown>;
+};
+
+export type QuotationDetailResponse = {
+  quotation: Record<string, unknown>;
+};
+
+export type QuotationItemsResponse = {
+  items: Record<string, unknown>[];
 };
 
 export type OrderItemsResponse = {
@@ -127,6 +136,7 @@ export const resourceConfigs = {
     collectionKey: 'requests',
   },
   orders: { key: 'orders', tag: 'Orders', path: '/api/v1/orders', collectionKey: 'orders' },
+  quotations: { key: 'quotations', tag: 'Quotations', path: '/api/v1/quotations', collectionKey: 'quotations' },
   payments: {
     key: 'payments',
     tag: 'Payments',
@@ -270,6 +280,18 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: ({ id, body }) => ({ url: `/api/v1/nurseries/${id}`, method: 'PUT', body }),
       invalidatesTags: ['Nurseries', 'Dashboard'],
     }),
+    updateNurseryStatus: builder.mutation<unknown, { id: number; status: string; reason?: string }>({
+      query: ({ id, status, reason }) => ({
+        url: `/api/v1/nurseries/${id}/status`,
+        method: 'PUT',
+        body: { status, ...(reason ? { admin_note: reason } : {}) },
+      }),
+      invalidatesTags: ['Nurseries', 'Dashboard'],
+    }),
+    approveDriver: builder.mutation<unknown, number>({
+      query: (id) => ({ url: `/api/v1/drivers/${id}/approve`, method: 'POST', body: {} }),
+      invalidatesTags: ['Drivers', 'Dashboard'],
+    }),
     createDriver: builder.mutation<unknown, Record<string, unknown>>({
       query: (body) => ({ url: '/api/v1/drivers', method: 'POST', body }),
       invalidatesTags: ['Drivers', 'Dashboard'],
@@ -305,6 +327,18 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     getOrder: builder.query<OrderDetailResponse, number>({
       query: (id) => `/api/v1/orders/${id}`,
       providesTags: ['Orders'],
+    }),
+    getQuotation: builder.query<QuotationDetailResponse, number>({
+      query: (id) => `/api/v1/quotations/${id}`,
+      providesTags: ['Quotations'],
+    }),
+    createQuotation: builder.mutation<QuotationDetailResponse, Record<string, unknown>>({
+      query: (body) => ({ url: '/api/v1/quotations', method: 'POST', body }),
+      invalidatesTags: ['Quotations'],
+    }),
+    deleteQuotation: builder.mutation<unknown, number>({
+      query: (id) => ({ url: `/api/v1/quotations/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Quotations'],
     }),
     listOrderItems: builder.query<OrderItemsResponse, number>({
       query: (id) => `/api/v1/orders/${id}/items`,
@@ -358,9 +392,21 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (id) => `/api/v1/plant-requests/${id}/responses`,
       providesTags: ['Requests'],
     }),
+    createRequest: builder.mutation<RequestDetailResponse, Record<string, unknown>>({
+      query: (body) => ({ url: '/api/v1/plant-requests', method: 'POST', body }),
+      invalidatesTags: ['Requests', 'Dashboard'],
+    }),
     createRequestResponse: builder.mutation<unknown, { id: number; body: Record<string, unknown> }>({
       query: ({ id, body }) => ({ url: `/api/v1/plant-requests/${id}/responses`, method: 'POST', body }),
       invalidatesTags: ['Requests'],
+    }),
+    updateRequestStatus: builder.mutation<RequestDetailResponse, { id: number; status: string }>({
+      query: ({ id, status }) => ({
+        url: `/api/v1/plant-requests/${id}/status`,
+        method: 'PUT',
+        body: { status },
+      }),
+      invalidatesTags: ['Requests', 'Dashboard'],
     }),
     cancelRequest: builder.mutation<unknown, number>({
       query: (id) => ({ url: `/api/v1/plant-requests/${id}`, method: 'DELETE' }),
@@ -502,6 +548,9 @@ export const adminResourcesApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useGetQuotationQuery,
+  useCreateQuotationMutation,
+  useDeleteQuotationMutation,
   useListSubscriptionPlansQuery,
   useGetSubscriptionQuery,
   useCreateSubscriptionMutation,
@@ -510,7 +559,9 @@ export const {
   useListSubscriptionPaymentsQuery,
   useGetRequestQuery,
   useListRequestResponsesQuery,
+  useCreateRequestMutation,
   useCreateRequestResponseMutation,
+  useUpdateRequestStatusMutation,
   useCancelRequestMutation,
   useUpdateRequestResponseMutation,
   useGetUserQuery,
@@ -567,6 +618,8 @@ export const {
   useGetDriverQuery,
   useUpdateDriverLocationMutation,
   useGetDriverLatestTrackingQuery,
+  useUpdateNurseryStatusMutation,
+  useApproveDriverMutation,
   useGetDispatchQuery,
   useAddDispatchItemMutation,
   useListDispatchTrackingQuery,

@@ -5,6 +5,10 @@ import {
   Button,
   Checkbox,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   FormControlLabel,
   Grid,
@@ -23,15 +27,19 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import {
-  useDeleteNurseryMutation,
   useGetNurseryQuery,
   useListNurseryAddressesQuery,
   useListNurseryInventoryQuery,
   useListNurseryUsersQuery,
   useUpdateNurseryMutation,
+  useUpdateNurseryStatusMutation,
   useCreateNurseryAddressMutation,
   useUpdateNurseryAddressMutation,
   useDeleteNurseryAddressMutation,
@@ -358,13 +366,24 @@ function InventoryTab({ nurseryId }: { nurseryId: number }) {
   );
 }
 
+type StatusAction = 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'ACTIVE';
+const STATUS_ACTION_CFG: Record<StatusAction, { title: string; verb: string; requiresReason: boolean }> = {
+  APPROVED:  { title: 'Approve Nursery',   verb: 'Approve',    requiresReason: false },
+  REJECTED:  { title: 'Reject Application',verb: 'Reject',     requiresReason: true  },
+  SUSPENDED: { title: 'Suspend Nursery',   verb: 'Suspend',    requiresReason: true  },
+  ACTIVE:    { title: 'Reactivate Nursery',verb: 'Reactivate', requiresReason: true  },
+};
+
 export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number; onDeleted?: () => void }) {
   const nurseryQuery = useGetNurseryQuery(nurseryId);
   const usersQuery = useListNurseryUsersQuery(nurseryId);
   const inventoryQuery = useListNurseryInventoryQuery(nurseryId);
   const [updateNursery, updateState] = useUpdateNurseryMutation();
-  const [deleteNursery, deleteState] = useDeleteNurseryMutation();
+  const [updateStatus, statusState] = useUpdateNurseryStatusMutation();
   const [tab, setTab] = useState(0);
+  const [actionDialog, setActionDialog] = useState<StatusAction | null>(null);
+  const [actionReason, setActionReason] = useState('');
+  const [actionError, setActionError] = useState('');
 
   if (nurseryQuery.isLoading) return <DetailSkeleton />;
   if (nurseryQuery.error) return <ErrorState message={normalizeApiError(nurseryQuery.error).message} onRetry={nurseryQuery.refetch} />;
@@ -374,8 +393,15 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
     ? (usersQuery.data!.users as Record<string, unknown>[])
     : [];
 
+  const status = String(nursery.status ?? '').toUpperCase();
+  const canApprove    = status === 'PENDING';
+  const canReject     = status === 'PENDING';
+  const canSuspend    = status === 'APPROVED' || status === 'ACTIVE';
+  const canReactivate = status === 'SUSPENDED';
+
   const detailItems: Array<[string, unknown]> = [
     ['Code', nursery.nursery_code ?? nursery.code],
+    ['Owner ID', nursery.owner_user_id],
     ['Mobile', nursery.mobile],
     ['Email', nursery.email],
     ['Website', nursery.website],
@@ -388,18 +414,62 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
     nurseryQuery.refetch();
   }
 
-  async function handleDelete() {
-    if (!window.confirm(`Delete nursery "${text(nursery.name)}"? This cannot be undone.`)) return;
-    await deleteNursery(nurseryId).unwrap();
-    onDeleted?.();
+  async function handleStatusAction() {
+    if (!actionDialog) return;
+    const cfg = STATUS_ACTION_CFG[actionDialog];
+    if (cfg.requiresReason && !actionReason.trim()) return;
+    try {
+      setActionError('');
+      await updateStatus({ id: nurseryId, status: actionDialog, reason: actionReason.trim() }).unwrap();
+      setActionDialog(null);
+      setActionReason('');
+      nurseryQuery.refetch();
+    } catch (e) {
+      setActionError(normalizeApiError(e).message);
+    }
   }
 
   return (
     <Stack spacing={2.5}>
-      {(updateState.isError || deleteState.isError) && (
+      {(updateState.isError || statusState.isError) && (
         <Alert severity="error">
-          {normalizeApiError(updateState.error || deleteState.error).message}
+          {normalizeApiError(updateState.error || statusState.error).message}
         </Alert>
+      )}
+
+      {/* Status action dialog */}
+      {actionDialog && (
+        <Dialog open onClose={() => { setActionDialog(null); setActionReason(''); setActionError(''); }} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontWeight: 700 }}>{STATUS_ACTION_CFG[actionDialog].title}</DialogTitle>
+          <DialogContent>
+            <Typography fontSize={14} color="text.secondary" mb={1.5}>
+              You are about to <strong>{STATUS_ACTION_CFG[actionDialog].verb.toLowerCase()}</strong>{' '}
+              <strong>{text(nursery.nursery_name ?? nursery.name)}</strong>.
+            </Typography>
+            {actionError && <Alert severity="error" sx={{ mb: 1.5 }}>{actionError}</Alert>}
+            <TextField
+              label={STATUS_ACTION_CFG[actionDialog].requiresReason ? 'Reason (required)' : 'Internal note (optional)'}
+              multiline
+              rows={3}
+              fullWidth
+              value={actionReason}
+              onChange={(e) => setActionReason(e.target.value)}
+              size="small"
+            />
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+            <Button onClick={() => { setActionDialog(null); setActionReason(''); setActionError(''); }} size="small">Cancel</Button>
+            <Button
+              variant="contained"
+              color={actionDialog === 'APPROVED' ? 'success' : actionDialog === 'REJECTED' ? 'error' : actionDialog === 'SUSPENDED' ? 'warning' : 'primary'}
+              onClick={handleStatusAction}
+              disabled={statusState.isLoading || (STATUS_ACTION_CFG[actionDialog].requiresReason && !actionReason.trim())}
+              size="small"
+            >
+              {statusState.isLoading ? 'Saving…' : STATUS_ACTION_CFG[actionDialog].verb}
+            </Button>
+          </DialogActions>
+        </Dialog>
       )}
 
       {/* ── Header card ── */}
@@ -410,7 +480,7 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
               <Typography fontSize={11} fontWeight={700} textTransform="uppercase" letterSpacing="0.06em" color="text.secondary" mb={0.25}>
                 Nursery
               </Typography>
-              <Typography variant="h6" fontWeight={700}>{text(nursery.name)}</Typography>
+              <Typography variant="h6" fontWeight={700}>{text(nursery.nursery_name ?? nursery.name)}</Typography>
               <Typography fontSize={12} color="text.secondary" fontFamily="monospace">
                 {text(nursery.nursery_code)}
               </Typography>
@@ -442,11 +512,37 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
           )}
 
           <Divider />
+          {/* Status actions — no hard delete */}
+          <Stack direction="row" spacing={1} flexWrap="wrap">
+            {canApprove && (
+              <Button size="small" variant="contained" color="success" startIcon={<CheckIcon />}
+                onClick={() => setActionDialog('APPROVED')} disabled={statusState.isLoading}>
+                Approve
+              </Button>
+            )}
+            {canReject && (
+              <Button size="small" variant="outlined" color="error" startIcon={<CloseIcon />}
+                onClick={() => setActionDialog('REJECTED')} disabled={statusState.isLoading}>
+                Reject
+              </Button>
+            )}
+            {canSuspend && (
+              <Button size="small" variant="outlined" color="warning" startIcon={<PauseCircleOutlineIcon />}
+                onClick={() => setActionDialog('SUSPENDED')} disabled={statusState.isLoading}>
+                Suspend
+              </Button>
+            )}
+            {canReactivate && (
+              <Button size="small" variant="outlined" color="primary" startIcon={<PlayCircleOutlineIcon />}
+                onClick={() => setActionDialog('ACTIVE')} disabled={statusState.isLoading}>
+                Reactivate
+              </Button>
+            )}
+          </Stack>
           <NurseryForm
             initial={nursery}
             loading={updateState.isLoading}
             onSubmit={handleUpdate}
-            onDelete={deleteState.isLoading ? undefined : handleDelete}
           />
         </Stack>
       </Paper>

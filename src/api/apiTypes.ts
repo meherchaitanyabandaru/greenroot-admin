@@ -31,13 +31,18 @@ export type AuthResponse = {
 export type DashboardSummary = {
   users: number;
   nurseries: number;
+  pending_nurseries: number;
+  approved_nurseries: number;
+  suspended_nurseries: number;
   plants: number;
   inventory_items: number;
   plant_requests: number;
   orders: number;
+  active_orders: number;
   payments: number;
   dispatches: number;
   notifications: number;
+  active_drivers: number;
   revenue: number;
 };
 

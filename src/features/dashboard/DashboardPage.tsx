@@ -1,13 +1,13 @@
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import {
-  Assignment,
-  Inventory,
+  AccountTree,
   LocalFlorist,
-  LocalShipping,
-  Payments,
   People,
   Storefront,
+  ReceiptLong,
+  LocalShipping,
 } from '@mui/icons-material';
 import {
   Box,
@@ -25,8 +25,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  PieChart,
-  Pie,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -40,20 +38,28 @@ import { greenRootPalette } from '../../theme/palette';
 import { normalizeApiError } from '../../utils/apiError';
 import { useDashboardQuery } from './dashboardApi';
 
-// ─── KPI card ───────────────────────────────────────────────────────────────
 function KpiCard({
   label,
   value,
   Icon,
   href,
   accent = false,
+  alert = false,
 }: {
   label: string;
   value: number;
   Icon: SvgIconComponent;
   href: string;
   accent?: boolean;
+  alert?: boolean;
 }) {
+  const iconBg = alert
+    ? 'rgba(220,38,38,0.10)'
+    : accent
+      ? 'rgba(163,214,92,0.15)'
+      : 'primary.50';
+  const iconColor = alert ? '#DC2626' : accent ? '#7A9E2E' : 'primary.main';
+
   return (
     <Card
       component={Link}
@@ -63,7 +69,8 @@ function KpiCard({
         textDecoration: 'none',
         height: '100%',
         transition: 'box-shadow 0.15s',
-        '&:hover': { boxShadow: '0 4px 20px rgba(0,0,0,0.1)', textDecoration: 'none' },
+        '&:hover': { boxShadow: '0 4px 20px rgba(0,0,0,0.1)' },
+        ...(alert && value > 0 ? { border: '1.5px solid #FCA5A5' } : {}),
       }}
     >
       <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
@@ -79,7 +86,12 @@ function KpiCard({
             >
               {label}
             </Typography>
-            <Typography variant="h4" fontWeight={800} lineHeight={1}>
+            <Typography
+              variant="h4"
+              fontWeight={800}
+              lineHeight={1}
+              color={alert && value > 0 ? '#DC2626' : 'text.primary'}
+            >
               {value.toLocaleString('en-IN')}
             </Typography>
           </Box>
@@ -88,10 +100,10 @@ function KpiCard({
               width: 40,
               height: 40,
               borderRadius: 2,
-              bgcolor: accent ? 'rgba(163,214,92,0.15)' : 'primary.50',
+              bgcolor: iconBg,
               display: 'grid',
               placeItems: 'center',
-              color: accent ? '#7A9E2E' : 'primary.main',
+              color: iconColor,
               flexShrink: 0,
             }}
           >
@@ -103,34 +115,33 @@ function KpiCard({
   );
 }
 
-// ─── Pending action row ───────────────────────────────────────────────────────
-function PendingAction({
+function AttentionBanner({
   label,
   count,
   href,
-  color,
+  severity,
 }: {
   label: string;
   count: number;
   href: string;
-  color: 'warning' | 'error';
+  severity: 'warning' | 'error';
 }) {
   if (count === 0) return null;
-  const styles = {
-    warning: { bg: '#FEF3C7', text: '#B7791F', icon: '#D97706' },
-    error: { bg: '#FEE2E2', text: '#C2410C', icon: '#DC2626' },
-  }[color];
+  const s =
+    severity === 'error'
+      ? { bg: '#FEE2E2', text: '#B91C1C', icon: '#DC2626' }
+      : { bg: '#FEF3C7', text: '#B45309', icon: '#D97706' };
 
   return (
     <Stack
       direction="row"
       alignItems="center"
       justifyContent="space-between"
-      sx={{ px: 2, py: 1.25, borderRadius: 1.5, bgcolor: styles.bg }}
+      sx={{ px: 2, py: 1.25, borderRadius: 1.5, bgcolor: s.bg }}
     >
       <Stack direction="row" spacing={1} alignItems="center">
-        <WarningAmberIcon sx={{ fontSize: 16, color: styles.icon }} />
-        <Typography fontSize={13} fontWeight={500} color={styles.text}>
+        <ErrorOutlineIcon sx={{ fontSize: 16, color: s.icon }} />
+        <Typography fontSize={13} fontWeight={500} color={s.text}>
           {label}
         </Typography>
       </Stack>
@@ -138,87 +149,96 @@ function PendingAction({
         <Chip
           label={count}
           size="small"
-          sx={{
-            bgcolor: styles.text,
-            color: '#fff',
-            fontWeight: 700,
-            height: 20,
-            fontSize: 11,
-          }}
+          sx={{ bgcolor: s.text, color: '#fff', fontWeight: 700, height: 20, fontSize: 11 }}
         />
         <Button
           component={Link}
           to={href}
           size="small"
           endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
-          sx={{ color: styles.text, fontSize: 12, minWidth: 0, p: 0 }}
+          sx={{ color: s.text, fontSize: 12, minWidth: 0, p: 0 }}
         >
-          View
+          Review
         </Button>
       </Stack>
     </Stack>
   );
 }
 
-// ─── Summary type from API ────────────────────────────────────────────────────
-type Summary = {
-  nurseries: number | string;
-  plants: number | string;
-  plant_requests: number | string;
-  orders: number | string;
-  payments: number | string;
-  dispatches: number | string;
-  users: number | string;
-};
-
 export function DashboardPage() {
   const { data, error, isLoading, refetch } = useDashboardQuery();
-  const summary = data?.summary as Summary | undefined;
+  const s = data?.summary;
 
-  const n = (k: keyof Summary) => (summary ? Number(summary[k]) : 0);
+  const n = (k: keyof NonNullable<typeof s>) => (s ? Number(s[k] ?? 0) : 0);
 
-  const barData = summary
+  const barData = s
     ? [
+        { name: 'Users', value: n('users'), fill: greenRootPalette.accent.blue },
         { name: 'Nurseries', value: n('nurseries'), fill: greenRootPalette.primary[700] },
-        { name: 'Plants', value: n('plants'), fill: greenRootPalette.primary[500] },
-        { name: 'Requests', value: n('plant_requests'), fill: greenRootPalette.accent.amber },
-        { name: 'Orders', value: n('orders'), fill: greenRootPalette.accent.blue },
-        { name: 'Dispatches', value: n('dispatches'), fill: greenRootPalette.primary[400] },
-        { name: 'Users', value: n('users'), fill: greenRootPalette.accent.mint },
-      ]
-    : [];
-
-  const pieData = summary
-    ? [
-        { name: 'Nurseries', value: n('nurseries'), fill: greenRootPalette.primary[700] },
+        { name: 'Active Orders', value: n('active_orders'), fill: greenRootPalette.accent.amber },
+        { name: 'Dispatches', value: n('dispatches'), fill: greenRootPalette.primary[500] },
+        { name: 'Drivers', value: n('active_drivers'), fill: greenRootPalette.accent.mint },
         { name: 'Plants', value: n('plants'), fill: greenRootPalette.primary[400] },
-        { name: 'Requests', value: n('plant_requests'), fill: greenRootPalette.accent.amber },
-        { name: 'Orders', value: n('orders'), fill: greenRootPalette.accent.blue },
       ]
     : [];
 
   return (
     <Box>
-      <PageHeader
-        title="Dashboard"
-        description="GreenRoot platform overview"
-      />
+      <PageHeader title="Dashboard" description="GreenRoot platform overview" />
 
       {isLoading && <LoadingState />}
       {error && <ErrorState message={normalizeApiError(error).message} onRetry={refetch} />}
 
-      {summary && (
+      {s && (
         <Stack spacing={3}>
           {/* ── KPI row ── */}
           <Grid container spacing={2}>
             {[
-              { label: 'Total Nurseries', value: n('nurseries'), Icon: Storefront, href: '/nurseries' },
-              { label: 'Active Users', value: n('users'), Icon: People, href: '/users' },
-              { label: 'Plant Requests', value: n('plant_requests'), Icon: Assignment, href: '/requests', accent: true },
-              { label: 'Orders', value: n('orders'), Icon: Inventory, href: '/orders' },
-              { label: 'Payments', value: n('payments'), Icon: Payments, href: '/payments' },
-              { label: 'Active Dispatches', value: n('dispatches'), Icon: LocalShipping, href: '/dispatches', accent: true },
-              { label: 'Plants in Catalog', value: n('plants'), Icon: LocalFlorist, href: '/plants' },
+              {
+                label: 'Pending Applications',
+                value: n('pending_nurseries'),
+                Icon: CheckCircleOutlineIcon,
+                href: '/nurseries/applications',
+                alert: true,
+              },
+              {
+                label: 'Total Users',
+                value: n('users'),
+                Icon: People,
+                href: '/users',
+              },
+              {
+                label: 'Approved Nurseries',
+                value: n('approved_nurseries'),
+                Icon: Storefront,
+                href: '/nurseries',
+                accent: true,
+              },
+              {
+                label: 'Active Drivers',
+                value: n('active_drivers'),
+                Icon: AccountTree,
+                href: '/drivers',
+              },
+              {
+                label: 'Active Orders',
+                value: n('active_orders'),
+                Icon: ReceiptLong,
+                href: '/orders',
+              },
+              {
+                label: 'Active Dispatches',
+                value: n('dispatches'),
+                Icon: LocalShipping,
+                href: '/dispatches',
+                accent: true,
+              },
+              {
+                label: 'Plants in Catalog',
+                value: n('plants'),
+                Icon: LocalFlorist,
+                href: '/plants',
+              },
             ].map((kpi) => (
               <Grid key={kpi.label} size={{ xs: 12, sm: 6, md: 4, xl: 3 }}>
                 <KpiCard {...kpi} />
@@ -226,7 +246,7 @@ export function DashboardPage() {
             ))}
           </Grid>
 
-          {/* ── Charts row ── */}
+          {/* ── Main row ── */}
           <Grid container spacing={2}>
             {/* Bar chart */}
             <Grid size={{ xs: 12, lg: 8 }}>
@@ -236,7 +256,7 @@ export function DashboardPage() {
                     Platform Overview
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mb={2.5}>
-                    Total records across all modules
+                    Key metrics across the platform
                   </Typography>
                   <Box sx={{ height: 260 }}>
                     <ResponsiveContainer width="100%" height="100%">
@@ -256,7 +276,11 @@ export function DashboardPage() {
                         />
                         <Tooltip
                           cursor={{ fill: 'rgba(31,122,58,0.04)' }}
-                          contentStyle={{ borderRadius: 8, fontSize: 13, border: '1px solid #DFE7E2' }}
+                          contentStyle={{
+                            borderRadius: 8,
+                            fontSize: 13,
+                            border: '1px solid #DFE7E2',
+                          }}
                         />
                         <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                           {barData.map((entry) => (
@@ -270,63 +294,55 @@ export function DashboardPage() {
               </Card>
             </Grid>
 
-            {/* Pie chart */}
+            {/* Nursery status breakdown */}
             <Grid size={{ xs: 12, lg: 4 }}>
               <Card sx={{ height: '100%' }}>
                 <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
                   <Typography variant="subtitle1" fontWeight={700} mb={0.25}>
-                    Operations Mix
+                    Nursery Status
                   </Typography>
                   <Typography variant="body2" color="text.secondary" mb={2}>
-                    Core module breakdown
+                    Current registration breakdown
                   </Typography>
-                  <Box sx={{ height: 180 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={pieData}
-                          dataKey="value"
-                          innerRadius={52}
-                          outerRadius={80}
-                          paddingAngle={3}
-                        >
-                          {pieData.map((entry) => (
-                            <Cell key={entry.name} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          contentStyle={{ borderRadius: 8, fontSize: 13, border: '1px solid #DFE7E2' }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </Box>
-                  <Stack spacing={0.75} mt={1.5}>
-                    {pieData.map((d) => (
-                      <Stack key={d.name} direction="row" alignItems="center" spacing={1}>
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            bgcolor: d.fill,
-                            flexShrink: 0,
-                          }}
-                        />
-                        <Typography fontSize={12} flex={1} color="text.secondary">
-                          {d.name}
+                  <Stack spacing={1.5}>
+                    {[
+                      { label: 'Pending Review', value: n('pending_nurseries'), color: '#B45309', bg: '#FEF3C7' },
+                      { label: 'Approved', value: n('approved_nurseries'), color: '#15803D', bg: '#DCFCE7' },
+                      { label: 'Suspended', value: n('suspended_nurseries'), color: '#7C3AED', bg: '#EDE9FE' },
+                    ].map(({ label, value, color, bg }) => (
+                      <Stack
+                        key={label}
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        sx={{ px: 1.5, py: 1, borderRadius: 1.5, bgcolor: bg }}
+                      >
+                        <Typography fontSize={13} fontWeight={500} color={color}>
+                          {label}
                         </Typography>
-                        <Typography fontSize={12} fontWeight={700}>
-                          {d.value.toLocaleString('en-IN')}
+                        <Typography fontSize={20} fontWeight={800} color={color} lineHeight={1}>
+                          {value}
                         </Typography>
                       </Stack>
                     ))}
                   </Stack>
+                  <Button
+                    component={Link}
+                    to="/nurseries/applications"
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    sx={{ mt: 2, fontSize: 12 }}
+                    endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
+                  >
+                    Review Applications
+                  </Button>
                 </CardContent>
               </Card>
             </Grid>
           </Grid>
 
-          {/* ── Bottom row: Needs Attention + Quick Access ── */}
+          {/* ── Bottom row: Needs Attention + Quick Links ── */}
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, md: 5 }}>
               <Card sx={{ height: '100%' }}>
@@ -335,23 +351,23 @@ export function DashboardPage() {
                     Needs Attention
                   </Typography>
                   <Stack spacing={1}>
-                    <PendingAction
-                      label="Open plant requests"
-                      count={n('plant_requests')}
-                      href="/requests"
-                      color="warning"
+                    <AttentionBanner
+                      label="Nursery applications pending review"
+                      count={n('pending_nurseries')}
+                      href="/nurseries/applications"
+                      severity="error"
                     />
-                    <PendingAction
-                      label="Active dispatches"
-                      count={n('dispatches')}
-                      href="/dispatches"
-                      color="warning"
+                    <AttentionBanner
+                      label="Nurseries currently suspended"
+                      count={n('suspended_nurseries')}
+                      href="/nurseries"
+                      severity="warning"
                     />
-                    {n('plant_requests') === 0 && n('dispatches') === 0 && (
+                    {n('pending_nurseries') === 0 && n('suspended_nurseries') === 0 && (
                       <Box sx={{ py: 3, textAlign: 'center' }}>
                         <Typography fontSize={28} mb={1}>✅</Typography>
                         <Typography fontSize={13} color="text.secondary">
-                          All caught up — no pending actions.
+                          No pending admin actions.
                         </Typography>
                       </Box>
                     )}
@@ -368,12 +384,12 @@ export function DashboardPage() {
                   </Typography>
                   <Grid container spacing={1}>
                     {[
-                      { label: 'Add Nursery', href: '/nurseries' },
+                      { label: 'Review Applications', href: '/nurseries/applications' },
+                      { label: 'All Nurseries', href: '/nurseries' },
+                      { label: 'Manage Users', href: '/users' },
+                      { label: 'Driver Management', href: '/drivers' },
+                      { label: 'Audit Logs', href: '/audit' },
                       { label: 'Add Plant', href: '/plants' },
-                      { label: 'Create Order', href: '/orders' },
-                      { label: 'Create Dispatch', href: '/dispatches' },
-                      { label: 'Add Driver', href: '/drivers' },
-                      { label: 'Add Vehicle', href: '/vehicles' },
                     ].map((item) => (
                       <Grid key={item.label} size={{ xs: 6, sm: 4 }}>
                         <Button
