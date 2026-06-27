@@ -20,7 +20,6 @@ import { useMemo, useState } from 'react';
 import {
   resourceConfigs,
   type ResourceConfig,
-  useCreateDispatchMutation,
   useCreateDriverMutation,
   useCreateInventoryMutation,
   useCreateManualPaymentMutation,
@@ -34,20 +33,20 @@ import {
   useUpdateDriverMutation,
   useUpdateInventoryMutation,
   useUpdatePaymentStatusMutation,
+  useCreateVehicleMutation,
+  useRetireVehicleMutation,
+  useUpdateVehicleMutation,
 } from '../../api/adminResources';
 import { AppDataTable } from '../../components/data-table/AppDataTable';
 import { TableAvatar } from '../../components/data-table/TableAvatar';
 import { ErrorState } from '../../components/feedback/ErrorState';
-import { LoadingState, TableSkeleton } from '../../components/feedback/LoadingState';
+import { TableSkeleton } from '../../components/feedback/LoadingState';
 import { useToast } from '../../components/feedback/ToastProvider';
 import { FormDrawer } from '../../components/forms/FormDrawer';
 import { SearchInput } from '../../components/forms/SearchInput';
 import { PageHeader } from '../../components/page/PageHeader';
 import { StatusChip } from '../../components/status/StatusChip';
-import { DispatchForm } from '../dispatches/DispatchForm';
-import { DispatchStatusForm } from '../dispatches/DispatchStatusForm';
 import { DispatchDetailPanel } from '../dispatches/DispatchDetailPanel';
-import { QuotationCreateDrawer } from '../quotations/QuotationCreateDrawer';
 import { QuotationDetailPanel } from '../quotations/QuotationDetailPanel';
 import { DriverForm } from '../drivers/DriverForm';
 import { DriverDetailPanel } from '../drivers/DriverDetailPanel';
@@ -55,16 +54,15 @@ import { InventoryForm } from '../inventory/InventoryForm';
 import { NurseryDetailPanel } from '../nurseries/NurseryDetailPanel';
 import { NurseryForm } from '../nurseries/NurseryForm';
 import { OrderDetailPanel } from '../orders/OrderDetailPanel';
-import { OrderCreateDrawer } from '../orders/OrderCreateDrawer';
 import { UserDetailPanel } from '../users/UserDetailPanel';
 import { PaymentForm } from '../payments/PaymentForm';
 import { PaymentStatusForm } from '../payments/PaymentStatusForm';
 import { PlantDetailPanel } from '../plants/PlantDetailPanel';
 import { PlantForm } from '../plants/PlantForm';
 import { RequestDetailPanel } from '../requests/RequestDetailPanel';
-import { RequestCreateDrawer } from '../requests/RequestCreateDrawer';
 import { SubscriptionDetailPanel } from '../subscriptions/SubscriptionDetailPanel';
-import { SubscriptionCreateDrawer } from '../subscriptions/SubscriptionCreateDrawer';
+import { VehicleDetailPanel } from '../vehicles/VehicleDetailPanel';
+import { VehicleForm } from '../vehicles/VehicleForm';
 import { normalizeApiError } from '../../utils/apiError';
 import { formatCurrency, formatDate, toLabel } from '../../utils/labels';
 
@@ -90,6 +88,8 @@ const meta: Record<ResourceKey, { title: string; description: string; searchable
   subscriptions:         { title: 'Subscriptions',          description: 'Monitor user subscription lifecycle.' },
   subscriptionPlans:     { title: 'Subscription Plans',     description: 'Review active subscription catalog plans.' },
   attachments:           { title: 'Attachments',            description: 'Inspect uploaded metadata and linked entities.' },
+  sourcingPosts:         { title: 'Sourcing Posts',         description: 'Monitor private nursery sourcing needs and availability.' },
+  sourcingNetwork:       { title: 'Sourcing Network',       description: 'Review approved nurseries participating in sourcing discovery.' },
   audit:                 { title: 'Audit Logs',             description: 'Read-only platform audit activity.' },
 };
 
@@ -146,7 +146,9 @@ function CellValue({ value, colKey }: { value: unknown; colKey: string }) {
   if (
     colKey.endsWith('_code') ||
     colKey === 'order_number' ||
+    colKey === 'post_code' ||
     colKey === 'dispatch_number' ||
+    colKey === 'vehicle_code' ||
     colKey === 'vehicle_number' ||
     colKey === 'license_number'
   ) {
@@ -241,10 +243,16 @@ function columnsFor(
                   ? ['payment_code', 'payer_name', 'payment_for', 'amount', 'payment_method', 'payment_status']
                   : resource === 'dispatches'
                     ? ['dispatch_number', 'order_number', 'vehicle_number', 'driver_name', 'dispatch_status']
+                    : resource === 'vehicles'
+                      ? ['vehicle_code', 'vehicle_number', 'vehicle_type', 'capacity_kg', 'owner_name', 'status']
                     : resource === 'drivers'
                         ? ['driver_code', 'driver_name', 'mobile', 'license_number', 'status']
                         : resource === 'attachments'
                           ? ['attachment_code', 'entity_type', 'file_name', 'uploaded_by']
+                          : resource === 'sourcingPosts'
+                            ? ['post_code', 'nursery_name', 'post_type', 'plant_name', 'quantity', 'status']
+                          : resource === 'sourcingNetwork'
+                            ? ['nursery_name', 'village', 'distance_km', 'road_accessible', 'lorry_accessible']
                           : resource === 'notifications'
                             ? ['notification_type', 'title', 'channel', 'notification_status']
                             : resource === 'subscriptions'
@@ -274,10 +282,13 @@ function columnsFor(
     resource === 'inventory' ||
     resource === 'payments' ||
     resource === 'drivers' ||
+    resource === 'vehicles' ||
     resource === 'dispatches' ||
     resource === 'nurseries' ||
     resource === 'requests' ||
-    resource === 'subscriptions';
+    resource === 'subscriptions' ||
+    resource === 'sourcingPosts' ||
+    resource === 'sourcingNetwork';
 
   const isViewOnly =
     resource === 'orders' ||
@@ -287,12 +298,15 @@ function columnsFor(
     resource === 'requests' ||
     resource === 'subscriptions' ||
     resource === 'drivers' ||
-    resource === 'dispatches';
+    resource === 'dispatches' ||
+    resource === 'sourcingPosts' ||
+    resource === 'sourcingNetwork';
 
   const hasDeactivate =
-    resource !== 'dispatches' &&
-    resource !== 'payments' &&
-    resource !== 'orders';
+    resource === 'drivers' ||
+    resource === 'inventory' ||
+    resource === 'plants' ||
+    resource === 'vehicles';
 
   const deactivateLabel =
     resource === 'drivers'
@@ -355,6 +369,8 @@ const INVENTORY_STATUSES = ['AVAILABLE', 'LOW_STOCK', 'OUT_OF_STOCK', 'RESERVED'
 const ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'PARTIALLY_FULFILLED', 'COMPLETED', 'CANCELLED'];
 const PAYMENT_STATUSES = ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED', 'CANCELLED'];
 const DISPATCH_STATUSES = ['PENDING', 'DISPATCHED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'];
+const SOURCING_POST_STATUSES = ['OPEN', 'CLOSED', 'EXPIRED'];
+const SOURCING_POST_TYPES = ['NEED', 'AVAILABLE'];
 
 // ─── Add button labels ────────────────────────────────────────────────────────
 // Only resources where admin can create records; read-only monitoring pages excluded
@@ -363,8 +379,8 @@ const addLabel: Partial<Record<ResourceKey, string>> = {
   nurseries:  'Nursery',
   inventory:  'Inventory',
   payments:   'Payment',
-  dispatches: 'Dispatch',
   drivers:    'Driver',
+  vehicles:   'Vehicle',
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -383,19 +399,17 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
   const [sortBy, setSortBy] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [orderCreateOpen, setOrderCreateOpen] = useState(false);
-  const [quotationCreateOpen, setQuotationCreateOpen] = useState(false);
-  const [subscriptionCreateOpen, setSubscriptionCreateOpen] = useState(false);
-  const [requestCreateOpen, setRequestCreateOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<Record<string, unknown> | null>(null);
 
   const [createPlant, plantState] = useCreatePlantMutation();
   const [createNursery, nurseryState] = useCreateNurseryMutation();
-  const [createDispatch, createDispatchState] = useCreateDispatchMutation();
   const [updateDispatchStatus, updateDispatchStatusState] = useUpdateDispatchStatusMutation();
   const [createDriver, createDriverState] = useCreateDriverMutation();
   const [updateDriver, updateDriverState] = useUpdateDriverMutation();
   const [deactivateDriver, deactivateDriverState] = useDeactivateDriverMutation();
+  const [createVehicle, createVehicleState] = useCreateVehicleMutation();
+  const [updateVehicle, updateVehicleState] = useUpdateVehicleMutation();
+  const [retireVehicle, retireVehicleState] = useRetireVehicleMutation();
   const [createInventory, createInventoryState] = useCreateInventoryMutation();
   const [updateInventory, updateInventoryState] = useUpdateInventoryMutation();
   const [deleteInventory, deleteInventoryState] = useDeleteInventoryMutation();
@@ -416,7 +430,7 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
         light_requirement: resource === 'plants' ? lightRequirement : undefined,
         water_requirement: resource === 'plants' ? waterRequirement : undefined,
         status:
-          resource === 'drivers' || resource === 'users' || resource === 'requests'
+          resource === 'drivers' || resource === 'users' || resource === 'requests' || resource === 'sourcingPosts'
             ? status
             : undefined,
         role: resource === 'users' ? userRole : undefined,
@@ -426,6 +440,8 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
         payment_for: resource === 'payments' ? paymentFor : undefined,
         payment_method: resource === 'payments' ? paymentMethod : undefined,
         dispatch_status: resource === 'dispatches' ? status : undefined,
+        vehicle_type: resource === 'vehicles' ? plantType : undefined,
+        post_type: resource === 'sourcingPosts' ? plantType : undefined,
         sort_by: sortBy || undefined,
         sort_order: sortBy ? sortOrder : undefined,
       },
@@ -444,11 +460,12 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
         onDeactivate: async (row) => {
           const id = Number(row.id);
           if (resource === 'drivers' && id > 0) { await deactivateDriver(id).unwrap(); showToast('Driver deactivated'); }
+          if (resource === 'vehicles' && id > 0) { await retireVehicle(id).unwrap(); showToast('Vehicle retired'); }
           if (resource === 'inventory' && id > 0) { await deleteInventory(id).unwrap(); showToast('Inventory item removed'); }
           if (resource === 'plants' && id > 0) { await deletePlant(id).unwrap(); showToast('Plant deleted'); }
         },
       }),
-    [deactivateDriver, deleteInventory, deletePlant, resource, rows],
+    [deactivateDriver, deleteInventory, deletePlant, resource, retireVehicle, rows, showToast],
   );
 
   const canCreate = resource in addLabel;
@@ -466,7 +483,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
     if (resource === 'dispatches') {
       const id = Number(editingRow?.id);
       if (id > 0) await updateDispatchStatus({ id, body: values }).unwrap();
-      else await createDispatch(values).unwrap();
     }
     if (resource === 'payments') {
       const id = Number(editingRow?.id);
@@ -478,6 +494,11 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
       if (id > 0) await updateDriver({ id, body: values }).unwrap();
       else await createDriver(values).unwrap();
     }
+    if (resource === 'vehicles') {
+      const id = Number(editingRow?.id);
+      if (id > 0) await updateVehicle({ id, body: values }).unwrap();
+      else await createVehicle(values).unwrap();
+    }
     showToast(isEdit ? `${resourceLabel} updated` : `${resourceLabel} created`);
     setDrawerOpen(false);
     setEditingRow(null);
@@ -485,17 +506,7 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
 
   function openCreateDrawer() {
     setEditingRow(null);
-    if (resource === 'orders') {
-      setOrderCreateOpen(true);
-    } else if (resource === 'quotations') {
-      setQuotationCreateOpen(true);
-    } else if (resource === 'subscriptions') {
-      setSubscriptionCreateOpen(true);
-    } else if (resource === 'requests') {
-      setRequestCreateOpen(true);
-    } else {
-      setDrawerOpen(true);
-    }
+    setDrawerOpen(true);
   }
 
   function handleSort(column: string) {
@@ -535,6 +546,8 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
       ? USER_STATUSES
       : resource === 'drivers'
         ? DRIVER_STATUSES
+        : resource === 'vehicles'
+          ? VEHICLE_STATUSES
         : resource === 'inventory'
             ? INVENTORY_STATUSES
             : resource === 'orders'
@@ -545,6 +558,8 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
                   ? DISPATCH_STATUSES
                   : resource === 'requests'
                     ? REQUEST_STATUSES
+                    : resource === 'sourcingPosts'
+                      ? SOURCING_POST_STATUSES
                     : [];
 
   const showStatusFilter =
@@ -553,8 +568,10 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
     resource === 'inventory' ||
     resource === 'payments' ||
     resource === 'drivers' ||
+    resource === 'vehicles' ||
     resource === 'dispatches' ||
-    resource === 'requests';
+    resource === 'requests' ||
+    resource === 'sourcingPosts';
 
   // Determine drawer width
   const wideDrawer =
@@ -565,7 +582,9 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
     resource === 'requests' ||
     resource === 'subscriptions' ||
     resource === 'drivers' ||
-    resource === 'dispatches';
+    resource === 'vehicles' ||
+    resource === 'dispatches' ||
+    resource === 'sourcingPosts';
 
   return (
     <Box>
@@ -611,6 +630,14 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
           </>
         )}
 
+        {resource === 'sourcingPosts' && (
+          <TextField select label="Type" value={plantType} size="small" sx={{ minWidth: 150 }}
+            onChange={(e) => { setPlantType(e.target.value); setPage(0); }}>
+            <MenuItem value="">All types</MenuItem>
+            {SOURCING_POST_TYPES.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+          </TextField>
+        )}
+
         {resource === 'payments' && (
           <>
             <TextField select label="Type" value={paymentFor} size="small" sx={{ minWidth: 150 }}
@@ -654,9 +681,14 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
           {normalizeApiError(plantState.error || deletePlantState.error).message}
         </Alert>
       )}
-      {(createDispatchState.isError || updateDispatchStatusState.isError) && (
+      {updateDispatchStatusState.isError && (
         <Alert severity="error" sx={{ mb: 2 }}>
-          {normalizeApiError(createDispatchState.error || updateDispatchStatusState.error).message}
+          {normalizeApiError(updateDispatchStatusState.error).message}
+        </Alert>
+      )}
+      {(createVehicleState.isError || updateVehicleState.isError || retireVehicleState.isError) && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {normalizeApiError(createVehicleState.error || updateVehicleState.error || retireVehicleState.error).message}
         </Alert>
       )}
       {(createInventoryState.isError || updateInventoryState.isError || deleteInventoryState.isError) && (
@@ -757,8 +789,16 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
           editingRow ? (
             <DispatchDetailPanel dispatchId={Number(editingRow.id)} />
           ) : (
-            <DispatchForm loading={createDispatchState.isLoading} onSubmit={submitForm} />
+            <Alert severity="info">Admins monitor dispatches and update status from an existing dispatch.</Alert>
           )
+        ) : resource === 'vehicles' ? (
+          editingRow ? (
+            <VehicleDetailPanel vehicleId={Number(editingRow.id)} />
+          ) : (
+            <VehicleForm loading={createVehicleState.isLoading} onSubmit={submitForm} />
+          )
+        ) : resource === 'sourcingPosts' || resource === 'sourcingNetwork' ? (
+          <Alert severity="info">This is an admin monitoring view for the private B2B sourcing network.</Alert>
         ) : (
           <DriverForm
             initial={editingRow ?? undefined}
@@ -768,34 +808,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
         )}
       </FormDrawer>
 
-      {resource === 'orders' && (
-        <OrderCreateDrawer
-          open={orderCreateOpen}
-          onClose={() => setOrderCreateOpen(false)}
-          onCreated={() => refetch()}
-        />
-      )}
-      {resource === 'quotations' && (
-        <QuotationCreateDrawer
-          open={quotationCreateOpen}
-          onClose={() => setQuotationCreateOpen(false)}
-          onCreated={() => refetch()}
-        />
-      )}
-      {resource === 'subscriptions' && (
-        <SubscriptionCreateDrawer
-          open={subscriptionCreateOpen}
-          onClose={() => setSubscriptionCreateOpen(false)}
-          onCreated={() => refetch()}
-        />
-      )}
-      {resource === 'requests' && (
-        <RequestCreateDrawer
-          open={requestCreateOpen}
-          onClose={() => setRequestCreateOpen(false)}
-          onCreated={() => refetch()}
-        />
-      )}
     </Box>
   );
 }

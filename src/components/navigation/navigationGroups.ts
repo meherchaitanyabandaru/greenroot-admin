@@ -1,5 +1,6 @@
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CategoryIcon from '@mui/icons-material/Category';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -14,9 +15,13 @@ import SecurityIcon from '@mui/icons-material/Security';
 import SmsIcon from '@mui/icons-material/Sms';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import SubscriptionsIcon from '@mui/icons-material/Subscriptions';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import TravelExploreIcon from '@mui/icons-material/TravelExplore';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import type { SvgIconComponent } from '@mui/icons-material';
 
-export type NavItem = { label: string; path: string; icon: SvgIconComponent };
+export type NavItem = { label: string; path: string; icon: SvgIconComponent; badge?: string };
 export type NavGroup = { section: string; items: NavItem[] };
 
 export const navigationGroups: NavGroup[] = [
@@ -25,15 +30,9 @@ export const navigationGroups: NavGroup[] = [
     items: [{ label: 'Dashboard', path: '/', icon: DashboardIcon }],
   },
   {
-    section: 'Approvals',
+    section: 'People',
     items: [
-      { label: 'Nursery Applications', path: '/nurseries/applications', icon: CheckCircleOutlineIcon },
-    ],
-  },
-  {
-    section: 'Platform Users',
-    items: [
-      { label: 'Users', path: '/users', icon: PeopleIcon },
+      { label: 'All Users', path: '/users', icon: PeopleIcon },
       { label: 'Drivers', path: '/drivers', icon: AccountTreeIcon },
     ],
   },
@@ -41,38 +40,66 @@ export const navigationGroups: NavGroup[] = [
     section: 'Nurseries',
     items: [
       { label: 'All Nurseries', path: '/nurseries', icon: StorefrontIcon },
+      { label: 'Pending Approvals', path: '/nurseries/applications', icon: CheckCircleOutlineIcon },
+      { label: 'Inventory', path: '/inventory', icon: InventoryIcon },
     ],
   },
   {
-    section: 'Master Data',
+    section: 'Plant Catalogue',
     items: [
       { label: 'Plants', path: '/plants', icon: LocalFloristIcon },
-      { label: 'Plant Categories', path: '/plants/categories', icon: CategoryIcon },
+      { label: 'Categories', path: '/plants/categories', icon: CategoryIcon },
     ],
   },
   {
-    section: 'Business Monitoring',
+    section: 'Sourcing Network',
+    items: [
+      { label: 'Network Members', path: '/sourcing-network', icon: StorefrontIcon },
+      { label: 'Need & Availability Posts', path: '/sourcing-posts', icon: TravelExploreIcon },
+    ],
+  },
+  {
+    section: 'Sales',
     items: [
       { label: 'Quotations', path: '/quotations', icon: DescriptionIcon },
       { label: 'Orders', path: '/orders', icon: ReceiptLongIcon },
-      { label: 'Dispatches', path: '/dispatches', icon: LocalShippingIcon },
       { label: 'Plant Requests', path: '/requests', icon: AssignmentIcon },
-      { label: 'Notifications', path: '/notifications', icon: NotificationsIcon },
     ],
   },
   {
-    section: 'Commercial',
+    section: 'Logistics',
     items: [
-      { label: 'Subscriptions', path: '/subscriptions', icon: SubscriptionsIcon },
-      { label: 'Plans', path: '/subscription-plans', icon: SubscriptionsIcon },
+      { label: 'Dispatches', path: '/dispatches', icon: LocalShippingIcon },
+      { label: 'Vehicles', path: '/vehicles', icon: DirectionsCarIcon },
+      { label: 'Live Tracking', path: '/tracking', icon: TimelineIcon },
+    ],
+  },
+  {
+    section: 'Billing',
+    items: [
+      { label: 'Subscription Plans', path: '/subscription-plans', icon: SubscriptionsIcon },
+      { label: 'Active Subscriptions', path: '/subscriptions', icon: SubscriptionsIcon },
       { label: 'Payments', path: '/payments', icon: PaymentsIcon },
     ],
   },
   {
-    section: 'Governance',
+    section: 'Communication',
+    items: [
+      { label: 'Notifications', path: '/notifications', icon: NotificationsIcon },
+      { label: 'Templates', path: '/notifications/templates', icon: SmsIcon },
+      { label: 'Notification Devices', path: '/notifications/devices', icon: NotificationsIcon },
+    ],
+  },
+  {
+    section: 'Media',
+    items: [
+      { label: 'Attachments', path: '/attachments', icon: AttachFileIcon },
+    ],
+  },
+  {
+    section: 'Security',
     items: [
       { label: 'Audit Logs', path: '/audit', icon: SecurityIcon },
-      { label: 'Notification Templates', path: '/notifications/templates', icon: SmsIcon },
     ],
   },
 ];

@@ -24,6 +24,9 @@ const NurseryApplicationsPage = lazy(() =>
     default: m.NurseryApplicationsPage,
   })),
 );
+const TrackingPage = lazy(() =>
+  import('../features/tracking/TrackingPage').then((m) => ({ default: m.TrackingPage })),
+);
 
 export function AppRouter() {
   return (
@@ -45,6 +48,7 @@ export function AppRouter() {
 
             {/* Nurseries */}
             <Route path="/nurseries" element={<ResourceListPage resource="nurseries" />} />
+            <Route path="/inventory" element={<ResourceListPage resource="inventory" />} />
 
             {/* Master Data */}
             <Route path="/plants" element={<ResourceListPage resource="plants" />} />
@@ -55,7 +59,10 @@ export function AppRouter() {
             <Route path="/orders" element={<ResourceListPage resource="orders" />} />
             <Route path="/dispatches" element={<ResourceListPage resource="dispatches" />} />
             <Route path="/requests" element={<ResourceListPage resource="requests" />} />
+            <Route path="/sourcing-posts" element={<ResourceListPage resource="sourcingPosts" />} />
+            <Route path="/sourcing-network" element={<ResourceListPage resource="sourcingNetwork" />} />
             <Route path="/notifications" element={<ResourceListPage resource="notifications" />} />
+            <Route path="/tracking" element={<TrackingPage />} />
             <Route path="/notifications/templates" element={<ResourceListPage resource="notificationTemplates" />} />
 
             {/* Commercial */}
@@ -64,6 +71,9 @@ export function AppRouter() {
             <Route path="/subscription-plans" element={<ResourceListPage resource="subscriptionPlans" />} />
 
             {/* Governance */}
+            <Route path="/vehicles" element={<ResourceListPage resource="vehicles" />} />
+            <Route path="/attachments" element={<ResourceListPage resource="attachments" />} />
+            <Route path="/notifications/devices" element={<ResourceListPage resource="notificationDevices" />} />
             <Route path="/audit" element={<ResourceListPage resource="audit" />} />
           </Route>
         </Route>

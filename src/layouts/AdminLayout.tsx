@@ -4,33 +4,26 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
-import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
-import SearchIcon from '@mui/icons-material/Search';
 import {
   AppBar,
   Avatar,
-  Badge,
   Box,
   CircularProgress,
   Collapse,
-  Divider,
   Drawer,
   IconButton,
-  InputAdornment,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Paper,
   Popover,
   Stack,
-  TextField,
   Toolbar,
   Tooltip,
   Typography,
   useMediaQuery,
 } from '@mui/material';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { baseApi } from '../api/baseApi';
 import { getStoredAuth } from '../api/authStorage';
@@ -42,20 +35,10 @@ import { tokens } from '../theme/tokens';
 
 const { sidebar: sb, semantic, shadow, transition, radius } = tokens;
 
-const DRAWER_FULL = 256;
-const DRAWER_MINI = 58;
+const DRAWER_FULL = 272;
+const DRAWER_MINI = 64;
 const EXPANDED_KEY = 'gr_nav_expanded';
-
-// ── Emoji map for group headers ───────────────────────────────────────────────
-const GROUP_EMOJI: Record<string, string> = {
-  'Approvals':            '✅',
-  'Platform Users':       '👥',
-  'Nurseries':            '🏡',
-  'Master Data':          '🌱',
-  'Business Monitoring':  '📊',
-  'Commercial':           '💳',
-  'Governance':           '⚙️',
-};
+const COLLAPSED_KEY = 'gr_nav_collapsed';
 
 // ── Logo mark ─────────────────────────────────────────────────────────────────
 function GrLogo({ size = 30 }: { size?: number }) {
@@ -88,7 +71,7 @@ function NavItem({
   indent = false,
   onNavigate,
 }: {
-  item: { label: string; path: string; icon: React.ElementType };
+  item: { label: string; path: string; icon: React.ElementType; badge?: string };
   indent?: boolean;
   onNavigate?: () => void;
 }) {
@@ -150,6 +133,24 @@ function NavItem({
           letterSpacing: '-0.003em',
         }}
       />
+      {item.badge && (
+        <Box
+          sx={{
+            minWidth: 18,
+            height: 18,
+            px: 0.6,
+            borderRadius: 9,
+            display: 'grid',
+            placeItems: 'center',
+            bgcolor: 'rgba(255,255,255,0.1)',
+            color: 'inherit',
+            fontSize: 10,
+            fontWeight: 700,
+          }}
+        >
+          {item.badge}
+        </Box>
+      )}
     </ListItemButton>
   );
 }
@@ -166,7 +167,6 @@ function GroupFlyout({
   onClose: () => void;
   onNavigate: () => void;
 }) {
-  const emoji = GROUP_EMOJI[group.section] ?? '';
   return (
     <Popover
       open={Boolean(anchorEl)}
@@ -199,8 +199,7 @@ function GroupFlyout({
             color={sb.groupLabel}
             sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}
           >
-            {emoji && <span style={{ fontSize: 11 }}>{emoji}</span>}
-            {group.section}
+                {group.section}
           </Typography>
         </Box>
       )}
@@ -235,6 +234,11 @@ function GroupFlyout({
                 primary={item.label}
                 primaryTypographyProps={{ fontSize: 12.5, fontWeight: 500, letterSpacing: '-0.003em' }}
               />
+              {item.badge && (
+                <Box sx={{ ml: 1, fontSize: 10, fontWeight: 700, color: sb.colorActive }}>
+                  {item.badge}
+                </Box>
+              )}
             </ListItemButton>
           );
         })}
@@ -266,12 +270,7 @@ function SidebarFull({
     try { return localStorage.getItem(EXPANDED_KEY) ?? getActiveGroup(); }
     catch { return getActiveGroup(); }
   });
-
-  useEffect(() => {
-    const activeGroup = getActiveGroup();
-    if (activeGroup && activeGroup !== expanded) setExpanded(activeGroup);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
+  const activeGroup = getActiveGroup();
 
   const toggleGroup = useCallback((section: string) => {
     const next = expanded === section ? '' : section;
@@ -328,9 +327,7 @@ function SidebarFull({
       <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', py: 1.25, px: 1 }}>
         {navigationGroups.map((group) => {
           const isRoot = !group.section;
-          const isOpen = isRoot || expanded === group.section;
-          const emoji = GROUP_EMOJI[group.section] ?? '';
-
+          const isOpen = isRoot || expanded === group.section || activeGroup === group.section;
           return (
             <Box key={group.section || '__root'} mb={0.25}>
               {/* Group accordion header */}
@@ -348,11 +345,6 @@ function SidebarFull({
                     transition: `all ${transition.fast}`,
                   }}
                 >
-                  {emoji && (
-                    <Box component="span" sx={{ fontSize: 12, mr: 1, lineHeight: 1 }}>
-                      {emoji}
-                    </Box>
-                  )}
                   <ListItemText
                     primary={group.section}
                     primaryTypographyProps={{
@@ -455,11 +447,10 @@ function SidebarMini({ onExpand }: { onExpand: () => void }) {
           }
 
           const RepIcon = group.items[0].icon;
-          const emoji = GROUP_EMOJI[group.section] ?? '';
           return (
             <Box key={group.section}>
               <Box sx={{ width: '70%', mx: 'auto', my: 0.5, borderTop: `1px solid ${sb.divider}` }} />
-              <Tooltip title={`${emoji} ${group.section}`.trim()} placement="right">
+              <Tooltip title={group.section} placement="right">
                 <ListItemButton
                   onClick={(e) => setFlyout({ group, el: e.currentTarget })}
                   sx={{
@@ -511,7 +502,10 @@ export function AdminLayout() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(COLLAPSED_KEY) !== 'false'; }
+    catch { return true; }
+  });
   const [logout, logoutState] = useLogoutMutation();
   const isMobile = useMediaQuery('(max-width:900px)');
   const user = useAppSelector((state) => state.auth.user);
@@ -527,6 +521,11 @@ export function AdminLayout() {
       dispatch(baseApi.util.resetApiState());
       navigate('/login', { replace: true });
     }
+  }
+
+  function setSidebarCollapsed(value: boolean) {
+    setCollapsed(value);
+    try { localStorage.setItem(COLLAPSED_KEY, String(value)); } catch { /* ignore */ }
   }
 
   return (
@@ -563,8 +562,8 @@ export function AdminLayout() {
         }}
       >
         {collapsed
-          ? <SidebarMini onExpand={() => setCollapsed(false)} />
-          : <SidebarFull onToggleCollapse={() => setCollapsed(true)} />
+          ? <SidebarMini onExpand={() => setSidebarCollapsed(false)} />
+          : <SidebarFull onToggleCollapse={() => setSidebarCollapsed(true)} />
         }
       </Drawer>
 
@@ -597,70 +596,7 @@ export function AdminLayout() {
               </IconButton>
             )}
 
-            {/* ⌘K Search */}
-            <TextField
-              placeholder="Search…"
-              size="small"
-              sx={{ maxWidth: 260, flex: 1 }}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ fontSize: 15, color: semantic.textMuted }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Box
-                        sx={{
-                          display: { xs: 'none', sm: 'flex' },
-                          alignItems: 'center',
-                          gap: 0.25,
-                          px: 0.75,
-                          py: 0.25,
-                          borderRadius: `${radius.xs}px`,
-                          bgcolor: semantic.bg,
-                          border: `1px solid ${semantic.border}`,
-                          color: semantic.textMuted,
-                          fontSize: 10.5,
-                          fontWeight: 500,
-                          lineHeight: 1,
-                          letterSpacing: '0.02em',
-                          whiteSpace: 'nowrap',
-                          userSelect: 'none',
-                        }}
-                      >
-                        ⌘K
-                      </Box>
-                    </InputAdornment>
-                  ),
-                  sx: {
-                    fontSize: 13.5,
-                    '& .MuiOutlinedInput-notchedOutline': { borderColor: semantic.border },
-                  },
-                },
-              }}
-            />
-
             <Box sx={{ flex: 1 }} />
-
-            {/* Notification bell */}
-            <Tooltip title="Notifications">
-              <IconButton
-                size="small"
-                sx={{
-                  color: semantic.textSecondary,
-                  '&:hover': { color: semantic.textPrimary, bgcolor: semantic.surfaceHover },
-                }}
-              >
-                <Badge color="error" variant="dot" invisible>
-                  <NotificationsNoneIcon sx={{ fontSize: 18 }} />
-                </Badge>
-              </IconButton>
-            </Tooltip>
-
-            {/* Divider */}
-            <Box sx={{ width: 1, height: 20, bgcolor: semantic.border, mx: 0.5 }} />
 
             {/* User */}
             <Stack direction="row" alignItems="center" spacing={1}>

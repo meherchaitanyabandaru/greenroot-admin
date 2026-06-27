@@ -19,6 +19,7 @@ export type ResourceConfig = {
     | 'Notifications'
     | 'Subscriptions'
     | 'Attachments'
+    | 'Sourcing'
     | 'Audit';
   path?: string;
   collectionKey?: string;
@@ -191,6 +192,18 @@ export const resourceConfigs = {
     tag: 'Attachments',
     path: '/api/v1/attachments',
     collectionKey: 'attachments',
+  },
+  sourcingPosts: {
+    key: 'sourcingPosts',
+    tag: 'Sourcing',
+    path: '/api/v1/sourcing-posts',
+    collectionKey: 'posts',
+  },
+  sourcingNetwork: {
+    key: 'sourcingNetwork',
+    tag: 'Sourcing',
+    path: '/api/v1/sourcing-network/nurseries',
+    collectionKey: 'nurseries',
   },
   tracking: {
     key: 'tracking',
