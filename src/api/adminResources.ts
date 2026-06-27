@@ -481,7 +481,7 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       invalidatesTags: ['Nurseries'],
     }),
     listNurseryUsers: builder.query<NurseryUsersResponse, number>({
-      query: (id) => `/api/v1/nurseries/${id}/users`,
+      query: (id) => `/api/v1/nurseries/${id}/managers`,
       providesTags: ['Nurseries'],
     }),
     listNurseryInventory: builder.query<{ inventory: Record<string, unknown>[] }, number>({

@@ -15,7 +15,7 @@ export const authApi = baseApi.injectEndpoints({
       invalidatesTags: ['Auth'],
     }),
     me: builder.query<{ user: User }, void>({
-      query: () => '/api/v1/auth/me',
+      query: () => '/api/v1/users/me',
       providesTags: ['Auth'],
     }),
     logout: builder.mutation<{ message: string }, { refresh_token?: string }>({

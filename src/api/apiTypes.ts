@@ -11,6 +11,12 @@ export type ApiErrorBody = {
   };
 };
 
+export type Role = {
+  id: number;
+  code: string;
+  name: string;
+};
+
 export type User = {
   id: number;
   first_name: string;
@@ -18,7 +24,7 @@ export type User = {
   mobile: string;
   email?: string | null;
   status: string;
-  roles?: string[];
+  roles?: Role[];
 };
 
 export type AuthResponse = {

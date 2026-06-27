@@ -20,7 +20,7 @@ export function ProtectedRoute() {
   if (isLoading) return <LoadingState label="Checking admin session" />;
   if (isError) return <Navigate replace to="/login" />;
 
-  const isAdmin = user?.roles?.includes('ADMIN');
+  const isAdmin = user?.roles?.some(r => r.code === 'ADMIN');
 
   if (!isAdmin) {
     return (
