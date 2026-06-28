@@ -1,6 +1,6 @@
 # GreenRoot — Admin UI Reference
 
-> Last updated: 2026-06-26
+> Last updated: 2026-06-28
 
 ---
 
@@ -13,7 +13,7 @@ Run locally (port 5173):
 ```bash
 cd greenroot-admin && npm run dev
 ```
-Login: mobile `9000000777` · OTP `123456`
+Login: mobile `9000000000` · OTP `123456`
 
 ---
 
