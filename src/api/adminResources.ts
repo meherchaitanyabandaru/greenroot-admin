@@ -247,6 +247,7 @@ export const resourceConfigs = {
       'Swagger exposes tracking by vehicle, driver, and dispatch ID. This needs an admin lookup/map screen instead of a generic global list.',
   },
   audit: { key: 'audit', tag: 'Audit', path: '/api/v1/audit-logs', collectionKey: 'audit_logs' },
+  securityLogs: { key: 'securityLogs', tag: 'SecurityLogs', path: '/api/v1/security-logs', collectionKey: 'security_logs' },
 } satisfies Record<string, ResourceConfig>;
 
 function toQuery(params: ListParams) {

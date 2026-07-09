@@ -39,6 +39,9 @@ const SubscriptionPromosPage = lazy(() =>
 const AuditLogsPage = lazy(() =>
   import('../features/audit/AuditLogsPage').then((m) => ({ default: m.AuditLogsPage })),
 );
+const SecurityLogsPage = lazy(() =>
+  import('../features/audit/SecurityLogsPage').then((m) => ({ default: m.SecurityLogsPage })),
+);
 
 export function AppRouter() {
   return (
@@ -88,6 +91,7 @@ export function AppRouter() {
             <Route path="/attachments" element={<ResourceListPage resource="attachments" />} />
             <Route path="/notifications/devices" element={<ResourceListPage resource="notificationDevices" />} />
             <Route path="/audit" element={<AuditLogsPage />} />
+            <Route path="/security-logs" element={<SecurityLogsPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate replace to="/" />} />

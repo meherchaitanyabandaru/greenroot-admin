@@ -6,6 +6,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import DescriptionIcon from '@mui/icons-material/Description';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import GppMaybeIcon from '@mui/icons-material/GppMaybe';
 import HistoryIcon from '@mui/icons-material/History';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import LocalFloristIcon from '@mui/icons-material/LocalFlorist';
@@ -99,9 +100,10 @@ export const navigationGroups: NavGroup[] = [
     ],
   },
   {
-    section: 'Platform',
+    section: 'Logs',
     items: [
-      { label: 'Audit Logs', path: '/audit', icon: HistoryIcon },
+      { label: 'Audit Logs',    path: '/audit',         icon: HistoryIcon },
+      { label: 'Security Logs', path: '/security-logs', icon: GppMaybeIcon },
     ],
   },
 ];
