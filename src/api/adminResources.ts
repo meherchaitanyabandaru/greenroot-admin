@@ -445,13 +445,20 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (body) => ({ url: '/api/v1/subscriptions', method: 'POST', body }),
       invalidatesTags: ['Subscriptions', 'Dashboard'],
     }),
-    renewSubscription: builder.mutation<unknown, number>({
-      query: (id) => ({ url: `/api/v1/subscriptions/${id}/renew`, method: 'POST', body: {} }),
+    renewSubscription: builder.mutation<
+      unknown,
+      { id: number; body: { billing_cycle: string; payment_method?: string; provider?: string; provider_order_id?: string } }
+    >({
+      query: ({ id, body }) => ({ url: `/api/v1/subscriptions/${id}/renew`, method: 'POST', body }),
       invalidatesTags: ['Subscriptions'],
     }),
-    cancelSubscription: builder.mutation<unknown, number>({
-      query: (id) => ({ url: `/api/v1/subscriptions/${id}/cancel`, method: 'POST', body: {} }),
+    cancelSubscription: builder.mutation<unknown, { id: number; body?: { cancel_immediately?: boolean; reason?: string } }>({
+      query: ({ id, body }) => ({ url: `/api/v1/subscriptions/${id}/cancel`, method: 'POST', body: body ?? { cancel_immediately: true } }),
       invalidatesTags: ['Subscriptions', 'Dashboard'],
+    }),
+    updateSubscriptionStatus: builder.mutation<unknown, { id: number; status: string }>({
+      query: ({ id, status }) => ({ url: `/api/v1/subscriptions/${id}/status`, method: 'PUT', body: { subscription_status: status } }),
+      invalidatesTags: ['Subscriptions'],
     }),
     listSubscriptionPayments: builder.query<{ payments: Record<string, unknown>[] }, number>({
       query: (id) => `/api/v1/subscriptions/${id}/payments`,
@@ -569,6 +576,7 @@ export const {
   useCreateSubscriptionMutation,
   useRenewSubscriptionMutation,
   useCancelSubscriptionMutation,
+  useUpdateSubscriptionStatusMutation,
   useListSubscriptionPaymentsQuery,
   useGetRequestQuery,
   useListRequestResponsesQuery,

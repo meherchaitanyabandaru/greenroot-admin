@@ -27,6 +27,9 @@ const NurseryApplicationsPage = lazy(() =>
 const TrackingPage = lazy(() =>
   import('../features/tracking/TrackingPage').then((m) => ({ default: m.TrackingPage })),
 );
+const SubscriptionsPage = lazy(() =>
+  import('../features/subscriptions/SubscriptionsPage').then((m) => ({ default: m.SubscriptionsPage })),
+);
 
 export function AppRouter() {
   return (
@@ -67,7 +70,7 @@ export function AppRouter() {
 
             {/* Commercial */}
             <Route path="/payments" element={<ResourceListPage resource="payments" />} />
-            <Route path="/subscriptions" element={<ResourceListPage resource="subscriptions" />} />
+            <Route path="/subscriptions" element={<SubscriptionsPage />} />
             <Route path="/subscription-plans" element={<ResourceListPage resource="subscriptionPlans" />} />
 
             {/* Governance */}
