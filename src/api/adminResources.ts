@@ -93,6 +93,41 @@ export type RequestResponsesResponse = {
   responses: Record<string, unknown>[];
 };
 
+export type SubscriptionPromo = {
+  id: number;
+  promo_code: string;
+  name: string;
+  description?: string;
+  discount_type: 'PERCENTAGE' | 'FLAT';
+  discount_value: number;
+  max_discount_cap?: number;
+  applicable_plans: string[];
+  applicable_cycles: string[];
+  valid_from: string;
+  valid_until: string;
+  is_active: boolean;
+  max_uses?: number;
+  used_count: number;
+  created_by?: number;
+  created_at: string;
+  updated_at?: string;
+};
+
+export type SubscriptionPlan = {
+  id: number;
+  plan_code: string;
+  plan_name: string;
+  description?: string;
+  six_month_price?: number;
+  yearly_price?: number;
+  max_managers?: number;
+  max_nurseries?: number;
+  is_active: boolean;
+  features?: Record<string, unknown>;
+  created_at: string;
+  updated_at?: string;
+};
+
 export type PlantDetailResponse = {
   plant: Record<string, unknown>;
 };
@@ -433,7 +468,7 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Requests'],
     }),
-    listSubscriptionPlans: builder.query<{ plans: Record<string, unknown>[] }, void>({
+    listSubscriptionPlans: builder.query<{ plans: SubscriptionPlan[] }, void>({
       query: () => '/api/v1/subscription-plans',
       providesTags: ['Subscriptions'],
     }),
@@ -463,6 +498,73 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     listSubscriptionPayments: builder.query<{ payments: Record<string, unknown>[] }, number>({
       query: (id) => `/api/v1/subscriptions/${id}/payments`,
       providesTags: ['Payments', 'Subscriptions'],
+    }),
+    listSubscriptionPromos: builder.query<{ promos: SubscriptionPromo[] }, void>({
+      query: () => '/api/v1/subscription-promos',
+      providesTags: ['Subscriptions'],
+    }),
+    createSubscriptionPromo: builder.mutation<
+      { promo: SubscriptionPromo },
+      {
+        promo_code: string;
+        name: string;
+        description?: string;
+        discount_type: string;
+        discount_value: number;
+        max_discount_cap?: number;
+        applicable_plans: string[];
+        applicable_cycles: string[];
+        valid_from: string;
+        valid_until: string;
+        max_uses?: number;
+      }
+    >({
+      query: (body) => ({ url: '/api/v1/subscription-promos', method: 'POST', body }),
+      invalidatesTags: ['Subscriptions'],
+    }),
+    updateSubscriptionPromo: builder.mutation<
+      { promo: SubscriptionPromo },
+      {
+        id: number;
+        body: {
+          name: string;
+          description?: string;
+          discount_type: string;
+          discount_value: number;
+          max_discount_cap?: number;
+          applicable_plans: string[];
+          applicable_cycles: string[];
+          valid_from: string;
+          valid_until: string;
+          is_active: boolean;
+          max_uses?: number;
+        };
+      }
+    >({
+      query: ({ id, body }) => ({ url: `/api/v1/subscription-promos/${id}`, method: 'PUT', body }),
+      invalidatesTags: ['Subscriptions'],
+    }),
+    blastSubscriptionPromo: builder.mutation<{ sent_count: number }, number>({
+      query: (id) => ({ url: `/api/v1/subscription-promos/${id}/blast`, method: 'POST' }),
+      invalidatesTags: ['Subscriptions'],
+    }),
+    updateSubscriptionPlan: builder.mutation<
+      { plan: SubscriptionPlan },
+      {
+        id: number;
+        body: {
+          plan_name: string;
+          description?: string | null;
+          six_month_price: number;
+          yearly_price: number;
+          max_managers?: number | null;
+          is_active: boolean;
+          features: Record<string, unknown>;
+        };
+      }
+    >({
+      query: ({ id, body }) => ({ url: `/api/v1/subscription-plans/${id}`, method: 'PUT', body }),
+      invalidatesTags: ['Subscriptions'],
     }),
     getUser: builder.query<UserDetailResponse, number>({
       query: (id) => `/api/v1/users/${id}`,
@@ -572,6 +674,11 @@ export const {
   useCreateQuotationMutation,
   useDeleteQuotationMutation,
   useListSubscriptionPlansQuery,
+  useUpdateSubscriptionPlanMutation,
+  useListSubscriptionPromosQuery,
+  useCreateSubscriptionPromoMutation,
+  useUpdateSubscriptionPromoMutation,
+  useBlastSubscriptionPromoMutation,
   useGetSubscriptionQuery,
   useCreateSubscriptionMutation,
   useRenewSubscriptionMutation,

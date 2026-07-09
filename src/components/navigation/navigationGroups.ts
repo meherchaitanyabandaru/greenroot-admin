@@ -19,6 +19,7 @@ import TimelineIcon from '@mui/icons-material/Timeline';
 import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import type { SvgIconComponent } from '@mui/icons-material';
 
 export type NavItem = { label: string; path: string; icon: SvgIconComponent; badge?: string };
@@ -79,6 +80,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { label: 'Subscription Plans', path: '/subscription-plans', icon: SubscriptionsIcon },
       { label: 'Active Subscriptions', path: '/subscriptions', icon: SubscriptionsIcon },
+      { label: 'Promo Offers', path: '/subscription-promos', icon: LocalOfferIcon },
       { label: 'Payments', path: '/payments', icon: PaymentsIcon },
     ],
   },
