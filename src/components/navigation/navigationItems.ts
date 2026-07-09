@@ -33,7 +33,7 @@ export const navigationItems: NavigationItem[] = [
   { label: 'Plant Categories', path: '/plants/categories', icon: LocalFloristIcon },
   { label: 'Nurseries', path: '/nurseries', icon: StorefrontIcon },
   { label: 'Inventory', path: '/inventory', icon: InventoryIcon },
-  { label: 'Requests', path: '/requests', icon: AssignmentIcon },
+  { label: 'Plant Requests', path: '/requests', icon: AssignmentIcon },
   // V1 quotation & order flow
   { label: 'Quotations', path: '/quotations', icon: FormatQuoteIcon },
   { label: 'Orders', path: '/orders', icon: ReceiptLongIcon },

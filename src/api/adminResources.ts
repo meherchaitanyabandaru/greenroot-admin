@@ -8,7 +8,7 @@ export type ResourceConfig = {
     | 'Plants'
     | 'Nurseries'
     | 'Inventory'
-    | 'Requests'
+    | 'PlantRequests'
     | 'Orders'
     | 'Quotations'
     | 'Payments'
@@ -165,11 +165,11 @@ export const resourceConfigs = {
     path: '/api/v1/inventory',
     collectionKey: 'inventory',
   },
-  requests: {
-    key: 'requests',
-    tag: 'Requests',
+  plantRequests: {
+    key: 'plantRequests',
+    tag: 'PlantRequests',
     path: '/api/v1/plant-requests',
-    collectionKey: 'requests',
+    collectionKey: 'plant_requests',
   },
   orders: { key: 'orders', tag: 'Orders', path: '/api/v1/orders', collectionKey: 'orders' },
   quotations: { key: 'quotations', tag: 'Quotations', path: '/api/v1/quotations', collectionKey: 'quotations' },
@@ -435,19 +435,19 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     }),
     getRequest: builder.query<RequestDetailResponse, number>({
       query: (id) => `/api/v1/plant-requests/${id}`,
-      providesTags: ['Requests'],
+      providesTags: ['PlantRequests'],
     }),
     listRequestResponses: builder.query<RequestResponsesResponse, number>({
       query: (id) => `/api/v1/plant-requests/${id}/responses`,
-      providesTags: ['Requests'],
+      providesTags: ['PlantRequests'],
     }),
     createRequest: builder.mutation<RequestDetailResponse, Record<string, unknown>>({
       query: (body) => ({ url: '/api/v1/plant-requests', method: 'POST', body }),
-      invalidatesTags: ['Requests', 'Dashboard'],
+      invalidatesTags: ['PlantRequests', 'Dashboard'],
     }),
     createRequestResponse: builder.mutation<unknown, { id: number; body: Record<string, unknown> }>({
       query: ({ id, body }) => ({ url: `/api/v1/plant-requests/${id}/responses`, method: 'POST', body }),
-      invalidatesTags: ['Requests'],
+      invalidatesTags: ['PlantRequests'],
     }),
     updateRequestStatus: builder.mutation<RequestDetailResponse, { id: number; status: string }>({
       query: ({ id, status }) => ({
@@ -455,11 +455,11 @@ export const adminResourcesApi = baseApi.injectEndpoints({
         method: 'PUT',
         body: { status },
       }),
-      invalidatesTags: ['Requests', 'Dashboard'],
+      invalidatesTags: ['PlantRequests', 'Dashboard'],
     }),
     cancelRequest: builder.mutation<unknown, number>({
       query: (id) => ({ url: `/api/v1/plant-requests/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['Requests', 'Dashboard'],
+      invalidatesTags: ['PlantRequests', 'Dashboard'],
     }),
     updateRequestResponse: builder.mutation<unknown, { responseId: number; body: { status: string } }>({
       query: ({ responseId, body }) => ({
@@ -467,7 +467,7 @@ export const adminResourcesApi = baseApi.injectEndpoints({
         method: 'PUT',
         body,
       }),
-      invalidatesTags: ['Requests'],
+      invalidatesTags: ['PlantRequests'],
     }),
     listSubscriptionPlans: builder.query<{ plans: SubscriptionPlan[] }, void>({
       query: () => '/api/v1/subscription-plans',
