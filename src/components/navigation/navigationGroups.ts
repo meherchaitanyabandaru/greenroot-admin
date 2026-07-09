@@ -5,21 +5,21 @@ import CategoryIcon from '@mui/icons-material/Category';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import DescriptionIcon from '@mui/icons-material/Description';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import HistoryIcon from '@mui/icons-material/History';
+import InventoryIcon from '@mui/icons-material/Inventory';
 import LocalFloristIcon from '@mui/icons-material/LocalFlorist';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import PeopleIcon from '@mui/icons-material/People';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import SecurityIcon from '@mui/icons-material/Security';
 import SmsIcon from '@mui/icons-material/Sms';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import SubscriptionsIcon from '@mui/icons-material/Subscriptions';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import TravelExploreIcon from '@mui/icons-material/TravelExplore';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
-import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import type { SvgIconComponent } from '@mui/icons-material';
 
 export type NavItem = { label: string; path: string; icon: SvgIconComponent; badge?: string };
@@ -99,9 +99,9 @@ export const navigationGroups: NavGroup[] = [
     ],
   },
   {
-    section: 'Security',
+    section: 'Platform',
     items: [
-      { label: 'Audit Logs', path: '/audit', icon: SecurityIcon },
+      { label: 'Audit Logs', path: '/audit', icon: HistoryIcon },
     ],
   },
 ];
