@@ -1,6 +1,6 @@
 # GreenRoot — Admin UI Reference
 
-> Last updated: 2026-06-28
+> Last updated: 2026-07-10
 
 ---
 
@@ -55,52 +55,28 @@ Source of truth for APIs: `greenroot-api/docs/swagger/openapi.yaml`
 | Auth | ✅ Live | Login, token refresh, logout, me | — |
 | Dashboard | ✅ Live | Cards + charts via `/api/v1/admin/dashboard` | — |
 | Audit | ✅ Live | Read-only audit log table | — |
-| Plants | 🔶 Partial | List, CRUD, images, care guide, detail panel | **Category management screen** |
-| Nurseries | 🔶 Partial | List, CRUD, detail panel (addresses, team, edit, delete) | **Address create/edit forms** |
-| Inventory | 🔶 Partial | List, CRUD | **Nursery/plant-specific views** |
-| Plant Requests | 🔶 Partial | Global list | **Matching/response workflow** |
-| Orders | 🔶 Partial | List, detail panel, status update, items, payments, dispatches | **Create/delete/item-edit** |
-| Payments | 🔶 Partial | List, manual record, status/provider update | **Subscription payment provider flow** |
-| Subscriptions | 🔶 Partial | List, plans list | **Lifecycle forms (renew/cancel)** |
-| Vehicles | 🔶 Partial | List, CRUD, retire | **Detail workflow** |
-| Drivers | 🔶 Partial | List, CRUD, deactivate | **Detail + location** |
-| Dispatches | 🔶 Partial | List, create, status update | **Detail/items workflow** |
-| Tracking | ❌ Pending | Nothing — needs map/timeline UI | Requires ID lookup + map |
-| Notifications | 🔶 Partial | List, devices, templates | **Create/read/template-edit** |
-| Attachments | 🔶 Partial | List | **Upload form + metadata form** |
-| Users | 🔶 Partial | Admin list/search, detail drawer (profile, roles, addresses, sessions) | — |
+| Plants | ✅ Live | List, CRUD, images, care guide, detail panel, **category CRUD page** | — |
+| Nurseries | ✅ Live | List, CRUD, detail panel (addresses add/edit/delete, team, status actions, edit) | — |
+| Inventory | ✅ Live | List, CRUD, **nursery_id + plant_id filter inputs** | — |
+| Plant Requests | ✅ Live | Global list, **response matching detail panel** (select/reject per supplier) | — |
+| Orders | ✅ Live | List, detail panel, status update, inline item edit/delete, payments, dispatches, **create drawer** | — |
+| Payments | ✅ Live | List, manual record (ORDER + **SUBSCRIPTION**), status/provider update | — |
+| Subscriptions | ✅ Live | List, plans list, **lifecycle detail panel (renew dialog, cancel dialog, payment history)** | — |
+| Vehicles | ✅ Live | List, CRUD, retire, **detail panel (info, tracking history, last known location)** | — |
+| Drivers | ✅ Live | List, CRUD, deactivate, **detail panel (location, approve, edit)** | — |
+| Dispatches | ✅ Live | List, create, status update, **detail panel (items, tracking, trip UUID)** | — |
+| Tracking | ✅ Live | **Live tracking table (IN_TRANSIT dispatches, auto-refresh 30s, vehicle GPS link)** | — |
+| Notifications | ✅ Live | List, devices, templates, **detail panel (mark-read, delete), template editor, mark-all-read** | — |
+| Attachments | ✅ Live | List, **upload form (presign → PUT → save metadata)** | — |
+| Users | ✅ Live | Admin list/search, detail drawer (profile, roles, addresses, sessions) | — |
 
 ---
 
-## Priority Queue (Build In This Order)
+## Priority Queue
 
-1. **Plant Request matching screen**  
-   Path: `src/features/requests/`  
-   Needs: `GET /api/v1/plant-requests/:id/responses` + inventory matching UI
+All 7 priority items and all 6 module gap items are now **complete**. See NEXT_WEEK_ACTION_ITEMS.md for full log.
 
-2. **Subscription lifecycle forms**  
-   Path: `src/features/subscriptions/`  
-   Needs: `POST /api/v1/subscriptions/:id/renew` + cancel form
-
-3. **Notification actions**  
-   Path: `src/features/notifications/`  
-   Needs: create notification, mark-read, template edit
-
-4. **Tracking console**  
-   Path: `src/features/tracking/`  
-   Needs: ID lookup + map/timeline via `GET /api/v1/tracking/vehicle/:id` etc.
-
-5. **Attachment upload**  
-   Path: `src/features/attachments/`  
-   Needs: metadata form + S3-ready file upload
-
-6. **Nursery address CRUD**  
-   Path: `src/features/nurseries/NurseryDetailPanel.tsx`  
-   Needs: nested address create/edit forms
-
-7. **Plant category management**  
-   Path: `src/features/plants/`  
-   Needs: dedicated category list/create/edit screen
+**Remaining (pre-production, not this phase):** See Section 5 in NEXT_WEEK_ACTION_ITEMS.md — rate limiting, CORS review, CI/CD, DB indexes, integration tests.
 
 ---
 
