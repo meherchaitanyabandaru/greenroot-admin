@@ -667,6 +667,26 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (body) => ({ url: '/api/v1/tracking', method: 'POST', body }),
       invalidatesTags: ['Vehicles', 'Drivers', 'Dispatches'],
     }),
+    getNotification: builder.query<{ notification: Record<string, unknown> }, number>({
+      query: (id) => `/api/v1/notifications/${id}`,
+      providesTags: ['Notifications'],
+    }),
+    markNotificationRead: builder.mutation<unknown, number>({
+      query: (id) => ({ url: `/api/v1/notifications/${id}/read`, method: 'PUT' }),
+      invalidatesTags: ['Notifications'],
+    }),
+    markAllNotificationsRead: builder.mutation<unknown, void>({
+      query: () => ({ url: '/api/v1/notifications/read-all', method: 'PUT' }),
+      invalidatesTags: ['Notifications'],
+    }),
+    updateNotificationTemplate: builder.mutation<unknown, { id: number; body: Record<string, unknown> }>({
+      query: ({ id, body }) => ({ url: `/api/v1/notifications/templates/${id}`, method: 'PUT', body }),
+      invalidatesTags: ['Notifications'],
+    }),
+    deleteNotification: builder.mutation<unknown, number>({
+      query: (id) => ({ url: `/api/v1/notifications/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Notifications'],
+    }),
   }),
 });
 
@@ -753,4 +773,9 @@ export const {
   useAddDispatchItemMutation,
   useListDispatchTrackingQuery,
   useRecordTrackingMutation,
+  useGetNotificationQuery,
+  useMarkNotificationReadMutation,
+  useMarkAllNotificationsReadMutation,
+  useUpdateNotificationTemplateMutation,
+  useDeleteNotificationMutation,
 } = adminResourcesApi;

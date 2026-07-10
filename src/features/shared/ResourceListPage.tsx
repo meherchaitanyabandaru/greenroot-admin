@@ -36,6 +36,7 @@ import {
   useCreateVehicleMutation,
   useRetireVehicleMutation,
   useUpdateVehicleMutation,
+  useMarkAllNotificationsReadMutation,
 } from '../../api/adminResources';
 import { AppDataTable } from '../../components/data-table/AppDataTable';
 import { TableAvatar } from '../../components/data-table/TableAvatar';
@@ -62,6 +63,8 @@ import { PlantForm } from '../plants/PlantForm';
 import { RequestDetailPanel } from '../plant_requests/RequestDetailPanel';
 import { SubscriptionDetailPanel } from '../subscriptions/SubscriptionDetailPanel';
 import { VehicleDetailPanel } from '../vehicles/VehicleDetailPanel';
+import { NotificationDetailPanel } from '../notifications/NotificationDetailPanel';
+import { NotificationTemplateDetailPanel } from '../notifications/NotificationTemplateDetailPanel';
 import { VehicleForm } from '../vehicles/VehicleForm';
 import { normalizeApiError } from '../../utils/apiError';
 import { formatCurrency, formatDate, toLabel } from '../../utils/labels';
@@ -288,7 +291,9 @@ function columnsFor(
     resource === 'plantRequests' ||
     resource === 'subscriptions' ||
     resource === 'sourcingPosts' ||
-    resource === 'sourcingNetwork';
+    resource === 'sourcingNetwork' ||
+    resource === 'notifications' ||
+    resource === 'notificationTemplates';
 
   const isViewOnly =
     resource === 'orders' ||
@@ -416,6 +421,7 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
   const [deletePlant, deletePlantState] = useDeletePlantMutation();
   const [createManualPayment, createManualPaymentState] = useCreateManualPaymentMutation();
   const [updatePaymentStatus, updatePaymentStatusState] = useUpdatePaymentStatusMutation();
+  const [markAllRead, markAllReadState] = useMarkAllNotificationsReadMutation();
 
   const config: ResourceConfig = resourceConfigs[resource];
 
@@ -584,7 +590,9 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
     resource === 'drivers' ||
     resource === 'vehicles' ||
     resource === 'dispatches' ||
-    resource === 'sourcingPosts';
+    resource === 'sourcingPosts' ||
+    resource === 'notifications' ||
+    resource === 'notificationTemplates';
 
   return (
     <Box>
@@ -595,6 +603,15 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
           canCreate ? (
             <Button onClick={openCreateDrawer} startIcon={<AddIcon />} variant="contained" size="small">
               Add {addLabel[resource]}
+            </Button>
+          ) : resource === 'notifications' ? (
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={markAllReadState.isLoading}
+              onClick={async () => { await markAllRead().unwrap(); showToast('All notifications marked as read'); refetch(); }}
+            >
+              Mark All Read
             </Button>
           ) : undefined
         }
@@ -799,6 +816,13 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
           )
         ) : resource === 'sourcingPosts' || resource === 'sourcingNetwork' ? (
           <Alert severity="info">This is an admin monitoring view for the private B2B sourcing network.</Alert>
+        ) : resource === 'notifications' && editingRow ? (
+          <NotificationDetailPanel
+            notificationId={Number(editingRow.id)}
+            onDeleted={() => { setDrawerOpen(false); setEditingRow(null); }}
+          />
+        ) : resource === 'notificationTemplates' && editingRow ? (
+          <NotificationTemplateDetailPanel templateId={Number(editingRow.id)} />
         ) : (
           <DriverForm
             initial={editingRow ?? undefined}
