@@ -393,6 +393,10 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/api/v1/quotations/${id}/send`, method: 'POST' }),
       invalidatesTags: ['Quotations'],
     }),
+    getQuotationCurrentDocument: builder.query<{ document: Record<string, unknown>; download_url: string }, number>({
+      query: (id) => `/api/v1/quotations/${id}/documents/current`,
+      providesTags: ['Quotations'],
+    }),
     listOrderItems: builder.query<OrderItemsResponse, number>({
       query: (id) => `/api/v1/orders/${id}/items`,
       providesTags: ['Orders'],
@@ -713,6 +717,7 @@ export const adminResourcesApi = baseApi.injectEndpoints({
 
 export const {
   useGetQuotationQuery,
+  useLazyGetQuotationCurrentDocumentQuery,
   useCreateQuotationMutation,
   useDeleteQuotationMutation,
   useSendQuotationMutation,

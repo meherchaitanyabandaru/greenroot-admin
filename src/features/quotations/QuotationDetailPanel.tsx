@@ -1,9 +1,12 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DownloadIcon from '@mui/icons-material/Download';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import {
+  Alert,
   Box,
   Button,
   Chip,
+  CircularProgress,
   Divider,
   Snackbar,
   Stack,
@@ -15,7 +18,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { useGetQuotationQuery } from '../../api/adminResources';
+import { useGetQuotationQuery, useLazyGetQuotationCurrentDocumentQuery } from '../../api/adminResources';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
 
@@ -72,7 +75,11 @@ function InfoRow({ label, value }: { label: string; value: unknown }) {
 
 export function QuotationDetailPanel({ quotationId }: { quotationId: number }) {
   const { data, isLoading, error, refetch } = useGetQuotationQuery(quotationId);
+  const [fetchCurrentDoc, { isFetching: isPdfFetching }] = useLazyGetQuotationCurrentDocumentQuery();
   const [copied, setCopied] = useState(false);
+  const [pdfSnack, setPdfSnack] = useState<{ open: boolean; severity: 'success' | 'error' | 'info'; msg: string }>({
+    open: false, severity: 'info', msg: '',
+  });
 
   if (isLoading) return <LoadingState label="Loading quotation…" />;
   if (error) {
@@ -91,15 +98,26 @@ export function QuotationDetailPanel({ quotationId }: { quotationId: number }) {
     navigator.clipboard.writeText(code).then(() => { setCopied(true); });
   }
 
-  function handleViewJson() {
-    const json = JSON.stringify(data?.quotation ?? {}, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${String(q.quotation_code ?? 'quotation')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+  async function handleDownloadPdf() {
+    try {
+      const result = await fetchCurrentDoc(quotationId).unwrap();
+      const url = result.download_url;
+      if (!url) throw new Error('No download URL');
+      // Open presigned URL in new tab — browser will trigger the PDF download
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setPdfSnack({ open: true, severity: 'success', msg: 'PDF opened for download.' });
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      if (status === 404) {
+        setPdfSnack({
+          open: true,
+          severity: 'info',
+          msg: 'No PDF stored yet for this quotation. Share it from the mobile app to generate one.',
+        });
+      } else {
+        setPdfSnack({ open: true, severity: 'error', msg: 'Failed to fetch PDF. Please try again.' });
+      }
+    }
   }
 
   return (
@@ -129,12 +147,15 @@ export function QuotationDetailPanel({ quotationId }: { quotationId: number }) {
           </Button>
           <Button
             size="small"
-            variant="outlined"
-            startIcon={<PictureAsPdfIcon />}
-            onClick={handleViewJson}
+            variant="contained"
+            color="primary"
+            startIcon={isPdfFetching ? <CircularProgress size={14} color="inherit" /> : <PictureAsPdfIcon sx={{ fontSize: 16 }} />}
+            endIcon={!isPdfFetching && <DownloadIcon sx={{ fontSize: 14 }} />}
+            onClick={handleDownloadPdf}
+            disabled={isPdfFetching}
             sx={{ fontSize: 12 }}
           >
-            Download JSON
+            {isPdfFetching ? 'Fetching…' : 'Download PDF'}
           </Button>
         </Stack>
       </Stack>
@@ -242,6 +263,7 @@ export function QuotationDetailPanel({ quotationId }: { quotationId: number }) {
         </Stack>
       </Stack>
 
+      {/* Copy ID snackbar */}
       <Snackbar
         open={copied}
         autoHideDuration={2000}
@@ -249,6 +271,23 @@ export function QuotationDetailPanel({ quotationId }: { quotationId: number }) {
         message={`Copied: ${q.quotation_code}`}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
+
+      {/* PDF download feedback snackbar */}
+      <Snackbar
+        open={pdfSnack.open}
+        autoHideDuration={5000}
+        onClose={() => setPdfSnack((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setPdfSnack((s) => ({ ...s, open: false }))}
+          severity={pdfSnack.severity}
+          variant="filled"
+          sx={{ width: '100%', fontSize: 13 }}
+        >
+          {pdfSnack.msg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
