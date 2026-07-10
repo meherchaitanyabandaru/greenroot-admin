@@ -66,6 +66,7 @@ import { VehicleDetailPanel } from '../vehicles/VehicleDetailPanel';
 import { NotificationDetailPanel } from '../notifications/NotificationDetailPanel';
 import { NotificationTemplateDetailPanel } from '../notifications/NotificationTemplateDetailPanel';
 import { AttachmentUploadForm } from '../attachments/AttachmentUploadForm';
+import { OrderCreateDrawer } from '../orders/OrderCreateDrawer';
 import { VehicleForm } from '../vehicles/VehicleForm';
 import { normalizeApiError } from '../../utils/apiError';
 import { formatCurrency, formatDate, toLabel } from '../../utils/labels';
@@ -407,6 +408,9 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<Record<string, unknown> | null>(null);
+  const [orderCreateOpen, setOrderCreateOpen] = useState(false);
+  const [inventoryNurseryId, setInventoryNurseryId] = useState('');
+  const [inventoryPlantId, setInventoryPlantId] = useState('');
 
   const [createPlant, plantState] = useCreatePlantMutation();
   const [createNursery, nurseryState] = useCreateNurseryMutation();
@@ -443,6 +447,8 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
             : undefined,
         role: resource === 'users' ? userRole : undefined,
         inventory_status: resource === 'inventory' ? status : undefined,
+        nursery_id: resource === 'inventory' && inventoryNurseryId ? inventoryNurseryId : undefined,
+        plant_id: resource === 'inventory' && inventoryPlantId ? inventoryPlantId : undefined,
         order_status: resource === 'orders' ? status : undefined,
         payment_status: resource === 'payments' ? status : undefined,
         payment_for: resource === 'payments' ? paymentFor : undefined,
@@ -606,6 +612,15 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
             <Button onClick={openCreateDrawer} startIcon={<AddIcon />} variant="contained" size="small">
               Add {addLabel[resource]}
             </Button>
+          ) : resource === 'orders' ? (
+            <Button
+              startIcon={<AddIcon />}
+              variant="contained"
+              size="small"
+              onClick={() => setOrderCreateOpen(true)}
+            >
+              Add Order
+            </Button>
           ) : resource === 'notifications' ? (
             <Button
               variant="outlined"
@@ -678,6 +693,29 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
             <MenuItem value="">All roles</MenuItem>
             {USER_ROLES.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
           </TextField>
+        )}
+
+        {resource === 'inventory' && (
+          <>
+            <TextField
+              label="Nursery ID"
+              size="small"
+              type="number"
+              sx={{ minWidth: 130 }}
+              value={inventoryNurseryId}
+              onChange={(e) => { setInventoryNurseryId(e.target.value); setPage(0); }}
+              inputProps={{ min: 1 }}
+            />
+            <TextField
+              label="Plant ID"
+              size="small"
+              type="number"
+              sx={{ minWidth: 120 }}
+              value={inventoryPlantId}
+              onChange={(e) => { setInventoryPlantId(e.target.value); setPage(0); }}
+              inputProps={{ min: 1 }}
+            />
+          </>
         )}
 
         {showStatusFilter && (
@@ -836,6 +874,11 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
         )}
       </FormDrawer>
 
+      <OrderCreateDrawer
+        open={orderCreateOpen}
+        onClose={() => setOrderCreateOpen(false)}
+        onCreated={() => { setOrderCreateOpen(false); refetch(); }}
+      />
     </Box>
   );
 }
