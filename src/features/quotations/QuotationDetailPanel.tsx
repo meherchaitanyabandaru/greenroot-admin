@@ -148,6 +148,8 @@ export function QuotationDetailPanel({
       <InfoRow label="Nursery" value={q.nursery_name} />
       <InfoRow label="Nursery Phone" value={q.nursery_phone} />
       <InfoRow label="Generated At" value={formatDate(q.created_at)} />
+      <InfoRow label="Valid Until" value={q.valid_until ? formatDate(q.valid_until) : '15 days after approval (default)'} />
+      <InfoRow label="Assigned To" value={q.assigned_manager_name ?? (q.assigned_manager_user_id ? `User #${q.assigned_manager_user_id}` : null)} />
       <Divider sx={{ my: 2 }} />
 
       {/* Recipient */}
@@ -158,6 +160,21 @@ export function QuotationDetailPanel({
       <InfoRow label="Mobile" value={q.recipient_mobile} />
       <Divider sx={{ my: 2 }} />
 
+      {/* Converted to order */}
+      {q.status === 'CONVERTED' && q.converted_order_id && (
+        <>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.06em' }}>
+            Conversion
+          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ py: 0.75 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ minWidth: 160, flexShrink: 0 }}>Linked Order</Typography>
+            <Chip label={text(q.converted_order_code ?? `#${q.converted_order_id}`)} size="small" color="success" sx={{ fontWeight: 700, fontSize: 11 }} />
+          </Stack>
+          <InfoRow label="Converted On" value={formatDate(q.converted_at)} />
+          <Divider sx={{ my: 2 }} />
+        </>
+      )}
+
       {/* Notes */}
       {q.notes && (
         <>
@@ -165,6 +182,17 @@ export function QuotationDetailPanel({
             Notes
           </Typography>
           <Typography variant="body2" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>{text(q.notes)}</Typography>
+          <Divider sx={{ my: 2 }} />
+        </>
+      )}
+
+      {/* Rejection reason */}
+      {q.status === 'CUSTOMER_REJECTED' && q.rejection_reason && (
+        <>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1, color: 'error.main', textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.06em' }}>
+            Rejection Reason
+          </Typography>
+          <Typography variant="body2" color="error" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>{text(q.rejection_reason)}</Typography>
           <Divider sx={{ my: 2 }} />
         </>
       )}

@@ -378,6 +378,7 @@ const PAYMENT_STATUSES = ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED', 'CANCELLED
 const DISPATCH_STATUSES = ['PENDING', 'DISPATCHED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'];
 const SOURCING_POST_STATUSES = ['OPEN', 'CLOSED', 'EXPIRED'];
 const SOURCING_POST_TYPES = ['NEED', 'AVAILABLE'];
+const QUOTATION_STATUSES = ['INTERNAL_DRAFT', 'CUSTOMER_DRAFT', 'CUSTOMER_SENT', 'CUSTOMER_ACCEPTED', 'CUSTOMER_REJECTED', 'CONVERTED'];
 
 // ─── Add button labels ────────────────────────────────────────────────────────
 // Only resources where admin can create records; read-only monitoring pages excluded
@@ -411,6 +412,10 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
   const [orderCreateOpen, setOrderCreateOpen] = useState(false);
   const [inventoryNurseryId, setInventoryNurseryId] = useState('');
   const [inventoryPlantId, setInventoryPlantId] = useState('');
+  const [quotationDateFrom, setQuotationDateFrom] = useState('');
+  const [quotationDateTo, setQuotationDateTo] = useState('');
+  const [quotationAmountMin, setQuotationAmountMin] = useState('');
+  const [quotationAmountMax, setQuotationAmountMax] = useState('');
 
   const [createPlant, plantState] = useCreatePlantMutation();
   const [createNursery, nurseryState] = useCreateNurseryMutation();
@@ -442,9 +447,15 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
         light_requirement: resource === 'plants' ? lightRequirement : undefined,
         water_requirement: resource === 'plants' ? waterRequirement : undefined,
         status:
-          resource === 'drivers' || resource === 'users' || resource === 'plantRequests' || resource === 'sourcingPosts'
-            ? status
-            : undefined,
+          resource === 'quotations'
+            ? status || undefined
+            : resource === 'drivers' || resource === 'users' || resource === 'plantRequests' || resource === 'sourcingPosts'
+              ? status
+              : undefined,
+        date_from: resource === 'quotations' && quotationDateFrom ? quotationDateFrom : undefined,
+        date_to: resource === 'quotations' && quotationDateTo ? quotationDateTo : undefined,
+        amount_min: resource === 'quotations' && quotationAmountMin ? quotationAmountMin : undefined,
+        amount_max: resource === 'quotations' && quotationAmountMax ? quotationAmountMax : undefined,
         role: resource === 'users' ? userRole : undefined,
         inventory_status: resource === 'inventory' ? status : undefined,
         nursery_id: resource === 'inventory' && inventoryNurseryId ? inventoryNurseryId : undefined,
@@ -574,7 +585,9 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
                     ? REQUEST_STATUSES
                     : resource === 'sourcingPosts'
                       ? SOURCING_POST_STATUSES
-                    : [];
+                      : resource === 'quotations'
+                        ? QUOTATION_STATUSES
+                        : [];
 
   const showStatusFilter =
     resource === 'users' ||
@@ -585,7 +598,8 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
     resource === 'vehicles' ||
     resource === 'dispatches' ||
     resource === 'plantRequests' ||
-    resource === 'sourcingPosts';
+    resource === 'sourcingPosts' ||
+    resource === 'quotations';
 
   // Determine drawer width
   const wideDrawer =
@@ -724,6 +738,47 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
             <MenuItem value="">All statuses</MenuItem>
             {statusOptions.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
           </TextField>
+        )}
+
+        {resource === 'quotations' && (
+          <>
+            <TextField
+              label="Date From"
+              type="date"
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              value={quotationDateFrom}
+              onChange={(e) => { setQuotationDateFrom(e.target.value); setPage(0); }}
+              sx={{ minWidth: 150 }}
+            />
+            <TextField
+              label="Date To"
+              type="date"
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              value={quotationDateTo}
+              onChange={(e) => { setQuotationDateTo(e.target.value); setPage(0); }}
+              sx={{ minWidth: 150 }}
+            />
+            <TextField
+              label="Min Amount (₹)"
+              type="number"
+              size="small"
+              value={quotationAmountMin}
+              onChange={(e) => { setQuotationAmountMin(e.target.value); setPage(0); }}
+              sx={{ minWidth: 140 }}
+              inputProps={{ min: 0 }}
+            />
+            <TextField
+              label="Max Amount (₹)"
+              type="number"
+              size="small"
+              value={quotationAmountMax}
+              onChange={(e) => { setQuotationAmountMax(e.target.value); setPage(0); }}
+              sx={{ minWidth: 140 }}
+              inputProps={{ min: 0 }}
+            />
+          </>
         )}
       </Stack>
 
