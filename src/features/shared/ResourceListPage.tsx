@@ -65,6 +65,7 @@ import { SubscriptionDetailPanel } from '../subscriptions/SubscriptionDetailPane
 import { VehicleDetailPanel } from '../vehicles/VehicleDetailPanel';
 import { NotificationDetailPanel } from '../notifications/NotificationDetailPanel';
 import { NotificationTemplateDetailPanel } from '../notifications/NotificationTemplateDetailPanel';
+import { AttachmentUploadForm } from '../attachments/AttachmentUploadForm';
 import { VehicleForm } from '../vehicles/VehicleForm';
 import { normalizeApiError } from '../../utils/apiError';
 import { formatCurrency, formatDate, toLabel } from '../../utils/labels';
@@ -380,12 +381,13 @@ const SOURCING_POST_TYPES = ['NEED', 'AVAILABLE'];
 // ─── Add button labels ────────────────────────────────────────────────────────
 // Only resources where admin can create records; read-only monitoring pages excluded
 const addLabel: Partial<Record<ResourceKey, string>> = {
-  plants:     'Plant',
-  nurseries:  'Nursery',
-  inventory:  'Inventory',
-  payments:   'Payment',
-  drivers:    'Driver',
-  vehicles:   'Vehicle',
+  plants:      'Plant',
+  nurseries:   'Nursery',
+  inventory:   'Inventory',
+  payments:    'Payment',
+  drivers:     'Driver',
+  vehicles:    'Vehicle',
+  attachments: 'Attachment',
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -823,6 +825,8 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
           />
         ) : resource === 'notificationTemplates' && editingRow ? (
           <NotificationTemplateDetailPanel templateId={Number(editingRow.id)} />
+        ) : resource === 'attachments' && !editingRow ? (
+          <AttachmentUploadForm onSuccess={() => { setDrawerOpen(false); refetch(); }} />
         ) : (
           <DriverForm
             initial={editingRow ?? undefined}

@@ -687,6 +687,23 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/api/v1/notifications/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Notifications'],
     }),
+    presignUpload: builder.mutation<
+      { upload_url: string; file_url: string; key: string; bucket: string },
+      { bucket: string; file_name: string; content_type?: string }
+    >({
+      query: (body) => ({ url: '/api/v1/storage/presign', method: 'POST', body }),
+    }),
+    createAttachment: builder.mutation<unknown, {
+      entity_type: string;
+      entity_id: number;
+      file_name: string;
+      file_url: string;
+      file_type?: string;
+      file_size?: number;
+    }>({
+      query: (body) => ({ url: '/api/v1/attachments', method: 'POST', body }),
+      invalidatesTags: ['Attachments'],
+    }),
   }),
 });
 
@@ -778,4 +795,6 @@ export const {
   useMarkAllNotificationsReadMutation,
   useUpdateNotificationTemplateMutation,
   useDeleteNotificationMutation,
+  usePresignUploadMutation,
+  useCreateAttachmentMutation,
 } = adminResourcesApi;
