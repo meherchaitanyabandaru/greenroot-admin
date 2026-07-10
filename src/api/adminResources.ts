@@ -43,6 +43,11 @@ export type QuotationItemsResponse = {
   items: Record<string, unknown>[];
 };
 
+export type QuotationPDFResponse = {
+  blob: Blob;
+  filename?: string;
+};
+
 export type OrderItemsResponse = {
   items: Record<string, unknown>[];
 };
@@ -393,8 +398,19 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/api/v1/quotations/${id}/send`, method: 'POST' }),
       invalidatesTags: ['Quotations'],
     }),
-    getQuotationCurrentDocument: builder.query<{ document: Record<string, unknown>; download_url: string }, number>({
+    getQuotationCurrentDocument: builder.query<{ document: Record<string, unknown> & { created_at?: string }; download_url: string }, number>({
       query: (id) => `/api/v1/quotations/${id}/documents/current`,
+      providesTags: ['Quotations'],
+    }),
+    getQuotationRenderedPdf: builder.query<QuotationPDFResponse, number>({
+      query: (id) => ({
+        url: `/api/v1/quotations/${id}/documents/render`,
+        responseHandler: async (response) => {
+          const disposition = response.headers.get('content-disposition') ?? '';
+          const filename = disposition.match(/filename="([^"]+)"/)?.[1];
+          return { blob: await response.blob(), filename };
+        },
+      }),
       providesTags: ['Quotations'],
     }),
     listOrderItems: builder.query<OrderItemsResponse, number>({
@@ -718,6 +734,7 @@ export const adminResourcesApi = baseApi.injectEndpoints({
 export const {
   useGetQuotationQuery,
   useLazyGetQuotationCurrentDocumentQuery,
+  useLazyGetQuotationRenderedPdfQuery,
   useCreateQuotationMutation,
   useDeleteQuotationMutation,
   useSendQuotationMutation,
