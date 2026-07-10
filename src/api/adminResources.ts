@@ -389,6 +389,10 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/api/v1/quotations/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Quotations'],
     }),
+    sendQuotation: builder.mutation<QuotationDetailResponse, number>({
+      query: (id) => ({ url: `/api/v1/quotations/${id}/send`, method: 'POST' }),
+      invalidatesTags: ['Quotations'],
+    }),
     listOrderItems: builder.query<OrderItemsResponse, number>({
       query: (id) => `/api/v1/orders/${id}/items`,
       providesTags: ['Orders'],
@@ -711,6 +715,7 @@ export const {
   useGetQuotationQuery,
   useCreateQuotationMutation,
   useDeleteQuotationMutation,
+  useSendQuotationMutation,
   useListSubscriptionPlansQuery,
   useUpdateSubscriptionPlanMutation,
   useListSubscriptionPromosQuery,
