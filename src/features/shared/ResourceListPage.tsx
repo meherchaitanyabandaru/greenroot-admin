@@ -262,9 +262,11 @@ function columnsFor(
                             ? ['notification_type', 'title', 'channel', 'notification_status']
                             : resource === 'subscriptions'
                               ? ['subscription_code', 'plan_name', 'subscription_status']
-                              : Object.keys(first)
-                                  .filter((k) => !['created_at', 'updated_at', 'deleted_at', 'id'].includes(k))
-                                  .slice(0, 6);
+                              : resource === 'quotations'
+                                ? ['quotation_code', 'quotation_type', 'status', 'nursery_name', 'recipient_name', 'total_amount', 'assigned_manager_name', 'created_at']
+                                : Object.keys(first)
+                                    .filter((k) => !['created_at', 'updated_at', 'deleted_at', 'id'].includes(k))
+                                    .slice(0, 6);
 
   const dataCols: ColumnDef<Record<string, unknown>>[] = dataKeys.map((key) => ({
     accessorKey: key,
@@ -291,6 +293,7 @@ function columnsFor(
     resource === 'dispatches' ||
     resource === 'nurseries' ||
     resource === 'plantRequests' ||
+    resource === 'quotations' ||
     resource === 'subscriptions' ||
     resource === 'sourcingPosts' ||
     resource === 'sourcingNetwork' ||
@@ -303,6 +306,7 @@ function columnsFor(
     resource === 'users' ||
     resource === 'nurseries' ||
     resource === 'plantRequests' ||
+    resource === 'quotations' ||
     resource === 'subscriptions' ||
     resource === 'drivers' ||
     resource === 'dispatches' ||
@@ -608,6 +612,7 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
     resource === 'users' ||
     resource === 'nurseries' ||
     resource === 'plantRequests' ||
+    resource === 'quotations' ||
     resource === 'subscriptions' ||
     resource === 'drivers' ||
     resource === 'vehicles' ||
@@ -649,99 +654,105 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
       />
 
       {/* ── Filters ── */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} flexWrap="wrap" sx={{ mb: 2.5 }}>
-        {config.path && (
-          <SearchInput
-            value={search}
-            onChange={(value) => { setSearch(value); setPage(0); }}
-            placeholder={`Search ${meta[resource].title.toLowerCase()}…`}
-          />
-        )}
+      <Stack spacing={1.5} sx={{ mb: 2.5 }}>
+        {/* Row 1: search + contextual dropdowns + status */}
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="center" flexWrap="wrap">
+          {config.path && (
+            <Box sx={{ flex: 1, minWidth: 220 }}>
+              <SearchInput
+                value={search}
+                onChange={(value) => { setSearch(value); setPage(0); }}
+                placeholder={`Search ${meta[resource].title.toLowerCase()}…`}
+              />
+            </Box>
+          )}
 
-        {resource === 'plants' && (
-          <>
+          {resource === 'plants' && (
+            <>
+              <TextField select label="Type" value={plantType} size="small" sx={{ minWidth: 150 }}
+                onChange={(e) => { setPlantType(e.target.value); setPage(0); }}>
+                <MenuItem value="">All types</MenuItem>
+                {PLANT_TYPES.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+              </TextField>
+              <TextField select label="Light" value={lightRequirement} size="small" sx={{ minWidth: 150 }}
+                onChange={(e) => { setLightRequirement(e.target.value); setPage(0); }}>
+                <MenuItem value="">All light</MenuItem>
+                {LIGHT_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+              </TextField>
+              <TextField select label="Water" value={waterRequirement} size="small" sx={{ minWidth: 150 }}
+                onChange={(e) => { setWaterRequirement(e.target.value); setPage(0); }}>
+                <MenuItem value="">All water</MenuItem>
+                {WATER_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+              </TextField>
+            </>
+          )}
+
+          {resource === 'sourcingPosts' && (
             <TextField select label="Type" value={plantType} size="small" sx={{ minWidth: 150 }}
               onChange={(e) => { setPlantType(e.target.value); setPage(0); }}>
               <MenuItem value="">All types</MenuItem>
-              {PLANT_TYPES.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+              {SOURCING_POST_TYPES.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
             </TextField>
-            <TextField select label="Light" value={lightRequirement} size="small" sx={{ minWidth: 150 }}
-              onChange={(e) => { setLightRequirement(e.target.value); setPage(0); }}>
-              <MenuItem value="">All light</MenuItem>
-              {LIGHT_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+          )}
+
+          {resource === 'payments' && (
+            <>
+              <TextField select label="Type" value={paymentFor} size="small" sx={{ minWidth: 150 }}
+                onChange={(e) => { setPaymentFor(e.target.value); setPage(0); }}>
+                <MenuItem value="">All types</MenuItem>
+                {PAYMENT_FOR_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+              </TextField>
+              <TextField select label="Method" value={paymentMethod} size="small" sx={{ minWidth: 160 }}
+                onChange={(e) => { setPaymentMethod(e.target.value); setPage(0); }}>
+                <MenuItem value="">All methods</MenuItem>
+                {PAYMENT_METHOD_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+              </TextField>
+            </>
+          )}
+
+          {resource === 'users' && (
+            <TextField select label="Role" value={userRole} size="small" sx={{ minWidth: 170 }}
+              onChange={(e) => { setUserRole(e.target.value); setPage(0); }}>
+              <MenuItem value="">All roles</MenuItem>
+              {USER_ROLES.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
             </TextField>
-            <TextField select label="Water" value={waterRequirement} size="small" sx={{ minWidth: 150 }}
-              onChange={(e) => { setWaterRequirement(e.target.value); setPage(0); }}>
-              <MenuItem value="">All water</MenuItem>
-              {WATER_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
+          )}
+
+          {resource === 'inventory' && (
+            <>
+              <TextField
+                label="Nursery ID"
+                size="small"
+                type="number"
+                sx={{ minWidth: 130 }}
+                value={inventoryNurseryId}
+                onChange={(e) => { setInventoryNurseryId(e.target.value); setPage(0); }}
+                inputProps={{ min: 1 }}
+              />
+              <TextField
+                label="Plant ID"
+                size="small"
+                type="number"
+                sx={{ minWidth: 120 }}
+                value={inventoryPlantId}
+                onChange={(e) => { setInventoryPlantId(e.target.value); setPage(0); }}
+                inputProps={{ min: 1 }}
+              />
+            </>
+          )}
+
+          {showStatusFilter && (
+            <TextField select label="Status" value={status} size="small" sx={{ minWidth: 170 }}
+              onChange={(e) => { setStatus(e.target.value); setPage(0); }}>
+              <MenuItem value="">All statuses</MenuItem>
+              {statusOptions.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
             </TextField>
-          </>
-        )}
+          )}
+        </Stack>
 
-        {resource === 'sourcingPosts' && (
-          <TextField select label="Type" value={plantType} size="small" sx={{ minWidth: 150 }}
-            onChange={(e) => { setPlantType(e.target.value); setPage(0); }}>
-            <MenuItem value="">All types</MenuItem>
-            {SOURCING_POST_TYPES.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
-          </TextField>
-        )}
-
-        {resource === 'payments' && (
-          <>
-            <TextField select label="Type" value={paymentFor} size="small" sx={{ minWidth: 150 }}
-              onChange={(e) => { setPaymentFor(e.target.value); setPage(0); }}>
-              <MenuItem value="">All types</MenuItem>
-              {PAYMENT_FOR_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
-            </TextField>
-            <TextField select label="Method" value={paymentMethod} size="small" sx={{ minWidth: 160 }}
-              onChange={(e) => { setPaymentMethod(e.target.value); setPage(0); }}>
-              <MenuItem value="">All methods</MenuItem>
-              {PAYMENT_METHOD_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
-            </TextField>
-          </>
-        )}
-
-        {resource === 'users' && (
-          <TextField select label="Role" value={userRole} size="small" sx={{ minWidth: 170 }}
-            onChange={(e) => { setUserRole(e.target.value); setPage(0); }}>
-            <MenuItem value="">All roles</MenuItem>
-            {USER_ROLES.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
-          </TextField>
-        )}
-
-        {resource === 'inventory' && (
-          <>
-            <TextField
-              label="Nursery ID"
-              size="small"
-              type="number"
-              sx={{ minWidth: 130 }}
-              value={inventoryNurseryId}
-              onChange={(e) => { setInventoryNurseryId(e.target.value); setPage(0); }}
-              inputProps={{ min: 1 }}
-            />
-            <TextField
-              label="Plant ID"
-              size="small"
-              type="number"
-              sx={{ minWidth: 120 }}
-              value={inventoryPlantId}
-              onChange={(e) => { setInventoryPlantId(e.target.value); setPage(0); }}
-              inputProps={{ min: 1 }}
-            />
-          </>
-        )}
-
-        {showStatusFilter && (
-          <TextField select label="Status" value={status} size="small" sx={{ minWidth: 170 }}
-            onChange={(e) => { setStatus(e.target.value); setPage(0); }}>
-            <MenuItem value="">All statuses</MenuItem>
-            {statusOptions.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
-          </TextField>
-        )}
-
+        {/* Row 2: quotation-specific date & amount filters */}
         {resource === 'quotations' && (
-          <>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems="center" flexWrap="wrap">
             <TextField
               label="Date From"
               type="date"
@@ -766,7 +777,7 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
               size="small"
               value={quotationAmountMin}
               onChange={(e) => { setQuotationAmountMin(e.target.value); setPage(0); }}
-              sx={{ minWidth: 140 }}
+              sx={{ minWidth: 150 }}
               inputProps={{ min: 0 }}
             />
             <TextField
@@ -775,10 +786,10 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
               size="small"
               value={quotationAmountMax}
               onChange={(e) => { setQuotationAmountMax(e.target.value); setPage(0); }}
-              sx={{ minWidth: 140 }}
+              sx={{ minWidth: 150 }}
               inputProps={{ min: 0 }}
             />
-          </>
+          </Stack>
         )}
       </Stack>
 
@@ -877,10 +888,7 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
             onDeleted={() => { setDrawerOpen(false); setEditingRow(null); }}
           />
         ) : resource === 'quotations' && editingRow ? (
-          <QuotationDetailPanel
-            quotationId={Number(editingRow.id)}
-            onDeleted={() => { setDrawerOpen(false); setEditingRow(null); }}
-          />
+          <QuotationDetailPanel quotationId={Number(editingRow.id)} />
         ) : resource === 'payments' ? (
           editingRow ? (
             <PaymentStatusForm

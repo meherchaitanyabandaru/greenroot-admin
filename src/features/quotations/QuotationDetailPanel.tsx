@@ -1,13 +1,11 @@
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import SendIcon from '@mui/icons-material/Send';
 import {
-  Alert,
   Box,
   Button,
   Chip,
-  CircularProgress,
   Divider,
+  Snackbar,
   Stack,
   Table,
   TableBody,
@@ -16,10 +14,10 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { useGetQuotationQuery, useDeleteQuotationMutation, useSendQuotationMutation } from '../../api/adminResources';
+import { useState } from 'react';
+import { useGetQuotationQuery } from '../../api/adminResources';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
-import { normalizeApiError } from '../../utils/apiError';
 
 function text(value: unknown) {
   if (value === null || value === undefined || value === '') return '-';
@@ -72,19 +70,15 @@ function InfoRow({ label, value }: { label: string; value: unknown }) {
   );
 }
 
-export function QuotationDetailPanel({
-  quotationId,
-  onDeleted,
-}: {
-  quotationId: number;
-  onDeleted?: () => void;
-}) {
+export function QuotationDetailPanel({ quotationId }: { quotationId: number }) {
   const { data, isLoading, error, refetch } = useGetQuotationQuery(quotationId);
-  const [deleteQuotation, deleteState] = useDeleteQuotationMutation();
-  const [sendQuotation, sendState] = useSendQuotationMutation();
+  const [copied, setCopied] = useState(false);
 
   if (isLoading) return <LoadingState label="Loading quotation…" />;
-  if (error) return <ErrorState message={normalizeApiError(error).message} onRetry={refetch} />;
+  if (error) {
+    const msg = (error as { data?: { error?: string } })?.data?.error ?? 'Failed to load quotation';
+    return <ErrorState message={msg} onRetry={refetch} />;
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const q: Record<string, any> = data?.quotation ?? {};
@@ -92,20 +86,20 @@ export function QuotationDetailPanel({
   const items: Record<string, any>[] = (q.items as Record<string, any>[] | undefined) ?? [];
   const status = String(q.status ?? 'DRAFT');
 
-  async function handleDelete() {
-    if (!window.confirm(`Delete quotation ${q.quotation_code}? This cannot be undone.`)) return;
-    await deleteQuotation(quotationId).unwrap();
-    onDeleted?.();
+  function handleCopyId() {
+    const code = String(q.quotation_code ?? '');
+    navigator.clipboard.writeText(code).then(() => { setCopied(true); });
   }
 
-  async function handleSend() {
-    if (!window.confirm(`Send quotation ${q.quotation_code} to the customer?`)) return;
-    await sendQuotation(quotationId).unwrap();
-    refetch();
-  }
-
-  function handlePrint() {
-    window.open(`/api/v1/quotations/${quotationId}`, '_blank');
+  function handleViewJson() {
+    const json = JSON.stringify(data?.quotation ?? {}, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${String(q.quotation_code ?? 'quotation')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -124,51 +118,26 @@ export function QuotationDetailPanel({
           />
         </Stack>
         <Stack direction="row" spacing={1}>
-          {status === 'CUSTOMER_DRAFT' && (
-            <Button
-              size="small"
-              variant="contained"
-              startIcon={sendState.isLoading ? <CircularProgress size={14} /> : <SendIcon />}
-              disabled={sendState.isLoading}
-              onClick={handleSend}
-              sx={{ fontSize: 12 }}
-            >
-              Send to Customer
-            </Button>
-          )}
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<ContentCopyIcon sx={{ fontSize: 14 }} />}
+            onClick={handleCopyId}
+            sx={{ fontSize: 12 }}
+          >
+            Copy ID
+          </Button>
           <Button
             size="small"
             variant="outlined"
             startIcon={<PictureAsPdfIcon />}
-            onClick={handlePrint}
+            onClick={handleViewJson}
             sx={{ fontSize: 12 }}
           >
-            View JSON
-          </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            color="error"
-            startIcon={deleteState.isLoading ? <CircularProgress size={14} /> : <DeleteOutlineIcon />}
-            disabled={deleteState.isLoading}
-            onClick={handleDelete}
-            sx={{ fontSize: 12 }}
-          >
-            Delete
+            Download JSON
           </Button>
         </Stack>
       </Stack>
-
-      {deleteState.error && (
-        <Alert severity="error" sx={{ mb: 2, fontSize: 13 }}>
-          {normalizeApiError(deleteState.error).message}
-        </Alert>
-      )}
-      {sendState.error && (
-        <Alert severity="error" sx={{ mb: 2, fontSize: 13 }}>
-          {normalizeApiError(sendState.error).message}
-        </Alert>
-      )}
 
       {/* Generated by */}
       <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.06em' }}>
@@ -272,6 +241,14 @@ export function QuotationDetailPanel({
           </Typography>
         </Stack>
       </Stack>
+
+      <Snackbar
+        open={copied}
+        autoHideDuration={2000}
+        onClose={() => setCopied(false)}
+        message={`Copied: ${q.quotation_code}`}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 }
