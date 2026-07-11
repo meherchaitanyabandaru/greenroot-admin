@@ -511,6 +511,74 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
             </>
           )}
 
+          {(nursery.logo_url || nursery.brand_icon_key || nursery.brand_color) && (
+            <>
+              <Divider />
+              <Box>
+                <Typography fontSize={11} fontWeight={600} textTransform="uppercase" letterSpacing="0.05em" color="text.secondary" mb={1}>
+                  Branding
+                </Typography>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  {/* Color swatch */}
+                  {nursery.brand_color && (
+                    <Tooltip title={`Brand color: ${nursery.brand_color}`}>
+                      <Box
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 1,
+                          bgcolor: String(nursery.brand_color),
+                          border: '2px solid',
+                          borderColor: 'divider',
+                          flexShrink: 0,
+                        }}
+                      />
+                    </Tooltip>
+                  )}
+                  <Box>
+                    {nursery.brand_icon_key && (
+                      <Typography fontSize={13} fontWeight={600}>
+                        Icon: {String(nursery.brand_icon_key)}
+                      </Typography>
+                    )}
+                    {nursery.brand_color && (
+                      <Typography fontSize={12} color="text.secondary" fontFamily="monospace">
+                        {String(nursery.brand_color)}
+                      </Typography>
+                    )}
+                    {nursery.logo_url && (
+                      <Chip
+                        size="small"
+                        label="Custom logo uploaded"
+                        color="success"
+                        variant="outlined"
+                        sx={{ mt: 0.5, fontSize: 11 }}
+                      />
+                    )}
+                  </Box>
+                  {nursery.logo_url && (
+                    <Box
+                      component="img"
+                      src={String(nursery.logo_url)}
+                      alt="Nursery logo"
+                      sx={{
+                        width: 56,
+                        height: 56,
+                        objectFit: 'cover',
+                        borderRadius: 1.5,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                      }}
+                      onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  )}
+                </Stack>
+              </Box>
+            </>
+          )}
+
           <Divider />
           {/* Status actions — no hard delete */}
           <Stack direction="row" spacing={1} flexWrap="wrap">
