@@ -405,7 +405,6 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
     ['Mobile', nursery.mobile],
     ['Email', nursery.email],
     ['Website', nursery.website],
-    ['GST No.', nursery.gst_number],
     ['Registered', formatDate(nursery.created_at)],
   ];
 

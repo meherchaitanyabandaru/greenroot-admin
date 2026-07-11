@@ -343,7 +343,6 @@ function NurseryReviewDrawer({
                       ['Name', nursery.name],
                       ['Mobile', nursery.mobile],
                       ['Email', nursery.email],
-                      ['GST No.', nursery.gst_number],
                       ['Website', nursery.website],
                       ['Registered', formatDate(nursery.created_at)],
                     ] as [string, unknown][]).map(([label, value]) => (

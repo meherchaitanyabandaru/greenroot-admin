@@ -133,22 +133,17 @@ function RenewDialog({ open, onClose, onSubmit, loading }: {
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>Billing Summary</Typography>
             {(() => {
               const base = cycle === 'YEARLY' ? 4999 : 499;
-              const gst = Math.round(base * 0.18);
               return (
                 <Stack spacing={0.5}>
                   <Stack direction="row" justifyContent="space-between">
                     <Typography variant="body2" color="text.secondary">Base ({cycle === 'YEARLY' ? 'Annual' : 'Monthly'})</Typography>
                     <Typography variant="body2">₹{base.toLocaleString('en-IN')}</Typography>
                   </Stack>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2" color="text.secondary">GST (18%) SAC 997331</Typography>
-                    <Typography variant="body2">₹{gst.toLocaleString('en-IN')}</Typography>
-                  </Stack>
                   <Divider sx={{ my: 0.5 }} />
                   <Stack direction="row" justifyContent="space-between">
                     <Typography variant="body2" fontWeight={700}>Total</Typography>
                     <Typography variant="body2" fontWeight={700} color="primary.main">
-                      ₹{(base + gst).toLocaleString('en-IN')}
+                      ₹{base.toLocaleString('en-IN')}
                     </Typography>
                   </Stack>
                 </Stack>
