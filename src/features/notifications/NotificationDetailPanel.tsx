@@ -116,7 +116,7 @@ export function NotificationDetailPanel({
           </Stack>
 
           {/* Message body */}
-          {n.message && (
+          {!!n.message && (
             <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'background.default' }}>
               <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={0.5}>
                 Message
@@ -140,7 +140,7 @@ export function NotificationDetailPanel({
           </Grid>
 
           {/* Data payload */}
-          {n.data && (
+          {!!n.data && (
             <Box>
               <Typography variant="caption" color="text.secondary" fontWeight={600}>Data payload</Typography>
               <Paper variant="outlined" sx={{ p: 1, mt: 0.5, bgcolor: 'background.default' }}>

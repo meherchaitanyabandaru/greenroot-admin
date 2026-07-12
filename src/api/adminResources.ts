@@ -20,7 +20,8 @@ export type ResourceConfig = {
     | 'Subscriptions'
     | 'Attachments'
     | 'Sourcing'
-    | 'Audit';
+    | 'Audit'
+    | 'SecurityLogs';
   path?: string;
   collectionKey?: string;
   integrationNote?: string;
@@ -123,6 +124,7 @@ export type SubscriptionPlan = {
   plan_code: string;
   plan_name: string;
   description?: string;
+  monthly_price?: number;
   six_month_price?: number;
   yearly_price?: number;
   max_managers?: number;
@@ -428,6 +430,10 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     updateOrderStatus: builder.mutation<unknown, { id: number; body: Record<string, unknown> }>({
       query: ({ id, body }) => ({ url: `/api/v1/orders/${id}/status`, method: 'PUT', body }),
       invalidatesTags: ['Orders', 'Dashboard'],
+    }),
+    updateOrderDelivery: builder.mutation<unknown, { id: number; body: Record<string, unknown> }>({
+      query: ({ id, body }) => ({ url: `/api/v1/orders/${id}/delivery`, method: 'PUT', body }),
+      invalidatesTags: ['Orders', 'Dispatches', 'Dashboard'],
     }),
     createOrder: builder.mutation<{ order: Record<string, unknown> }, Record<string, unknown>>({
       query: (body) => ({ url: '/api/v1/orders', method: 'POST', body }),
@@ -798,6 +804,7 @@ export const {
   useUpdateInventoryMutation,
   useUpdateNurseryMutation,
   useUpdateOrderStatusMutation,
+  useUpdateOrderDeliveryMutation,
   useUpdatePaymentStatusMutation,
   useUpdatePlantMutation,
   useUpdateVehicleMutation,

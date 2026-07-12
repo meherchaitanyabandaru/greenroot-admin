@@ -5,10 +5,12 @@ import {
   Chip,
   CircularProgress,
   Divider,
+  FormControlLabel,
   Grid,
   IconButton,
   Paper,
   Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -34,6 +36,7 @@ import {
   useUpdateOrderItemMutation,
   useDeleteOrderItemMutation,
   useDeleteOrderMutation,
+  useUpdateOrderDeliveryMutation,
 } from '../../api/adminResources';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
@@ -45,6 +48,15 @@ function text(value: unknown) {
   if (value === null || value === undefined || value === '') return '-';
   if (typeof value === 'number') return Number.isInteger(value) ? String(value) : value.toFixed(2);
   return String(value);
+}
+
+function field(row: Record<string, unknown> | null | undefined, key: string) {
+  return row?.[key];
+}
+
+function formText(row: Record<string, unknown> | null | undefined, key: string) {
+  const value = field(row, key);
+  return value === null || value === undefined ? '' : String(value);
 }
 
 function money(value: unknown) {
@@ -245,6 +257,158 @@ function SectionTable({
   );
 }
 
+function DeliverySnapshotSection({
+  orderId,
+  delivery,
+  onUpdated,
+}: {
+  orderId: number;
+  delivery: Record<string, unknown> | null | undefined;
+  onUpdated: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [emergency, setEmergency] = useState(false);
+  const [form, setForm] = useState<Record<string, string>>({
+    contact_name: formText(delivery, 'contact_name'),
+    contact_mobile: formText(delivery, 'contact_mobile'),
+    address_line1: formText(delivery, 'address_line1'),
+    address_line2: formText(delivery, 'address_line2'),
+    city: formText(delivery, 'city'),
+    state: formText(delivery, 'state'),
+    country: formText(delivery, 'country'),
+    postal_code: formText(delivery, 'postal_code'),
+    landmark: formText(delivery, 'landmark'),
+    delivery_instructions: formText(delivery, 'delivery_instructions'),
+  });
+  const [updateDelivery, updateState] = useUpdateOrderDeliveryMutation();
+
+  const set = (key: string, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
+  const address = [
+    field(delivery, 'address_line1'),
+    field(delivery, 'address_line2'),
+    field(delivery, 'city'),
+    field(delivery, 'state'),
+    field(delivery, 'postal_code'),
+    field(delivery, 'country'),
+  ].filter(Boolean).join(', ');
+  const driverAckPending = field(delivery, 'requires_driver_ack') === true;
+  const driverAckAt = field(delivery, 'driver_acknowledged_at');
+
+  async function handleSave() {
+    const body: Record<string, unknown> = {};
+    Object.entries(form).forEach(([key, value]) => {
+      if (value.trim()) body[key] = value.trim();
+    });
+    if (emergency) body.emergency_update = true;
+    await updateDelivery({ id: orderId, body }).unwrap();
+    setEditing(false);
+    setEmergency(false);
+    onUpdated();
+  }
+
+  return (
+    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+      <Stack spacing={1.5}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Box>
+            <Typography fontSize={11} fontWeight={700} textTransform="uppercase" letterSpacing="0.06em" color="text.secondary">
+              Delivery Snapshot
+            </Typography>
+            <Typography fontSize={13.5} color="text.secondary">
+              {delivery ? 'Order-specific delivery address' : 'No delivery snapshot saved'}
+            </Typography>
+          </Box>
+          <Button size="small" variant="outlined" onClick={() => setEditing((v) => !v)}>
+            {editing ? 'Cancel' : 'Edit'}
+          </Button>
+        </Stack>
+
+        {updateState.isError && (
+          <Alert severity="error">{normalizeApiError(updateState.error).message}</Alert>
+        )}
+
+        {!editing ? (
+          <Grid container spacing={1.5}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography fontSize={11} fontWeight={600} color="text.secondary">Contact</Typography>
+              <Typography fontSize={13.5}>
+                {[field(delivery, 'contact_name'), field(delivery, 'contact_mobile')].filter(Boolean).join(' | ') || '-'}
+              </Typography>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography fontSize={11} fontWeight={600} color="text.secondary">Address</Typography>
+              <Typography fontSize={13.5}>{address || '-'}</Typography>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography fontSize={11} fontWeight={600} color="text.secondary">Landmark</Typography>
+              <Typography fontSize={13.5}>{text(field(delivery, 'landmark'))}</Typography>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography fontSize={11} fontWeight={600} color="text.secondary">Driver Ack</Typography>
+              <Chip
+                color={driverAckPending ? 'warning' : 'success'}
+                label={driverAckPending ? 'Pending' : driverAckAt ? 'Acknowledged' : 'Not required'}
+                size="small"
+              />
+            </Grid>
+          </Grid>
+        ) : (
+          <Grid container spacing={1.5}>
+            {[
+              ['contact_name', 'Contact name'],
+              ['contact_mobile', 'Contact mobile'],
+              ['address_line1', 'Address line 1'],
+              ['address_line2', 'Address line 2'],
+              ['city', 'City'],
+              ['state', 'State'],
+              ['postal_code', 'PIN code'],
+              ['country', 'Country'],
+              ['landmark', 'Landmark'],
+            ].map(([key, label]) => (
+              <Grid key={key} size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
+                  label={label}
+                  onChange={(e) => set(key, e.target.value)}
+                  size="small"
+                  value={form[key] ?? ''}
+                />
+              </Grid>
+            ))}
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                label="Delivery instructions"
+                multiline
+                minRows={2}
+                onChange={(e) => set('delivery_instructions', e.target.value)}
+                size="small"
+                value={form.delivery_instructions ?? ''}
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <FormControlLabel
+                control={<Switch checked={emergency} onChange={(e) => setEmergency(e.target.checked)} />}
+                label="Emergency update after trip start"
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <Button
+                disabled={updateState.isLoading}
+                onClick={handleSave}
+                startIcon={updateState.isLoading ? <CircularProgress size={14} /> : undefined}
+                variant="contained"
+              >
+                Save Delivery Snapshot
+              </Button>
+            </Grid>
+          </Grid>
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
 // ─── Main panel ───────────────────────────────────────────────────────────────
 export function OrderDetailPanel({
   orderId,
@@ -372,6 +536,12 @@ export function OrderDetailPanel({
           />
         </Stack>
       </Paper>
+
+      <DeliverySnapshotSection
+        delivery={order.delivery_snapshot as Record<string, unknown> | null | undefined}
+        onUpdated={orderQuery.refetch}
+        orderId={orderId}
+      />
 
       {/* ── Items (inline editable) ── */}
       <Box>

@@ -12,6 +12,7 @@ export const baseApi = createApi({
     'Nurseries',
     'Inventory',
     'Requests',
+    'PlantRequests',
     'Orders',
     'Quotations',
     'Payments',
@@ -24,6 +25,7 @@ export const baseApi = createApi({
     'Attachments',
     'Sourcing',
     'Audit',
+    'SecurityLogs',
   ],
   endpoints: () => ({}),
 });

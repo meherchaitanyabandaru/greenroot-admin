@@ -68,7 +68,7 @@ function FeatureCell({ plan, row }: { plan: SubscriptionPlan; row: typeof FEATUR
     }
     return (
       <Typography variant="body2" fontWeight={600}>
-        {val}<Typography component="span" variant="caption" color="text.secondary">/day</Typography>
+        {String(val)}<Typography component="span" variant="caption" color="text.secondary">/day</Typography>
       </Typography>
     );
   }

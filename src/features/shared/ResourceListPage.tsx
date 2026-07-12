@@ -96,6 +96,7 @@ const meta: Record<ResourceKey, { title: string; description: string; searchable
   sourcingPosts:         { title: 'Sourcing Posts',         description: 'Monitor private nursery sourcing needs and availability.' },
   sourcingNetwork:       { title: 'Sourcing Network',       description: 'Review approved nurseries participating in sourcing discovery.' },
   audit:                 { title: 'Audit Logs',             description: 'Read-only platform audit activity.' },
+  securityLogs:          { title: 'Security Logs',          description: 'Platform security event log.' },
 };
 
 // ─── Cell renderers ───────────────────────────────────────────────────────────

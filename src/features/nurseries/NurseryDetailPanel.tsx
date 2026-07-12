@@ -510,7 +510,7 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
             </>
           )}
 
-          {(nursery.logo_url || nursery.brand_icon_key || nursery.brand_color) && (
+          {!!(nursery.logo_url || nursery.brand_icon_key || nursery.brand_color) && (
             <>
               <Divider />
               <Box>
@@ -519,7 +519,7 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
                 </Typography>
                 <Stack direction="row" spacing={2} alignItems="center">
                   {/* Color swatch */}
-                  {nursery.brand_color && (
+                  {!!nursery.brand_color && (
                     <Tooltip title={`Brand color: ${nursery.brand_color}`}>
                       <Box
                         sx={{
@@ -535,17 +535,17 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
                     </Tooltip>
                   )}
                   <Box>
-                    {nursery.brand_icon_key && (
+                    {!!nursery.brand_icon_key && (
                       <Typography fontSize={13} fontWeight={600}>
                         Icon: {String(nursery.brand_icon_key)}
                       </Typography>
                     )}
-                    {nursery.brand_color && (
+                    {!!nursery.brand_color && (
                       <Typography fontSize={12} color="text.secondary" fontFamily="monospace">
                         {String(nursery.brand_color)}
                       </Typography>
                     )}
-                    {nursery.logo_url && (
+                    {!!nursery.logo_url && (
                       <Chip
                         size="small"
                         label="Custom logo uploaded"
@@ -555,7 +555,7 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
                       />
                     )}
                   </Box>
-                  {nursery.logo_url && (
+                  {!!nursery.logo_url && (
                     <Box
                       component="img"
                       src={String(nursery.logo_url)}

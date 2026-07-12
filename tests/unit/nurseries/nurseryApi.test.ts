@@ -37,7 +37,7 @@ describe('adminResourcesApi — lifecycle hook exports', () => {
 describe('NurseryUsersResponse', () => {
   it('accepts an array of manager records', () => {
     const sample: NurseryUsersResponse = {
-      managers: [
+      users: [
         {
           id: 1,
           user_id: 20,
@@ -51,18 +51,18 @@ describe('NurseryUsersResponse', () => {
         },
       ],
     };
-    expect(sample.managers).toHaveLength(1);
-    expect(sample.managers[0].role).toBe('MANAGER');
-    expect(sample.managers[0].is_active).toBe(true);
+    expect(sample.users).toHaveLength(1);
+    expect(sample.users[0].role).toBe('MANAGER');
+    expect(sample.users[0].is_active).toBe(true);
   });
 
-  it('accepts empty managers array (nursery with no managers)', () => {
-    const empty: NurseryUsersResponse = { managers: [] };
-    expect(empty.managers).toHaveLength(0);
+  it('accepts empty users array (nursery with no managers)', () => {
+    const empty: NurseryUsersResponse = { users: [] };
+    expect(empty.users).toHaveLength(0);
   });
 
-  it('manager record includes is_active flag for removal state', () => {
-    const record: NurseryUsersResponse['managers'][number] = {
+  it('user record includes is_active flag for removal state', () => {
+    const record: NurseryUsersResponse['users'][number] = {
       id: 2,
       user_id: 21,
       name: 'Removed Manager',
@@ -70,7 +70,7 @@ describe('NurseryUsersResponse', () => {
       email: null,
       role: 'MANAGER',
       status: 'INACTIVE',
-      is_active: false,  // removed manager — is_active = false
+      is_active: false,
       joined_at: '2025-01-01T00:00:00Z',
     };
     expect(record.is_active).toBe(false);
