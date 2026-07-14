@@ -23,7 +23,7 @@ export function LoginPage() {
   const [verifyOtp, verifyState] = useVerifyOtpMutation();
   const { control, handleSubmit, getValues } = useForm<LoginForm>({
     resolver: zodResolver(schema),
-    defaultValues: { mobile: '9000000777', otp: '123456' },
+    defaultValues: { mobile: '9000000000', otp: '123456' },
   });
 
   async function handleSendOtp() {
