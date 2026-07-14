@@ -91,6 +91,10 @@ export type NurseryUsersResponse = {
   users: Record<string, unknown>[];
 };
 
+export type LiveDriverLocationResponse = {
+  location: Record<string, unknown> | null;
+};
+
 export type RequestDetailResponse = {
   request: Record<string, unknown>;
 };
@@ -681,6 +685,10 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (id) => `/api/v1/drivers/${id}/tracking/latest`,
       providesTags: ['Drivers'],
     }),
+    getLiveDriverLocation: builder.query<LiveDriverLocationResponse, number>({
+      query: (driverUserId) => `/api/v1/tracking/live/drivers/${driverUserId}`,
+      providesTags: ['Tracking'],
+    }),
     getDispatch: builder.query<{ dispatch: Record<string, unknown> }, number>({
       query: (id) => `/api/v1/dispatches/${id}`,
       providesTags: ['Dispatches'],
@@ -818,6 +826,7 @@ export const {
   useGetDriverQuery,
   useUpdateDriverLocationMutation,
   useGetDriverLatestTrackingQuery,
+  useGetLiveDriverLocationQuery,
   useUpdateNurseryStatusMutation,
   useApproveDriverMutation,
   useGetDispatchQuery,

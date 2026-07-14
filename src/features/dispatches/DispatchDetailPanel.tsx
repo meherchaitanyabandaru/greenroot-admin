@@ -4,6 +4,9 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Divider,
   Grid,
   IconButton,
@@ -24,12 +27,14 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import MapIcon from '@mui/icons-material/Map';
 import { useState } from 'react';
 import {
   useGetDispatchQuery,
   useUpdateDispatchStatusMutation,
   useAddDispatchItemMutation,
   useListDispatchTrackingQuery,
+  useGetLiveDriverLocationQuery,
 } from '../../api/adminResources';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
@@ -46,6 +51,33 @@ function mapsLink(lat: unknown, lng: unknown) {
   const lo = Number(lng);
   if (!la || !lo) return null;
   return `https://maps.google.com/?q=${la},${lo}`;
+}
+
+function numberValue(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed !== 0 ? parsed : null;
+}
+
+function formatAgo(value: unknown) {
+  if (!value) return '—';
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return String(value);
+  const diff = Date.now() - date.getTime();
+  if (diff < 10_000) return 'just now';
+  if (diff < 60_000) return `${Math.max(1, Math.floor(diff / 1000))} sec ago`;
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} min ago`;
+  return date.toLocaleString();
+}
+
+function osmEmbedUrl(lat: number, lng: number) {
+  const pad = 0.015;
+  const bbox = [
+    lng - pad,
+    lat - pad,
+    lng + pad,
+    lat + pad,
+  ].join(',');
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
 }
 
 const STATUS_FLOW: Record<string, string[]> = {
@@ -98,12 +130,104 @@ function AddItemForm({ dispatchId }: { dispatchId: number }) {
   );
 }
 
+function DispatchLiveMapDialog({
+  open,
+  onClose,
+  dispatch,
+  trackingPoints,
+}: {
+  open: boolean;
+  onClose: () => void;
+  dispatch: Record<string, unknown>;
+  trackingPoints: Record<string, unknown>[];
+}) {
+  const driverUserId = numberValue(dispatch.driver_user_id);
+  const isInTransit = String(dispatch.dispatch_status) === 'IN_TRANSIT';
+  const liveQuery = useGetLiveDriverLocationQuery(driverUserId ?? 0, {
+    skip: !open || !isInTransit || !driverUserId,
+    pollingInterval: open && isInTransit ? 10000 : 0,
+  });
+
+  const live = liveQuery.data?.location ?? null;
+  const latestPersisted = trackingPoints[0] ?? null;
+  const lat =
+    numberValue(live?.latitude) ?? numberValue(latestPersisted?.latitude);
+  const lng =
+    numberValue(live?.longitude) ?? numberValue(latestPersisted?.longitude);
+  const lastSeen = live?.last_seen ?? latestPersisted?.tracked_at;
+  const source = live ? 'Redis GEO live location' : latestPersisted ? 'Latest persisted tracking point' : 'No location available';
+  const mapUrl = lat && lng ? osmEmbedUrl(lat, lng) : null;
+  const googleLink = lat && lng ? mapsLink(lat, lng) : null;
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <MapIcon color="primary" />
+        Live Dispatch Map
+      </DialogTitle>
+      <DialogContent sx={{ pt: 0 }}>
+        <Stack spacing={2}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} flexWrap="wrap" useFlexGap>
+            <Chip label={`Dispatch ${text(dispatch.dispatch_code)}`} size="small" />
+            <Chip label={`Status ${text(dispatch.dispatch_status)}`} size="small" color={isInTransit ? 'success' : 'default'} />
+            <Chip label={`Driver ${text(dispatch.driver_name ?? dispatch.driver_user_id)}`} size="small" variant="outlined" />
+            <Chip label={source} size="small" color={live ? 'success' : 'warning'} variant="outlined" />
+          </Stack>
+
+          {!isInTransit && (
+            <Alert severity="info">Live Redis GEO tracking is shown only while a dispatch is IN_TRANSIT.</Alert>
+          )}
+
+          {liveQuery.error && (
+            <Alert severity="warning">Could not fetch Redis GEO live location. Showing persisted tracking if available.</Alert>
+          )}
+
+          {mapUrl ? (
+            <Box>
+              <Box
+                component="iframe"
+                title="Dispatch live OpenStreetMap"
+                src={mapUrl}
+                sx={{
+                  width: '100%',
+                  height: 420,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                }}
+              />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 1.5 }} alignItems={{ sm: 'center' }}>
+                <Typography variant="body2">
+                  <strong>Current location:</strong> {lat!.toFixed(6)}, {lng!.toFixed(6)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Updated {formatAgo(lastSeen)}
+                </Typography>
+                {googleLink && (
+                  <Link href={googleLink} target="_blank" rel="noopener" variant="body2">
+                    Open in Google Maps
+                  </Link>
+                )}
+              </Stack>
+            </Box>
+          ) : (
+            <Alert severity="warning">
+              No live or persisted location is available for this dispatch yet. Ask the driver app to refresh location while the trip is IN_TRANSIT.
+            </Alert>
+          )}
+        </Stack>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
   const dispatchQuery = useGetDispatchQuery(dispatchId);
-  const trackingQuery = useListDispatchTrackingQuery(dispatchId);
+  const trackingQuery = useListDispatchTrackingQuery(dispatchId, { pollingInterval: 30000 });
   const [updateStatus, updateState] = useUpdateDispatchStatusMutation();
   const [tab, setTab] = useState(0);
   const [statusError, setStatusError] = useState('');
+  const [mapOpen, setMapOpen] = useState(false);
 
   if (dispatchQuery.isLoading) return <LoadingState />;
   if (dispatchQuery.error)
@@ -175,6 +299,20 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
               </Stack>
             </Box>
             <StatusChip value={dispatch.dispatch_status} />
+          </Stack>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Button
+              startIcon={<MapIcon />}
+              variant={dispatch.dispatch_status === 'IN_TRANSIT' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => setMapOpen(true)}
+            >
+              View Live Map
+            </Button>
+            {trackingQuery.isFetching && (
+              <Chip label="Refreshing tracking…" size="small" variant="outlined" />
+            )}
           </Stack>
 
           {/* Tracking UUID row */}
@@ -253,43 +391,70 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
         )}
 
         {tab === 1 && (
-          <Paper variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  {['Time', 'Latitude', 'Longitude', 'Notes', 'Map'].map((h) => (
-                    <TableCell key={h} sx={{ fontWeight: 700 }}>{h}</TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {trackingPoints.length === 0 ? (
+          <Stack spacing={1.5}>
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={1.5}>
+                <Box>
+                  <Typography variant="subtitle2">Dispatch Tracking</Typography>
+                  <Typography color="text.secondary" variant="body2">
+                    Redis GEO live location is available from View Live Map while the dispatch is IN_TRANSIT.
+                  </Typography>
+                </Box>
+                <Button startIcon={<MapIcon />} variant="contained" size="small" onClick={() => setMapOpen(true)}>
+                  View Live Map
+                </Button>
+              </Stack>
+            </Paper>
+
+            <Paper variant="outlined">
+              <Table size="small">
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={5}>
-                      <Typography color="text.secondary" variant="body2">No tracking points.</Typography>
-                    </TableCell>
+                    {['Time', 'Latitude', 'Longitude', 'Notes', 'Map'].map((h) => (
+                      <TableCell key={h} sx={{ fontWeight: 700 }}>{h}</TableCell>
+                    ))}
                   </TableRow>
-                ) : (
-                  trackingPoints.map((pt, i) => {
-                    const link = mapsLink(pt.latitude, pt.longitude);
-                    return (
-                      <TableRow key={i}>
-                        <TableCell>{text(pt.tracked_at)}</TableCell>
-                        <TableCell>{text(pt.latitude)}</TableCell>
-                        <TableCell>{text(pt.longitude)}</TableCell>
-                        <TableCell>{text(pt.notes)}</TableCell>
-                        <TableCell>
-                          {link ? <Link href={link} target="_blank" rel="noopener">Map</Link> : '-'}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </Paper>
+                </TableHead>
+                <TableBody>
+                  {trackingPoints.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5}>
+                        <Typography color="text.secondary" variant="body2">No tracking points.</Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    trackingPoints.map((pt, i) => {
+                      const link = mapsLink(pt.latitude, pt.longitude);
+                      return (
+                        <TableRow key={i}>
+                          <TableCell>{text(pt.tracked_at)}</TableCell>
+                          <TableCell>{text(pt.latitude)}</TableCell>
+                          <TableCell>{text(pt.longitude)}</TableCell>
+                          <TableCell>{text(pt.notes)}</TableCell>
+                          <TableCell>
+                            {link ? (
+                              <Button size="small" variant="text" onClick={() => setMapOpen(true)}>
+                                View Map
+                              </Button>
+                            ) : '-'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </Paper>
+          </Stack>
         )}
       </Box>
+
+      <DispatchLiveMapDialog
+        open={mapOpen}
+        onClose={() => setMapOpen(false)}
+        dispatch={dispatch}
+        trackingPoints={trackingPoints}
+      />
     </Stack>
   );
 }
