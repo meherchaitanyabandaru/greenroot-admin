@@ -250,7 +250,7 @@ function columnsFor(
                   : resource === 'dispatches'
                     ? ['dispatch_number', 'order_number', 'vehicle_number', 'driver_name', 'dispatch_status']
                     : resource === 'vehicles'
-                      ? ['vehicle_code', 'vehicle_number', 'vehicle_type', 'capacity_kg', 'owner_name', 'status']
+                      ? ['vehicle_code', 'vehicle_number', 'vehicle_type', 'driver_name', 'driver_mobile', 'status']
                     : resource === 'drivers'
                         ? ['driver_code', 'driver_name', 'mobile', 'license_number', 'status']
                         : resource === 'attachments'
@@ -332,8 +332,16 @@ function columnsFor(
   const actionCol: ColumnDef<Record<string, unknown>> = {
     id: 'actions',
     header: '',
-    cell: ({ row }) =>
-      hasActions ? (
+    cell: ({ row }) => {
+      const isActiveDriverVehicle =
+        resource === 'vehicles' &&
+        Boolean(row.original.driver_id) &&
+        String(row.original.driver_approval_status ?? '').toUpperCase() === 'APPROVED' &&
+        String(row.original.status ?? '').toUpperCase() === 'ACTIVE';
+      const disableDeactivate = isActiveDriverVehicle;
+      const deactivateTitle = isActiveDriverVehicle ? 'Assigned to active driver' : deactivateLabel;
+
+      return hasActions ? (
         <Stack direction="row" spacing={0.25} justifyContent="flex-end">
           <Tooltip title={isViewOnly ? 'View details' : 'Edit'}>
             <IconButton onClick={() => actions.onEdit?.(row.original)} size="small">
@@ -345,14 +353,17 @@ function columnsFor(
             </IconButton>
           </Tooltip>
           {hasDeactivate && (
-            <Tooltip title={deactivateLabel}>
-              <IconButton
-                onClick={() => actions.onDeactivate?.(row.original)}
-                size="small"
-                sx={{ color: 'error.main', opacity: 0.7, '&:hover': { opacity: 1 } }}
-              >
-                <BlockIcon sx={{ fontSize: 16 }} />
-              </IconButton>
+            <Tooltip title={deactivateTitle}>
+              <span>
+                <IconButton
+                  disabled={disableDeactivate}
+                  onClick={() => actions.onDeactivate?.(row.original)}
+                  size="small"
+                  sx={{ color: 'error.main', opacity: 0.7, '&:hover': { opacity: 1 } }}
+                >
+                  <BlockIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </span>
             </Tooltip>
           )}
         </Stack>
@@ -360,7 +371,8 @@ function columnsFor(
         <IconButton size="small">
           <MoreVertIcon sx={{ fontSize: 16 }} />
         </IconButton>
-      ),
+      );
+    },
   };
 
   return [...leadCols, ...dataCols, actionCol];
@@ -490,7 +502,11 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
         onDeactivate: async (row) => {
           const id = Number(row.id);
           if (resource === 'drivers' && id > 0) { await deactivateDriver(id).unwrap(); showToast('Driver deactivated'); }
-          if (resource === 'vehicles' && id > 0) { await retireVehicle(id).unwrap(); showToast('Vehicle retired'); }
+          if (resource === 'vehicles' && id > 0) {
+            if (!window.confirm('Retire this vehicle? It will be removed from the active fleet list.')) return;
+            await retireVehicle(id).unwrap();
+            showToast('Vehicle retired');
+          }
           if (resource === 'inventory' && id > 0) { await deleteInventory(id).unwrap(); showToast('Inventory item removed'); }
           if (resource === 'plants' && id > 0) { await deletePlant(id).unwrap(); showToast('Plant deleted'); }
         },

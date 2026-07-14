@@ -63,6 +63,9 @@ export function VehicleDetailPanel({ vehicleId }: { vehicleId: number }) {
     ['Capacity (kg)', vehicle.capacity_kg],
     ['Owner', vehicle.owner_name],
     ['Mobile', vehicle.mobile],
+    ['Assigned Driver', vehicle.driver_name],
+    ['Driver Mobile', vehicle.driver_mobile],
+    ['Driver Approval', vehicle.driver_approval_status],
     ['Created', vehicle.created_at],
   ];
 

@@ -330,9 +330,9 @@ function DeliverySnapshotSection({
         {!editing ? (
           <Grid container spacing={1.5}>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <Typography fontSize={11} fontWeight={600} color="text.secondary">Contact</Typography>
+              <Typography fontSize={11} fontWeight={600} color="text.secondary">Delivery contact</Typography>
               <Typography fontSize={13.5}>
-                {[field(delivery, 'contact_name'), field(delivery, 'contact_mobile')].filter(Boolean).join(' | ') || '-'}
+                {[field(delivery, 'contact_name'), field(delivery, 'contact_mobile')].filter(Boolean).join(' | ') || 'Uses customer profile'}
               </Typography>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -355,8 +355,8 @@ function DeliverySnapshotSection({
         ) : (
           <Grid container spacing={1.5}>
             {[
-              ['contact_name', 'Contact name'],
-              ['contact_mobile', 'Contact mobile'],
+              ['contact_name', 'Alternate contact name'],
+              ['contact_mobile', 'Alternate contact mobile'],
               ['address_line1', 'Address line 1'],
               ['address_line2', 'Address line 2'],
               ['city', 'City'],
@@ -372,6 +372,11 @@ function DeliverySnapshotSection({
                   onChange={(e) => set(key, e.target.value)}
                   size="small"
                   value={form[key] ?? ''}
+                  helperText={
+                    key === 'contact_name' || key === 'contact_mobile'
+                      ? 'Leave blank to use the customer profile contact'
+                      : undefined
+                  }
                 />
               </Grid>
             ))}
