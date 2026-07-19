@@ -46,6 +46,13 @@ function isExpiryWarning(dateStr: unknown): boolean {
   return diff > 0 && diff < 30 * 24 * 60 * 60 * 1000;
 }
 
+function capability(record: Record<string, unknown>, key: string): boolean | undefined {
+  const caps = record.capabilities;
+  if (!caps || typeof caps !== 'object') return undefined;
+  const value = (caps as Record<string, unknown>)[key];
+  return typeof value === 'boolean' ? value : undefined;
+}
+
 function ApprovalStatusBadge({ status }: { status: unknown }) {
   const s = String(status ?? '').toUpperCase();
   const cfg: Record<string, { label: string; color: 'success' | 'warning' | 'error' | 'default' }> = {
@@ -74,7 +81,8 @@ export function DriverDetailPanel({ driverId }: { driverId: number }) {
   const expiry = driver.license_expiry_date;
 
   const approvalStatus = String(driver.approval_status ?? '').toUpperCase();
-  const canApprove = approvalStatus !== 'APPROVED';
+  const canApprove = capability(driver, 'can_approve') ?? approvalStatus !== 'APPROVED';
+  const canEdit = capability(driver, 'can_edit') ?? true;
 
   const detailItems: Array<[string, unknown, boolean?]> = [
     ['Code', driver.driver_code],
@@ -180,12 +188,16 @@ export function DriverDetailPanel({ driverId }: { driverId: number }) {
             ))}
           </Grid>
 
-          <Divider />
-          <DriverForm
-            initial={driver}
-            loading={updateState.isLoading}
-            onSubmit={handleUpdate}
-          />
+          {canEdit && (
+            <>
+              <Divider />
+              <DriverForm
+                initial={driver}
+                loading={updateState.isLoading}
+                onSubmit={handleUpdate}
+              />
+            </>
+          )}
         </Stack>
       </Paper>
 

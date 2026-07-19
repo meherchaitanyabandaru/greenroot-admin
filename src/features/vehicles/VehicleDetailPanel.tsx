@@ -41,6 +41,13 @@ function mapsLink(lat: unknown, lng: unknown) {
   return `https://maps.google.com/?q=${la},${lo}`;
 }
 
+function capability(record: Record<string, unknown>, key: string): boolean | undefined {
+  const caps = record.capabilities;
+  if (!caps || typeof caps !== 'object') return undefined;
+  const value = (caps as Record<string, unknown>)[key];
+  return typeof value === 'boolean' ? value : undefined;
+}
+
 export function VehicleDetailPanel({ vehicleId }: { vehicleId: number }) {
   const vehicleQuery = useGetVehicleQuery(vehicleId);
   const trackingQuery = useListVehicleTrackingQuery(vehicleId);
@@ -55,6 +62,8 @@ export function VehicleDetailPanel({ vehicleId }: { vehicleId: number }) {
   const vehicle = vehicleQuery.data?.vehicle ?? {};
   const latest = latestQuery.data?.tracking ?? null;
   const trackingPoints = trackingQuery.data?.tracking ?? [];
+  const canEdit = capability(vehicle, 'can_edit') ?? true;
+  const canTrack = capability(vehicle, 'can_track') ?? true;
 
   const detailItems: Array<[string, unknown]> = [
     ['Code', vehicle.vehicle_code],
@@ -100,15 +109,20 @@ export function VehicleDetailPanel({ vehicleId }: { vehicleId: number }) {
               </Grid>
             ))}
           </Grid>
-          <Divider />
-          <VehicleForm
-            initial={vehicle}
-            loading={updateState.isLoading}
-            onSubmit={handleUpdate}
-          />
+          {canEdit && (
+            <>
+              <Divider />
+              <VehicleForm
+                initial={vehicle}
+                loading={updateState.isLoading}
+                onSubmit={handleUpdate}
+              />
+            </>
+          )}
         </Stack>
       </Paper>
 
+      {canTrack && (
       <Box>
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
           <Tab label="Location" />
@@ -174,6 +188,7 @@ export function VehicleDetailPanel({ vehicleId }: { vehicleId: number }) {
           </Paper>
         )}
       </Box>
+      )}
     </Stack>
   );
 }

@@ -338,8 +338,21 @@ function columnsFor(
         Boolean(row.original.driver_id) &&
         String(row.original.driver_approval_status ?? '').toUpperCase() === 'APPROVED' &&
         String(row.original.status ?? '').toUpperCase() === 'ACTIVE';
-      const disableDeactivate = isActiveDriverVehicle;
-      const deactivateTitle = isActiveDriverVehicle ? 'Assigned to active driver' : deactivateLabel;
+      const canRetireVehicle = capability(row.original, 'can_retire');
+      const canDeleteInventory = capability(row.original, 'can_delete');
+      const canDeactivate =
+        resource === 'vehicles'
+          ? canRetireVehicle ?? !isActiveDriverVehicle
+          : resource === 'inventory'
+            ? canDeleteInventory ?? true
+            : true;
+      const disableDeactivate = !canDeactivate;
+      const deactivateTitle =
+        resource === 'vehicles' && disableDeactivate
+          ? 'Vehicle cannot be retired'
+          : resource === 'inventory' && disableDeactivate
+            ? 'Inventory item cannot be deleted'
+            : deactivateLabel;
 
       return hasActions ? (
         <Stack direction="row" spacing={0.25} justifyContent="flex-end">
@@ -376,6 +389,13 @@ function columnsFor(
   };
 
   return [...leadCols, ...dataCols, actionCol];
+}
+
+function capability(row: Record<string, unknown>, key: string): boolean | undefined {
+  const caps = row.capabilities;
+  if (!caps || typeof caps !== 'object') return undefined;
+  const value = (caps as Record<string, unknown>)[key];
+  return typeof value === 'boolean' ? value : undefined;
 }
 
 // ─── Filter option sets ───────────────────────────────────────────────────────
