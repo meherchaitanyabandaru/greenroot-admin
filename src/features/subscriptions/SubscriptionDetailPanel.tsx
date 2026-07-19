@@ -246,6 +246,12 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
   const isCancelled = status === 'CANCELLED';
   const isExpired = status === 'EXPIRED';
   const days = daysUntil(sub.end_date);
+  const capabilities = (sub.capabilities ?? {}) as Record<string, unknown>;
+  const canRenew = typeof capabilities.can_renew === 'boolean' ? capabilities.can_renew : !isCancelled;
+  const canCancel =
+    typeof capabilities.can_cancel === 'boolean' ? capabilities.can_cancel : !isCancelled && !isExpired;
+  const canPause = typeof capabilities.can_pause === 'boolean' ? capabilities.can_pause : status === 'ACTIVE';
+  const canResume = typeof capabilities.can_resume === 'boolean' ? capabilities.can_resume : status === 'PAUSED';
 
   async function handleRenew(billingCycle: string, paymentMethod: string) {
     try {
@@ -404,7 +410,7 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
               variant="contained"
               size="small"
               fullWidth
-              disabled={renewState.isLoading || isCancelled}
+              disabled={renewState.isLoading || !canRenew}
               startIcon={renewState.isLoading ? <CircularProgress size={14} /> : <AutorenewIcon fontSize="small" />}
               onClick={() => setRenewOpen(true)}
             >
@@ -424,7 +430,11 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
                     onChange={(e) => setNewStatus(e.target.value)}
                     renderValue={(v) => v || <Typography variant="body2" color="text.secondary">Select new status…</Typography>}
                   >
-                    {['ACTIVE', 'PAUSED', 'EXPIRED'].map((s) => (
+                    {[
+                      ...(canResume ? ['ACTIVE'] : []),
+                      ...(canPause ? ['PAUSED'] : []),
+                      'EXPIRED',
+                    ].map((s) => (
                       <MenuItem key={s} value={s}>{s}</MenuItem>
                     ))}
                   </Select>
@@ -447,7 +457,7 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
               color="error"
               size="small"
               fullWidth
-              disabled={cancelState.isLoading || isCancelled}
+              disabled={cancelState.isLoading || !canCancel}
               startIcon={cancelState.isLoading ? <CircularProgress size={14} /> : <BlockIcon fontSize="small" />}
               onClick={() => setCancelOpen(true)}
             >
