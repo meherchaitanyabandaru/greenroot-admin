@@ -1,6 +1,6 @@
 # GreenRoot — Admin UI Reference
 
-> Last updated: 2026-07-10
+> Last updated: 2026-07-19
 
 ---
 
@@ -94,6 +94,7 @@ All 7 priority items and all 6 module gap items are now **complete**. See NEXT_W
 
 ## Admin UI Rules
 
+- **Backend-driven capabilities.** Action buttons (confirm, cancel, renew, etc.) are driven by the `capabilities` object returned in each resource response. Never hardcode role-string checks in the frontend — consume what the API says.
 - **Server-side pagination, filtering, sorting, search** on all tables
 - **Public codes** (`USR-000001`, `PLT-000001`) shown as primary display identifiers; internal numeric IDs available for debugging
 - **No hard-delete** of protected business records (orders, audit logs, completed quotations)
