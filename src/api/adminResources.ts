@@ -344,7 +344,23 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: ({ id, status, reason }) => ({
         url: `/api/v1/nurseries/${id}/status`,
         method: 'PUT',
-        body: { status, ...(reason ? { admin_note: reason } : {}) },
+        body: { status, reason: reason ?? '' },
+      }),
+      invalidatesTags: ['Nurseries', 'Dashboard'],
+    }),
+    updateUserStatus: builder.mutation<unknown, { id: number; status: string; reason?: string }>({
+      query: ({ id, status, reason }) => ({
+        url: `/api/v1/admin/users/${id}/status`,
+        method: 'PUT',
+        body: { status, reason: reason ?? '' },
+      }),
+      invalidatesTags: ['Users', 'Dashboard'],
+    }),
+    updateNurseryStatusAdmin: builder.mutation<unknown, { id: number; status: string; reason?: string }>({
+      query: ({ id, status, reason }) => ({
+        url: `/api/v1/admin/nurseries/${id}/status`,
+        method: 'PUT',
+        body: { status, reason: reason ?? '' },
       }),
       invalidatesTags: ['Nurseries', 'Dashboard'],
     }),
@@ -828,6 +844,8 @@ export const {
   useGetDriverLatestTrackingQuery,
   useGetLiveDriverLocationQuery,
   useUpdateNurseryStatusMutation,
+  useUpdateUserStatusMutation,
+  useUpdateNurseryStatusAdminMutation,
   useApproveDriverMutation,
   useGetDispatchQuery,
   useAddDispatchItemMutation,

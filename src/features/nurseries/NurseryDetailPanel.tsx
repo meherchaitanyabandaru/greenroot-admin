@@ -40,6 +40,7 @@ import {
   useListNurseryUsersQuery,
   useUpdateNurseryMutation,
   useUpdateNurseryStatusMutation,
+  useUpdateNurseryStatusAdminMutation,
   useCreateNurseryAddressMutation,
   useUpdateNurseryAddressMutation,
   useDeleteNurseryAddressMutation,
@@ -380,6 +381,7 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
   const inventoryQuery = useListNurseryInventoryQuery(nurseryId);
   const [updateNursery, updateState] = useUpdateNurseryMutation();
   const [updateStatus, statusState] = useUpdateNurseryStatusMutation();
+  const [updateStatusAdmin, statusAdminState] = useUpdateNurseryStatusAdminMutation();
   const [tab, setTab] = useState(0);
   const [actionDialog, setActionDialog] = useState<StatusAction | null>(null);
   const [actionReason, setActionReason] = useState('');
@@ -419,7 +421,13 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
     if (cfg.requiresReason && !actionReason.trim()) return;
     try {
       setActionError('');
-      await updateStatus({ id: nurseryId, status: actionDialog, reason: actionReason.trim() }).unwrap();
+      // SUSPENDED / ACTIVE go through the admin route to stamp suspension metadata.
+      // APPROVED / REJECTED go through the nurseries route (standard workflow).
+      if (actionDialog === 'SUSPENDED' || actionDialog === 'ACTIVE') {
+        await updateStatusAdmin({ id: nurseryId, status: actionDialog, reason: actionReason.trim() }).unwrap();
+      } else {
+        await updateStatus({ id: nurseryId, status: actionDialog, reason: actionReason.trim() }).unwrap();
+      }
       setActionDialog(null);
       setActionReason('');
       nurseryQuery.refetch();
@@ -430,9 +438,9 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
 
   return (
     <Stack spacing={2.5}>
-      {(updateState.isError || statusState.isError) && (
+      {(updateState.isError || statusState.isError || statusAdminState.isError) && (
         <Alert severity="error">
-          {normalizeApiError(updateState.error || statusState.error).message}
+          {normalizeApiError(updateState.error || statusState.error || statusAdminState.error).message}
         </Alert>
       )}
 
@@ -462,10 +470,10 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
               variant="contained"
               color={actionDialog === 'APPROVED' ? 'success' : actionDialog === 'REJECTED' ? 'error' : actionDialog === 'SUSPENDED' ? 'warning' : 'primary'}
               onClick={handleStatusAction}
-              disabled={statusState.isLoading || (STATUS_ACTION_CFG[actionDialog].requiresReason && !actionReason.trim())}
+              disabled={(statusState.isLoading || statusAdminState.isLoading) || (STATUS_ACTION_CFG[actionDialog].requiresReason && !actionReason.trim())}
               size="small"
             >
-              {statusState.isLoading ? 'Saving…' : STATUS_ACTION_CFG[actionDialog].verb}
+              {(statusState.isLoading || statusAdminState.isLoading) ? 'Saving…' : STATUS_ACTION_CFG[actionDialog].verb}
             </Button>
           </DialogActions>
         </Dialog>
@@ -583,25 +591,25 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
           <Stack direction="row" spacing={1} flexWrap="wrap">
             {canApprove && (
               <Button size="small" variant="contained" color="success" startIcon={<CheckIcon />}
-                onClick={() => setActionDialog('APPROVED')} disabled={statusState.isLoading}>
+                onClick={() => setActionDialog('APPROVED')} disabled={statusState.isLoading || statusAdminState.isLoading}>
                 Approve
               </Button>
             )}
             {canReject && (
               <Button size="small" variant="outlined" color="error" startIcon={<CloseIcon />}
-                onClick={() => setActionDialog('REJECTED')} disabled={statusState.isLoading}>
+                onClick={() => setActionDialog('REJECTED')} disabled={statusState.isLoading || statusAdminState.isLoading}>
                 Reject
               </Button>
             )}
             {canSuspend && (
               <Button size="small" variant="outlined" color="warning" startIcon={<PauseCircleOutlineIcon />}
-                onClick={() => setActionDialog('SUSPENDED')} disabled={statusState.isLoading}>
+                onClick={() => setActionDialog('SUSPENDED')} disabled={statusState.isLoading || statusAdminState.isLoading}>
                 Suspend
               </Button>
             )}
             {canReactivate && (
               <Button size="small" variant="outlined" color="primary" startIcon={<PlayCircleOutlineIcon />}
-                onClick={() => setActionDialog('ACTIVE')} disabled={statusState.isLoading}>
+                onClick={() => setActionDialog('ACTIVE')} disabled={statusState.isLoading || statusAdminState.isLoading}>
                 Reactivate
               </Button>
             )}
