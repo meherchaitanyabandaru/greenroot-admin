@@ -246,12 +246,11 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
   const isCancelled = status === 'CANCELLED';
   const isExpired = status === 'EXPIRED';
   const days = daysUntil(sub.end_date);
-  const capabilities = (sub.capabilities ?? {}) as Record<string, unknown>;
-  const canRenew = typeof capabilities.can_renew === 'boolean' ? capabilities.can_renew : !isCancelled;
-  const canCancel =
-    typeof capabilities.can_cancel === 'boolean' ? capabilities.can_cancel : !isCancelled && !isExpired;
-  const canPause = typeof capabilities.can_pause === 'boolean' ? capabilities.can_pause : status === 'ACTIVE';
-  const canResume = typeof capabilities.can_resume === 'boolean' ? capabilities.can_resume : status === 'PAUSED';
+  const capabilities = (sub.capabilities ?? {}) as Record<string, boolean>;
+  const canRenew = capabilities.can_renew ?? false;
+  const canCancel = capabilities.can_cancel ?? false;
+  const canPause = capabilities.can_pause ?? false;
+  const canResume = capabilities.can_resume ?? false;
 
   async function handleRenew(billingCycle: string, paymentMethod: string) {
     try {
