@@ -91,6 +91,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Notifications', path: '/notifications', icon: NotificationsIcon },
       { label: 'Templates', path: '/notifications/templates', icon: SmsIcon },
       { label: 'Notification Devices', path: '/notifications/devices', icon: NotificationsIcon },
+      { label: 'SMS / DLT', path: '/sms', icon: SmsIcon },
     ],
   },
   {
