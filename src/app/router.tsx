@@ -39,6 +39,9 @@ const SubscriptionPromosPage = lazy(() =>
 const SmsPage = lazy(() =>
   import('../features/sms/SmsPage').then((m) => ({ default: m.SmsPage })),
 );
+const EmailPage = lazy(() =>
+  import('../features/email/EmailPage').then((m) => ({ default: m.EmailPage })),
+);
 const AuditLogsPage = lazy(() =>
   import('../features/audit/AuditLogsPage').then((m) => ({ default: m.AuditLogsPage })),
 );
@@ -83,6 +86,7 @@ export function AppRouter() {
             <Route path="/tracking" element={<TrackingPage />} />
             <Route path="/notifications/templates" element={<ResourceListPage resource="notificationTemplates" />} />
             <Route path="/sms" element={<SmsPage />} />
+            <Route path="/email" element={<EmailPage />} />
 
             {/* Commercial */}
             <Route path="/payments" element={<ResourceListPage resource="payments" />} />

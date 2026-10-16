@@ -69,6 +69,7 @@ Source of truth for APIs: `greenroot-api/docs/swagger/openapi.yaml`
 | Notifications | ✅ Live | List, devices, templates, **detail panel (mark-read, delete), template editor, mark-all-read** | — |
 | Attachments | ✅ Live | List, **upload form (presign → PUT → save metadata)** | — |
 | Users | ✅ Live | Admin list/search, detail drawer (profile, roles, addresses, sessions) | — |
+| Email | ✅ Live | `/email`: go-live checklist, sender (From/Reply-To, domain verified), templates (sandboxed HTML/text live preview, test send), message log. Shares `features/messaging/shared.tsx` with SMS | Bounce/complaint webhooks |
 | SMS / DLT | ✅ Live | `/sms`: go-live checklist, Principal Entity, headers, templates (live preview, typed-variable editor, Copy for DLT, test send, approved-text lock), message log | Gateway delivery reports |
 
 ---

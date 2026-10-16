@@ -3,7 +3,6 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -26,12 +25,11 @@ import {
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EditIcon from '@mui/icons-material/Edit';
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import SaveIcon from '@mui/icons-material/Save';
 import dayjs from 'dayjs';
 import { PageHeader } from '../../components/page/PageHeader';
+import { ReadinessCard, StatusChip, StepsCard } from '../messaging/shared';
 import { useToast } from '../../components/feedback/ToastProvider';
 import { normalizeApiError } from '../../utils/apiError';
 import {
@@ -52,24 +50,6 @@ import {
   type SmsTemplate,
 } from './smsApi';
 import { SmsTemplateDrawer } from './SmsTemplateDrawer';
-
-const STATUS_COLOR: Record<string, 'default' | 'success' | 'warning' | 'error' | 'info'> = {
-  APPROVED: 'success',
-  SUBMITTED: 'info',
-  DRAFT: 'default',
-  NOT_REGISTERED: 'default',
-  REJECTED: 'error',
-  INACTIVE: 'warning',
-  SENT: 'success',
-  DELIVERED: 'success',
-  MOCKED: 'info',
-  BLOCKED: 'warning',
-  FAILED: 'error',
-};
-
-function StatusChip({ status }: { status: string }) {
-  return <Chip label={status} size="small" color={STATUS_COLOR[status] ?? 'default'} variant={status === 'DRAFT' ? 'outlined' : 'filled'} />;
-}
 
 const TABS = ['Readiness', 'Principal Entity', 'Headers', 'Templates', 'Message log'] as const;
 
@@ -117,48 +97,20 @@ function ReadinessTab() {
   const { data, isLoading, error } = useGetSmsStatusQuery();
   if (isLoading) return <CircularProgress />;
   if (error || !data) return <Alert severity="error">{normalizeApiError(error).message}</Alert>;
-  const dltChecks = data.checks.filter((c) => c.key !== 'provider');
-
   return (
     <Stack spacing={3}>
-      <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="subtitle1" fontWeight={700} mb={1}>
-          Go-live checklist {data.ready ? '— ready to switch the provider to live' : ''}
-        </Typography>
-        <Stack spacing={1}>
-          {dltChecks.map((c) => (
-            <Stack key={c.key} direction="row" spacing={1} alignItems="center">
-              {c.ok ? <CheckCircleIcon color="success" fontSize="small" /> : <RadioButtonUncheckedIcon color="disabled" fontSize="small" />}
-              <Typography variant="body2">{c.label}</Typography>
-              {c.detail && !c.ok && (
-                <Typography variant="caption" color="text.secondary">
-                  ({c.detail})
-                </Typography>
-              )}
-            </Stack>
-          ))}
-        </Stack>
-      </Paper>
-
-      <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="subtitle1" fontWeight={700} mb={1}>
-          How to register (TRAI TCCCPR 2018 / DLT)
-        </Typography>
-        <Stack component="ol" sx={{ m: 0, pl: 2.5 }} spacing={0.75}>
-          {[
-            'Register GreenRoot as a Principal Entity on one operator DLT portal (Jio, Airtel, Vi, BSNL, Tata or SmartPing). Enter the PE ID under Principal Entity.',
-            'Register the sender header. Service/transactional headers are exactly 6 letters (proposed: GRROOT). Phones will show it with a suffix such as JM-GRROOT-S.',
-            'Register each template under Templates exactly as written — use "Copy for DLT". All GreenRoot system SMS are SERVICE_IMPLICIT (TRANSACTIONAL is for banks only).',
-            'Pick an SMS aggregator (telemarketer) and bind it to the PE on the DLT portal (PE–TM chain). Enter its TM ID under Principal Entity.',
-            'When DLT approves, enter each DLT template ID and set the status to APPROVED.',
-            'Once this checklist is all green, implement the aggregator in platform/sms and set SMS_PROVIDER. Real OTPs start immediately.',
-          ].map((step) => (
-            <Typography key={step} component="li" variant="body2" color="text.secondary">
-              {step}
-            </Typography>
-          ))}
-        </Stack>
-      </Paper>
+      <ReadinessCard checks={data.checks} ready={data.ready} readyText="ready to switch the provider to live" />
+      <StepsCard
+        title="How to register (TRAI TCCCPR 2018 / DLT)"
+        steps={[
+          'Register GreenRoot as a Principal Entity on one operator DLT portal (Jio, Airtel, Vi, BSNL, Tata or SmartPing). Enter the PE ID under Principal Entity.',
+          'Register the sender header. Service/transactional headers are exactly 6 letters (proposed: GRROOT). Phones will show it with a suffix such as JM-GRROOT-S.',
+          'Register each template under Templates exactly as written — use "Copy for DLT". All GreenRoot system SMS are SERVICE_IMPLICIT (TRANSACTIONAL is for banks only).',
+          'Pick an SMS aggregator (telemarketer) and bind it to the PE on the DLT portal (PE–TM chain). Enter its TM ID under Principal Entity.',
+          'When DLT approves, enter each DLT template ID and set the status to APPROVED.',
+          'Once this checklist is all green, implement the aggregator in platform/sms and set SMS_PROVIDER. Real OTPs start immediately.',
+        ]}
+      />
     </Stack>
   );
 }

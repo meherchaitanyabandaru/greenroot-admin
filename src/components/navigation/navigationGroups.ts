@@ -4,6 +4,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CategoryIcon from '@mui/icons-material/Category';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import EmailIcon from '@mui/icons-material/Email';
 import DescriptionIcon from '@mui/icons-material/Description';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import GppMaybeIcon from '@mui/icons-material/GppMaybe';
@@ -92,6 +93,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Templates', path: '/notifications/templates', icon: SmsIcon },
       { label: 'Notification Devices', path: '/notifications/devices', icon: NotificationsIcon },
       { label: 'SMS / DLT', path: '/sms', icon: SmsIcon },
+      { label: 'Email', path: '/email', icon: EmailIcon },
     ],
   },
   {
