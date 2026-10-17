@@ -375,7 +375,7 @@ const STATUS_ACTION_CFG: Record<StatusAction, { title: string; verb: string; req
   ACTIVE:    { title: 'Reactivate Nursery',verb: 'Reactivate', requiresReason: true  },
 };
 
-export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number; onDeleted?: () => void }) {
+export function NurseryDetailPanel({ nurseryId }: { nurseryId: number }) {
   const nurseryQuery = useGetNurseryQuery(nurseryId);
   const usersQuery = useListNurseryUsersQuery(nurseryId);
   const inventoryQuery = useListNurseryInventoryQuery(nurseryId);
@@ -665,7 +665,7 @@ export function NurseryDetailPanel({ nurseryId, onDeleted }: { nurseryId: number
             color: '#7C3AED',
             bg: '#EDE9FE',
           },
-        ].map(({ label, value, color, bg }) => (
+        ].map(({ label, value, color }) => (
           <Grid key={label} size={{ xs: 6, md: 3 }}>
             <Paper
               variant="outlined"

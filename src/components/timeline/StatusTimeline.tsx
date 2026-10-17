@@ -25,7 +25,6 @@ export function StatusTimeline({
       {steps.map((step, i) => {
         const isDone = !isCancelled && i < current;
         const isActive = !isCancelled && i === current;
-        const isFuture = !isCancelled && i > current;
 
         const dotColor = isCancelled
           ? '#98A2B3'

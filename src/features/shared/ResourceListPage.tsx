@@ -902,10 +902,7 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
           )
         ) : resource === 'nurseries' ? (
           editingRow ? (
-            <NurseryDetailPanel
-              nurseryId={Number(editingRow.id)}
-              onDeleted={() => { setDrawerOpen(false); setEditingRow(null); }}
-            />
+            <NurseryDetailPanel nurseryId={Number(editingRow.id)} />
           ) : (
             <NurseryForm loading={nurseryState.isLoading} onSubmit={submitForm} />
           )

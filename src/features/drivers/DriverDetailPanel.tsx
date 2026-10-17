@@ -23,6 +23,7 @@ import {
   useApproveDriverMutation,
 } from '../../api/adminResources';
 import { ErrorState } from '../../components/feedback/ErrorState';
+import { useToast } from '../../components/feedback/ToastProvider';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
 import { normalizeApiError } from '../../utils/apiError';
@@ -65,6 +66,7 @@ function ApprovalStatusBadge({ status }: { status: unknown }) {
 }
 
 export function DriverDetailPanel({ driverId }: { driverId: number }) {
+  const { showToast } = useToast();
   const driverQuery = useGetDriverQuery(driverId);
   const latestQuery = useGetDriverLatestTrackingQuery(driverId);
   const [updateDriver, updateState] = useUpdateDriverMutation();
@@ -99,7 +101,9 @@ export function DriverDetailPanel({ driverId }: { driverId: number }) {
     try {
       await updateDriver({ id: driverId, body: values }).unwrap();
       driverQuery.refetch();
-    } catch (_) {}
+    } catch (err) {
+      showToast(normalizeApiError(err).message, 'error');
+    }
   }
 
   async function handleApprove() {

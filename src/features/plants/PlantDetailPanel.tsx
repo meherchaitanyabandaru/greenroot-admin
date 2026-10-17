@@ -5,7 +5,6 @@ import {
   Alert,
   Box,
   Chip,
-  Divider,
   Grid,
   Paper,
   Skeleton,
@@ -28,7 +27,7 @@ import {
   useUpdatePlantMutation,
 } from '../../api/adminResources';
 import { ErrorState } from '../../components/feedback/ErrorState';
-import { DetailSkeleton, LoadingState } from '../../components/feedback/LoadingState';
+import { DetailSkeleton } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
 import { normalizeApiError } from '../../utils/apiError';
 import { toLabel } from '../../utils/labels';
@@ -183,12 +182,10 @@ function CareGuideTab({ plantId }: { plantId: number }) {
 
 function ImagesTab({
   plant,
-  plantId,
   loading,
   onSubmit,
 }: {
   plant: Record<string, unknown>;
-  plantId: number;
   loading: boolean;
   onSubmit: (values: Record<string, unknown>) => Promise<void>;
 }) {
@@ -507,7 +504,6 @@ export function PlantDetailPanel({ plantId }: { plantId: number }) {
         {tab === 2 && (
           <ImagesTab
             plant={plant}
-            plantId={plantId}
             loading={createImageState.isLoading}
             onSubmit={submitImage}
           />

@@ -45,7 +45,6 @@ import { TableSkeleton } from '../../components/feedback/LoadingState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { PageHeader } from '../../components/page/PageHeader';
 import { SearchInput } from '../../components/forms/SearchInput';
-import { StatusChip } from '../../components/status/StatusChip';
 import { useToast } from '../../components/feedback/ToastProvider';
 import { normalizeApiError } from '../../utils/apiError';
 import { formatDate } from '../../utils/labels';

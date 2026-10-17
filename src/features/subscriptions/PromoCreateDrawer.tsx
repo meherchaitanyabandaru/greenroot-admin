@@ -56,40 +56,20 @@ export function PromoCreateDrawer({ open, promo, onClose }: Props) {
   const isSuccess = created || updated;
   const error = createErr || updateErr;
 
-  const [code, setCode] = useState('');
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [discountType, setDiscountType] = useState<'PERCENTAGE' | 'FLAT'>('PERCENTAGE');
-  const [discountValue, setDiscountValue] = useState('');
-  const [maxCap, setMaxCap] = useState('');
-  const [validFrom, setValidFrom] = useState(today());
-  const [validUntil, setValidUntil] = useState(daysFromNow(30));
-  const [maxUses, setMaxUses] = useState('');
-  const [isActive, setIsActive] = useState(true);
-  const [plans, setPlans] = useState<string[]>([]);
-  const [cycles, setCycles] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (promo) {
-      setCode(promo.promo_code);
-      setName(promo.name);
-      setDescription(promo.description ?? '');
-      setDiscountType(promo.discount_type);
-      setDiscountValue(String(promo.discount_value));
-      setMaxCap(promo.max_discount_cap != null ? String(promo.max_discount_cap) : '');
-      setValidFrom(promo.valid_from);
-      setValidUntil(promo.valid_until);
-      setMaxUses(promo.max_uses != null ? String(promo.max_uses) : '');
-      setIsActive(promo.is_active);
-      setPlans(promo.applicable_plans ?? []);
-      setCycles(promo.applicable_cycles ?? []);
-    } else {
-      setCode(''); setName(''); setDescription('');
-      setDiscountType('PERCENTAGE'); setDiscountValue(''); setMaxCap('');
-      setValidFrom(today()); setValidUntil(daysFromNow(30));
-      setMaxUses(''); setIsActive(true); setPlans([]); setCycles([]);
-    }
-  }, [promo, open]);
+  // State starts from `promo`; the parent remounts this drawer (key) for each
+  // promo / new form, so no effect has to copy props into state.
+  const [code, setCode] = useState(promo?.promo_code ?? '');
+  const [name, setName] = useState(promo?.name ?? '');
+  const [description, setDescription] = useState(promo?.description ?? '');
+  const [discountType, setDiscountType] = useState<'PERCENTAGE' | 'FLAT'>(promo?.discount_type ?? 'PERCENTAGE');
+  const [discountValue, setDiscountValue] = useState(promo ? String(promo.discount_value) : '');
+  const [maxCap, setMaxCap] = useState(promo?.max_discount_cap != null ? String(promo.max_discount_cap) : '');
+  const [validFrom, setValidFrom] = useState(promo?.valid_from ?? today());
+  const [validUntil, setValidUntil] = useState(promo?.valid_until ?? daysFromNow(30));
+  const [maxUses, setMaxUses] = useState(promo?.max_uses != null ? String(promo.max_uses) : '');
+  const [isActive, setIsActive] = useState(promo?.is_active ?? true);
+  const [plans, setPlans] = useState<string[]>(promo?.applicable_plans ?? []);
+  const [cycles, setCycles] = useState<string[]>(promo?.applicable_cycles ?? []);
 
   useEffect(() => {
     if (isSuccess) onClose();

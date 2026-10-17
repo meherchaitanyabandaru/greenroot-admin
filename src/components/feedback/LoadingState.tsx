@@ -1,8 +1,8 @@
 import { Box, LinearProgress, Skeleton, Stack, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 
-export function LoadingState({ label: _label }: { label?: string } = {}) {
+export function LoadingState({ label }: { label?: string } = {}) {
   return (
-    <Box sx={{ py: 4 }}>
+    <Box sx={{ py: 4 }} role="status" aria-label={label ?? 'Loading'}>
       <LinearProgress
         sx={{
           borderRadius: 2,

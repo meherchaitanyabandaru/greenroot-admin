@@ -39,6 +39,7 @@ import {
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
+import { useToast } from '../../components/feedback/ToastProvider';
 import { normalizeApiError } from '../../utils/apiError';
 
 function text(value: unknown) {
@@ -222,6 +223,7 @@ function DispatchLiveMapDialog({
 }
 
 export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
+  const { showToast } = useToast();
   const dispatchQuery = useGetDispatchQuery(dispatchId);
   const trackingQuery = useListDispatchTrackingQuery(dispatchId, { pollingInterval: 30000 });
   const [updateStatus, updateState] = useUpdateDispatchStatusMutation();
@@ -235,6 +237,7 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dispatch: any = dispatchQuery.data?.dispatch ?? {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const trackingPoints: any[] = trackingQuery.data?.tracking ?? [];
   const nextStatuses: string[] = STATUS_FLOW[String(dispatch.dispatch_status)] ?? [];
 
@@ -264,8 +267,13 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
     }
   }
 
-  function copyToClipboard(value: string, label: string) {
-    navigator.clipboard.writeText(value);
+  async function copyToClipboard(value: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      showToast(`${label} copied`, 'success');
+    } catch {
+      showToast(`Could not copy ${label.toLowerCase()}`, 'error');
+    }
   }
 
   return (

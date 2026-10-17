@@ -11,7 +11,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useListResourceQuery, useUpdateNotificationTemplateMutation } from '../../api/adminResources';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
@@ -26,29 +26,32 @@ export function NotificationTemplateDetailPanel({ templateId }: { templateId: nu
   const { data, isLoading, error, refetch } = useListResourceQuery(
     { resource: 'notificationTemplates', params: { page: 1, per_page: 100 } },
   );
-
-  const [updateTemplate, updateState] = useUpdateNotificationTemplateMutation();
-  const [name, setName] = useState('');
-  const [subject, setSubject] = useState('');
-  const [messageTemplate, setMessageTemplate] = useState('');
-  const [isActive, setIsActive] = useState(true);
-  const [saved, setSaved] = useState(false);
-  const [saveError, setSaveError] = useState('');
-
   const template = data?.rows.find((r) => Number(r.id) === templateId) ?? null;
-
-  useEffect(() => {
-    if (template) {
-      setName(text(template.template_name));
-      setSubject(text(template.subject));
-      setMessageTemplate(text(template.message_template));
-      setIsActive(Boolean(template.is_active));
-    }
-  }, [template]);
 
   if (isLoading) return <LoadingState />;
   if (error) return <ErrorState message={normalizeApiError(error).message} onRetry={refetch} />;
   if (!template) return <Typography color="text.secondary">Template not found.</Typography>;
+  // Keyed so the form re-initialises only when a different template opens; a
+  // background refetch no longer overwrites edits in progress.
+  return <TemplateForm key={templateId} templateId={templateId} template={template} onSaved={refetch} />;
+}
+
+function TemplateForm({
+  templateId,
+  template,
+  onSaved,
+}: {
+  templateId: number;
+  template: Record<string, unknown>;
+  onSaved: () => void;
+}) {
+  const [updateTemplate, updateState] = useUpdateNotificationTemplateMutation();
+  const [name, setName] = useState(() => text(template.template_name));
+  const [subject, setSubject] = useState(() => text(template.subject));
+  const [messageTemplate, setMessageTemplate] = useState(() => text(template.message_template));
+  const [isActive, setIsActive] = useState(() => Boolean(template.is_active));
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   async function handleSave() {
     try {
@@ -57,16 +60,16 @@ export function NotificationTemplateDetailPanel({ templateId }: { templateId: nu
       await updateTemplate({
         id: templateId,
         body: {
-          template_code: text(template!.template_code),
+          template_code: text(template.template_code),
           template_name: name || undefined,
-          channel: text(template!.channel),
+          channel: text(template.channel),
           subject: subject || undefined,
           message_template: messageTemplate || undefined,
           is_active: isActive,
         },
       }).unwrap();
       setSaved(true);
-      refetch();
+      onSaved();
     } catch (e) {
       setSaveError(normalizeApiError(e).message);
     }

@@ -22,7 +22,6 @@ import {
 import { useState } from 'react';
 import {
   useCreatePlantCategoryMutation,
-  useDeletePlantCategoryMutation,
   useListPlantCategoriesQuery,
   useUpdatePlantCategoryMutation,
 } from '../../api/adminResources';
@@ -35,7 +34,6 @@ export function CategoryManagementPage() {
   const { data, isLoading, error, refetch } = useListPlantCategoriesQuery();
   const [createCategory, createState] = useCreatePlantCategoryMutation();
   const [updateCategory, updateState] = useUpdatePlantCategoryMutation();
-  const [deleteCategory] = useDeletePlantCategoryMutation();
 
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);

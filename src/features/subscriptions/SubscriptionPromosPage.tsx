@@ -270,6 +270,7 @@ export function SubscriptionPromosPage() {
       </Box>
 
       <PromoCreateDrawer
+        key={editing ? `promo-${editing.id}` : creating ? 'new' : 'closed'}
         open={creating || !!editing}
         promo={editing}
         onClose={() => { setCreating(false); setEditing(null); }}
