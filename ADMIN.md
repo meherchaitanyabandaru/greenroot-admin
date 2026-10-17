@@ -78,7 +78,11 @@ Source of truth for APIs: `greenroot-api/docs/swagger/openapi.yaml`
 
 All 7 priority items and all 6 module gap items are now **complete**. See NEXT_WEEK_ACTION_ITEMS.md for full log.
 
-**Remaining (pre-production, not this phase):** See Section 5 in NEXT_WEEK_ACTION_ITEMS.md — rate limiting, CORS review, CI/CD, DB indexes, integration tests.
+**CI** (`.github/workflows/ci.yml`, on `master` and PRs): `npm ci`, `npm audit --omit=dev --audit-level=high`, lint (errors fail), vitest, type check + build. Dependabot opens weekly npm and monthly Actions updates; PRs use `.github/pull_request_template.md`; `CODEOWNERS` set. Done 2026-10-17: react-router-dom 7.18.4 and vitest 4.1.11 upgrades → `npm audit` 0.
+
+> Use npm ≥ 11 for `npm audit fix` (npm 10.9.2 crashes with `edgesOut`): `npx npm@11.21.0 audit fix`.
+
+**Remaining (pre-production):** Playwright e2e in CI; generated TypeScript client from the OpenAPI spec (Phase 3, A1); clear the 3 lint warnings; branch protection on `master` (owner action).
 
 ---
 
@@ -114,9 +118,9 @@ Endpoints used by admin:
 - `GET /api/v1/admin/users/:id` — user detail with roles/sessions/addresses
 - `GET /api/v1/nurseries/:id/addresses` — nursery addresses
 - `GET /api/v1/nurseries/:id/users` — nursery team
-- `GET /api/v1/tracking/vehicle/:id` — vehicle tracking history
-- `GET /api/v1/tracking/driver/:id` — driver tracking history
-- `GET /api/v1/tracking/dispatch/:id` — dispatch tracking history
+- `GET /api/v1/vehicles/:id/tracking[/latest]` — vehicle tracking history (admin only since 2026-10-17)
+- `GET /api/v1/drivers/:id/tracking/latest` — driver last location
+- `GET /api/v1/dispatches/:id/tracking` — dispatch tracking history
 - `POST /api/v1/subscriptions/:id/renew` · `cancel`
 - `GET /api/v1/plant-requests/:id/responses`
 
