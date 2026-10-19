@@ -250,7 +250,14 @@ export type MarketReport = {
   ad_title: string;
   ad_status: string;
   ad_nursery_name: string;
+  ad_description?: string;
+  ad_photos: string[];
+  /** Ads of this nursery GreenRoot already removed. */
+  ad_nursery_strikes: number;
+  ad_nursery_blocked_until?: string;
   reason: string;
+  /** Explicit images or a banned item: the ad was hidden on report. */
+  serious: boolean;
   notes?: string;
   status: 'PENDING' | 'REVIEWED' | 'DISMISSED';
   reported_by_name?: string;
@@ -455,7 +462,10 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (params) => `/api/v1/market/ads?${toQuery(params)}`,
       providesTags: ['Market'],
     }),
-    reviewMarketReport: builder.mutation<{ report: MarketReport }, { id: number; status: 'REVIEWED' | 'DISMISSED'; archive_ad: boolean }>({
+    reviewMarketReport: builder.mutation<
+      { report: MarketReport; outcome: { strikes: number; blocked_until?: string } },
+      { id: number; decision: 'REMOVE' | 'DISMISS' }
+    >({
       query: ({ id, ...body }) => ({ url: `/api/v1/market/reports/${id}/review`, method: 'POST', body }),
       invalidatesTags: ['Market', 'Dashboard'],
     }),

@@ -1,5 +1,6 @@
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Chip,
@@ -34,10 +35,17 @@ import { formatCurrency, toLabel } from '../../utils/labels';
 
 const REPORT_FILTERS = [
   { value: 'PENDING', label: 'Waiting for review' },
-  { value: 'REVIEWED', label: 'Action taken' },
+  { value: 'REVIEWED', label: 'Removed' },
   { value: 'DISMISSED', label: 'Dismissed' },
   { value: '', label: 'All' },
 ];
+
+/** What removing one more ad does to the seller (mirrors the API's blockDays). */
+function penaltyFor(strikesAfter: number) {
+  if (strikesAfter >= 3) return `Strike ${strikesAfter}: posting blocked for 90 days. Consider suspending the nursery from Nurseries.`;
+  if (strikesAfter === 2) return 'Strike 2: posting blocked for 30 days.';
+  return 'Strike 1: a warning. The nursery can keep posting.';
+}
 
 function formatDate(value?: string) {
   if (!value) return '—';
@@ -53,7 +61,7 @@ export function MarketPage() {
   const [tab, setTab] = useState<'reports' | 'ads'>('reports');
   return (
     <Box>
-      <PageHeader title="Local Market" description="Nursery-to-nursery surplus ads. Review reported ads and take down the ones that break the rules." />
+      <PageHeader title="Local Market" description="Nursery-to-nursery surplus ads. Ads reported for explicit images or banned items are hidden at once; check the photos, then restore or remove." />
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Tab value="reports" label="Reported ads" />
         <Tab value="ads" label="Published ads" />
@@ -68,14 +76,19 @@ function ReportsTab() {
   const [status, setStatus] = useState('PENDING');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
-  const [confirm, setConfirm] = useState<{ report: MarketReport; archive: boolean } | null>(null);
+  const [confirm, setConfirm] = useState<{ report: MarketReport; remove: boolean } | null>(null);
   const { data, isFetching, error, refetch } = useListMarketReportsQuery({ status: status || undefined, page: page + 1, per_page: rowsPerPage });
   const [review, reviewState] = useReviewMarketReportMutation();
 
   async function submit() {
     if (!confirm) return;
-    await review({ id: confirm.report.id, status: confirm.archive ? 'REVIEWED' : 'DISMISSED', archive_ad: confirm.archive }).unwrap();
-    showToast(confirm.archive ? 'Ad taken down and report closed' : 'Report dismissed');
+    const res = await review({ id: confirm.report.id, decision: confirm.remove ? 'REMOVE' : 'DISMISS' }).unwrap();
+    if (confirm.remove) {
+      const blocked = res.outcome.blocked_until ? `, posting blocked until ${formatDate(res.outcome.blocked_until)}` : '';
+      showToast(`Ad removed. ${confirm.report.ad_nursery_name} has ${res.outcome.strikes} strike${res.outcome.strikes === 1 ? '' : 's'}${blocked}`);
+    } else {
+      showToast(confirm.report.ad_status === 'SUSPENDED' ? 'Report dismissed and ad restored' : 'Report dismissed');
+    }
     setConfirm(null);
   }
 
@@ -84,12 +97,17 @@ function ReportsTab() {
       id: '_ad',
       header: 'Ad',
       cell: ({ row }) => (
-        <Box>
-          <Typography fontSize={13.5} fontWeight={600}>{row.original.ad_title}</Typography>
-          <Typography fontSize={12} color="text.secondary">
-            {row.original.ad_code} · {row.original.ad_nursery_name}
-          </Typography>
-        </Box>
+        <Stack direction="row" spacing={1.25} alignItems="center">
+          <Avatar variant="rounded" src={row.original.ad_photos[0]} sx={{ width: 44, height: 44 }}>
+            {row.original.ad_title[0]}
+          </Avatar>
+          <Box>
+            <Typography fontSize={13.5} fontWeight={600}>{row.original.ad_title}</Typography>
+            <Typography fontSize={12} color="text.secondary">
+              {row.original.ad_code} · {row.original.ad_nursery_name}
+            </Typography>
+          </Box>
+        </Stack>
       ),
     },
     {
@@ -97,7 +115,10 @@ function ReportsTab() {
       header: 'Reason',
       cell: ({ row }) => (
         <Box>
-          <Chip size="small" label={toLabel(row.original.reason)} sx={{ height: 22, fontSize: 11 }} />
+          <Stack direction="row" spacing={0.5} flexWrap="wrap">
+            <Chip size="small" label={toLabel(row.original.reason)} sx={{ height: 22, fontSize: 11 }} />
+            {row.original.serious && <Chip size="small" color="error" label="Hidden until reviewed" sx={{ height: 22, fontSize: 11 }} />}
+          </Stack>
           {row.original.notes && <Typography fontSize={12} color="text.secondary" mt={0.5}>“{row.original.notes}”</Typography>}
         </Box>
       ),
@@ -109,6 +130,23 @@ function ReportsTab() {
         <Box>
           <Typography fontSize={13}>{row.original.reported_by_nursery_name}</Typography>
           <Typography fontSize={12} color="text.secondary">{row.original.reported_by_name ?? ''} · {formatDate(row.original.created_at)}</Typography>
+        </Box>
+      ),
+    },
+    {
+      id: '_history',
+      header: 'Seller history',
+      cell: ({ row }) => (
+        <Box>
+          <Chip
+            size="small"
+            color={row.original.ad_nursery_strikes >= 2 ? 'error' : row.original.ad_nursery_strikes === 1 ? 'warning' : 'default'}
+            label={`${row.original.ad_nursery_strikes} strike${row.original.ad_nursery_strikes === 1 ? '' : 's'}`}
+            sx={{ height: 22, fontSize: 11 }}
+          />
+          {row.original.ad_nursery_blocked_until && (
+            <Typography fontSize={11.5} color="error.main" mt={0.5}>Blocked until {formatDate(row.original.ad_nursery_blocked_until)}</Typography>
+          )}
         </Box>
       ),
     },
@@ -131,15 +169,18 @@ function ReportsTab() {
       cell: ({ row }) =>
         row.original.status === 'PENDING' ? (
           <Stack direction="row" spacing={1} justifyContent="flex-end">
-            <Button size="small" onClick={() => setConfirm({ report: row.original, archive: false })}>Dismiss</Button>
-            <Button size="small" color="error" variant="outlined" onClick={() => setConfirm({ report: row.original, archive: true })}>
-              Take down ad
+            <Button size="small" onClick={() => setConfirm({ report: row.original, remove: false })}>
+              {row.original.ad_status === 'SUSPENDED' ? 'Restore ad' : 'Dismiss'}
+            </Button>
+            <Button size="small" color="error" variant="outlined" onClick={() => setConfirm({ report: row.original, remove: true })}>
+              Remove ad
             </Button>
           </Stack>
         ) : null,
     },
   ];
 
+  const report = confirm?.report;
   return (
     <>
       <Stack direction="row" spacing={1} mb={2} flexWrap="wrap">
@@ -167,20 +208,45 @@ function ReportsTab() {
         />
       )}
 
-      <Dialog open={confirm !== null} onClose={() => setConfirm(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>{confirm?.archive ? 'Take down this ad?' : 'Dismiss this report?'}</DialogTitle>
+      <Dialog open={confirm !== null} onClose={() => setConfirm(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>{confirm?.remove ? 'Remove this ad?' : report?.ad_status === 'SUSPENDED' ? 'Restore this ad?' : 'Dismiss this report?'}</DialogTitle>
         <DialogContent>
           {reviewState.error && <Alert severity="error" sx={{ mb: 1.5 }}>{normalizeApiError(reviewState.error).message}</Alert>}
-          <Typography fontSize={14}>
-            {confirm?.archive
-              ? `“${confirm.report.ad_title}” by ${confirm.report.ad_nursery_name} will be archived and disappear from the market. The report is closed as action taken.`
-              : `The ad stays published. The report from ${confirm?.report.reported_by_nursery_name} is closed as dismissed.`}
-          </Typography>
+          {report && (
+            <Stack spacing={1.5}>
+              <Box>
+                <Typography fontWeight={700}>{report.ad_title}</Typography>
+                <Typography fontSize={13} color="text.secondary">
+                  {report.ad_nursery_name} · reported for {toLabel(report.reason).toLowerCase()}
+                  {report.notes ? ` — “${report.notes}”` : ''}
+                </Typography>
+              </Box>
+              {report.ad_photos.length > 0 ? (
+                <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 0.5 }}>
+                  {report.ad_photos.map((url) => (
+                    <Box key={url} component="a" href={url} target="_blank" rel="noreferrer" sx={{ flex: '0 0 auto' }}>
+                      <Box component="img" src={url} alt="" sx={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 1, border: 1, borderColor: 'divider' }} />
+                    </Box>
+                  ))}
+                </Stack>
+              ) : (
+                <Typography fontSize={13} color="text.secondary">No photos on this ad.</Typography>
+              )}
+              {report.ad_description && <Typography fontSize={13.5}>{report.ad_description}</Typography>}
+              <Alert severity={confirm?.remove ? 'warning' : 'info'}>
+                {confirm?.remove
+                  ? `The ad is removed for good and every open report on it closes. ${penaltyFor(report.ad_nursery_strikes + 1)}`
+                  : report.ad_status === 'SUSPENDED'
+                    ? 'The report was wrong: the ad goes live again (unless another serious report is still open).'
+                    : `The ad stays as it is. The report from ${report.reported_by_nursery_name} is closed as dismissed.`}
+              </Alert>
+            </Stack>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirm(null)}>Cancel</Button>
-          <Button variant="contained" color={confirm?.archive ? 'error' : 'primary'} disabled={reviewState.isLoading} onClick={submit}>
-            {confirm?.archive ? 'Take down' : 'Dismiss'}
+          <Button variant="contained" color={confirm?.remove ? 'error' : 'primary'} disabled={reviewState.isLoading} onClick={submit}>
+            {confirm?.remove ? 'Remove ad' : report?.ad_status === 'SUSPENDED' ? 'Restore ad' : 'Dismiss'}
           </Button>
         </DialogActions>
       </Dialog>
