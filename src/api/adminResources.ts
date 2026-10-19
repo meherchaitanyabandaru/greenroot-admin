@@ -269,24 +269,37 @@ export type MarketReport = {
 
 export type MarketReportsResponse = { reports: MarketReport[]; pagination: Pagination };
 
-export type MarketAd = {
+/** Any market ad, as Admin → Local Market → All ads lists it. */
+export type AdminMarketAd = {
   id: number;
   code: string;
   title: string;
   plant_name: string;
-  nursery_name: string;
-  nursery_verified: boolean;
+  description?: string;
+  photos: string[];
   status: string;
+  /** Why GreenRoot hid or removed it; the seller sees this. */
+  moderation_note?: string;
   quantity?: number;
   price_per_unit?: number;
   price_unit?: string;
   view_count: number;
   enquiry_count: number;
+  pending_reports: number;
+  nursery_id: number;
+  nursery_name: string;
+  nursery_verified: boolean;
+  nursery_strikes: number;
+  nursery_blocked_until?: string;
+  posted_by_name?: string;
+  posted_by_photo?: string;
   published_at?: string;
   expires_at?: string;
+  created_at: string;
 };
 
-export type MarketAdsResponse = { ads: MarketAd[]; total: number; page: number; per_page: number };
+export type AdminMarketAdsResponse = { ads: AdminMarketAd[]; pagination: Pagination };
+export type ModerationOutcome = { strikes: number; blocked_until?: string };
 
 /** An uncaught error reported by the mobile or web app. */
 export type CrashReport = {
@@ -458,12 +471,23 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (params) => `/api/v1/market/reports?${toQuery(params)}`,
       providesTags: ['Market'],
     }),
-    listMarketAds: builder.query<MarketAdsResponse, { search?: string; page: number; per_page: number }>({
-      query: (params) => `/api/v1/market/ads?${toQuery(params)}`,
+    listMarketAdminAds: builder.query<AdminMarketAdsResponse, { status?: string; search?: string; page: number; per_page: number }>({
+      query: (params) => `/api/v1/market/admin/ads?${toQuery(params)}`,
       providesTags: ['Market'],
     }),
+    moderateMarketAd: builder.mutation<
+      { ad: AdminMarketAd; outcome: ModerationOutcome },
+      { id: number; action: 'HIDE' | 'RESTORE' | 'REMOVE'; note?: string }
+    >({
+      query: ({ id, ...body }) => ({ url: `/api/v1/market/admin/ads/${id}/moderate`, method: 'POST', body }),
+      invalidatesTags: ['Market', 'Dashboard'],
+    }),
+    unblockMarketNursery: builder.mutation<{ nursery_id: number }, number>({
+      query: (id) => ({ url: `/api/v1/market/admin/nurseries/${id}/unblock`, method: 'POST' }),
+      invalidatesTags: ['Market'],
+    }),
     reviewMarketReport: builder.mutation<
-      { report: MarketReport; outcome: { strikes: number; blocked_until?: string } },
+      { report: MarketReport; outcome: ModerationOutcome },
       { id: number; decision: 'REMOVE' | 'DISMISS' }
     >({
       query: ({ id, ...body }) => ({ url: `/api/v1/market/reports/${id}/review`, method: 'POST', body }),
@@ -962,7 +986,9 @@ export const {
   useGetBotanicalNameQuery,
   useResolvePlantMutation,
   useListMarketReportsQuery,
-  useListMarketAdsQuery,
+  useListMarketAdminAdsQuery,
+  useModerateMarketAdMutation,
+  useUnblockMarketNurseryMutation,
   useReviewMarketReportMutation,
   useListCrashReportsQuery,
   useCreateOrderMutation,

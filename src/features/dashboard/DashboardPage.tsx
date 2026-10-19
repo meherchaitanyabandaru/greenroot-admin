@@ -201,7 +201,7 @@ export function DashboardPage() {
 
   const alerts = [
     pendingApprovals > 0 && { tone: 'danger', title: `${pendingApprovals} nursery application${pendingApprovals > 1 ? 's' : ''} waiting`, body: 'Owners cannot sell until you approve them.', href: '/nurseries/applications' },
-    reportedAds > 0 && { tone: 'warning', title: `${reportedAds} reported market ad${reportedAds > 1 ? 's' : ''}`, body: 'Review the reports and take down ads that break the rules.', href: '/market' },
+    reportedAds > 0 && { tone: 'warning', title: `${reportedAds} reported market ad${reportedAds > 1 ? 's' : ''}`, body: 'Check the photos, then restore or remove the ads.', href: '/market' },
     crashes > 0 && { tone: 'warning', title: `${crashes} app crash${crashes > 1 ? 'es' : ''} in 24 h`, body: 'Check which app version and screen fail.', href: '/crash-reports' },
     sms.data && !sms.data.live && { tone: 'info', title: 'SMS is in mock mode', body: 'OTP is the fixed dev code for every account. Go live after DLT approval.', href: '/sms' },
     email.data && !email.data.live && { tone: 'info', title: 'Email is in mock mode', body: 'Nothing is delivered until a provider (Amazon SES) is enabled.', href: '/email' },
