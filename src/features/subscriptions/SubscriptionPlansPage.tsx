@@ -105,7 +105,7 @@ export function SubscriptionPlansPage() {
   if (error) return <Alert severity="error" sx={{ m: 3 }}>Failed to load plans</Alert>;
 
   return (
-    <Box p={3}>
+    <Box>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
         <Box>
           <Typography variant="h5" fontWeight={700}>Subscription Plans</Typography>

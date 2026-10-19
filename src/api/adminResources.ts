@@ -207,16 +207,68 @@ export type BotanicalDetailResponse = {
   synonym_count: number;
 };
 
+/** A nursery's report of a local-market ad, for Admin → Local Market. */
+export type MarketReport = {
+  id: number;
+  ad_id: number;
+  ad_code: string;
+  ad_title: string;
+  ad_status: string;
+  ad_nursery_name: string;
+  reason: string;
+  notes?: string;
+  status: 'PENDING' | 'REVIEWED' | 'DISMISSED';
+  reported_by_name?: string;
+  reported_by_nursery_name: string;
+  reviewed_by_name?: string;
+  reviewed_at?: string;
+  created_at: string;
+};
+
+export type MarketReportsResponse = { reports: MarketReport[]; pagination: Pagination };
+
+export type MarketAd = {
+  id: number;
+  code: string;
+  title: string;
+  plant_name: string;
+  nursery_name: string;
+  nursery_verified: boolean;
+  status: string;
+  quantity?: number;
+  price_per_unit?: number;
+  price_unit?: string;
+  view_count: number;
+  enquiry_count: number;
+  published_at?: string;
+  expires_at?: string;
+};
+
+export type MarketAdsResponse = { ads: MarketAd[]; total: number; page: number; per_page: number };
+
+/** An uncaught error reported by the mobile or web app. */
+export type CrashReport = {
+  id: number;
+  user_id?: number;
+  user_name?: string;
+  platform: 'android' | 'ios' | 'web';
+  app_version: string;
+  build_number?: string;
+  os_version?: string;
+  device_model?: string;
+  error_type: string;
+  message: string;
+  stack_trace?: string;
+  context?: Record<string, unknown>;
+  is_fatal: boolean;
+  occurred_at: string;
+  received_at: string;
+};
+
+export type CrashReportsResponse = { items: CrashReport[]; total: number };
+
 export type PlantCareGuideResponse = {
   care_guide: Record<string, unknown>;
-};
-
-export type PlantCategoriesResponse = {
-  categories: Record<string, unknown>[];
-};
-
-export type PlantCategoryResponse = {
-  category: Record<string, unknown>;
 };
 
 export const resourceConfigs = {
@@ -226,8 +278,6 @@ export const resourceConfigs = {
     path: '/api/v1/admin/users',
     collectionKey: 'users',
   },
-  plants: { key: 'plants', tag: 'Plants', path: '/api/v1/plants', collectionKey: 'plants' },
-  plantCategories: { key: 'plantCategories', tag: 'Plants', path: '/api/v1/plants/categories', collectionKey: 'categories' },
   nurseries: {
     key: 'nurseries',
     tag: 'Nurseries',
@@ -356,33 +406,9 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       },
       providesTags: (_result, _error, arg) => [resourceConfigs[arg.resource].tag],
     }),
-    createPlant: builder.mutation<unknown, Record<string, unknown>>({
-      query: (body) => ({ url: '/api/v1/plants', method: 'POST', body }),
-      invalidatesTags: ['Plants', 'Dashboard'],
-    }),
     updatePlant: builder.mutation<unknown, { id: number; body: Record<string, unknown> }>({
       query: ({ id, body }) => ({ url: `/api/v1/plants/${id}`, method: 'PUT', body }),
       invalidatesTags: ['Plants', 'Dashboard'],
-    }),
-    deletePlant: builder.mutation<unknown, number>({
-      query: (id) => ({ url: `/api/v1/plants/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['Plants', 'Dashboard'],
-    }),
-    listPlantCategories: builder.query<PlantCategoriesResponse, void>({
-      query: () => '/api/v1/plants/categories',
-      providesTags: ['Plants'],
-    }),
-    createPlantCategory: builder.mutation<PlantCategoryResponse, { name: string }>({
-      query: (body) => ({ url: '/api/v1/plants/categories', method: 'POST', body }),
-      invalidatesTags: ['Plants'],
-    }),
-    updatePlantCategory: builder.mutation<PlantCategoryResponse, { id: number; body: { name?: string; is_active?: boolean } }>({
-      query: ({ id, body }) => ({ url: `/api/v1/plants/categories/${id}`, method: 'PUT', body }),
-      invalidatesTags: ['Plants'],
-    }),
-    deletePlantCategory: builder.mutation<unknown, number>({
-      query: (id) => ({ url: `/api/v1/plants/categories/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['Plants'],
     }),
     getPlant: builder.query<PlantDetailResponse, number>({
       query: (id) => `/api/v1/plants/${id}`,
@@ -391,6 +417,21 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     listBotanicalNames: builder.query<BotanicalListResponse, BotanicalListParams>({
       query: (params) => `/api/v1/botanical-names?${toQuery(params)}`,
       providesTags: ['Plants'],
+    }),
+    listMarketReports: builder.query<MarketReportsResponse, { status?: string; page: number; per_page: number }>({
+      query: (params) => `/api/v1/market/reports?${toQuery(params)}`,
+      providesTags: ['Market'],
+    }),
+    listMarketAds: builder.query<MarketAdsResponse, { search?: string; page: number; per_page: number }>({
+      query: (params) => `/api/v1/market/ads?${toQuery(params)}`,
+      providesTags: ['Market'],
+    }),
+    reviewMarketReport: builder.mutation<{ report: MarketReport }, { id: number; status: 'REVIEWED' | 'DISMISSED'; archive_ad: boolean }>({
+      query: ({ id, ...body }) => ({ url: `/api/v1/market/reports/${id}/review`, method: 'POST', body }),
+      invalidatesTags: ['Market', 'Dashboard'],
+    }),
+    listCrashReports: builder.query<CrashReportsResponse, { platform?: string; app_version?: string; fatal?: string; page: number; per_page: number }>({
+      query: (params) => `/api/v1/admin/crash-reports?${toQuery(params)}`,
     }),
     listBotanicalFamilies: builder.query<BotanicalFamiliesResponse, void>({
       query: () => '/api/v1/botanical-names/families',
@@ -476,10 +517,6 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (id) => ({ url: `/api/v1/vehicles/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Vehicles', 'Dashboard'],
     }),
-    createDispatch: builder.mutation<unknown, Record<string, unknown>>({
-      query: (body) => ({ url: '/api/v1/dispatches', method: 'POST', body }),
-      invalidatesTags: ['Dispatches', 'Dashboard'],
-    }),
     updateDispatchStatus: builder.mutation<unknown, { id: number; body: Record<string, unknown> }>({
       query: ({ id, body }) => ({ url: `/api/v1/dispatches/${id}/status`, method: 'PUT', body }),
       invalidatesTags: ['Dispatches', 'Dashboard'],
@@ -495,18 +532,6 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     createQuotation: builder.mutation<QuotationDetailResponse, Record<string, unknown>>({
       query: (body) => ({ url: '/api/v1/quotations', method: 'POST', body }),
       invalidatesTags: ['Quotations'],
-    }),
-    deleteQuotation: builder.mutation<unknown, number>({
-      query: (id) => ({ url: `/api/v1/quotations/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['Quotations'],
-    }),
-    sendQuotation: builder.mutation<QuotationDetailResponse, number>({
-      query: (id) => ({ url: `/api/v1/quotations/${id}/send`, method: 'POST' }),
-      invalidatesTags: ['Quotations'],
-    }),
-    getQuotationCurrentDocument: builder.query<{ document: Record<string, unknown> & { created_at?: string }; download_url: string }, number>({
-      query: (id) => `/api/v1/quotations/${id}/documents/current`,
-      providesTags: ['Quotations'],
     }),
     getQuotationRenderedPdf: builder.query<QuotationPDFResponse, number>({
       query: (id) => ({
@@ -777,10 +802,6 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (id) => `/api/v1/drivers/${id}`,
       providesTags: ['Drivers'],
     }),
-    updateDriverLocation: builder.mutation<unknown, { id: number; body: { latitude: number; longitude: number } }>({
-      query: ({ id, body }) => ({ url: `/api/v1/drivers/${id}/location`, method: 'POST', body }),
-      invalidatesTags: ['Drivers'],
-    }),
     getDriverLatestTracking: builder.query<{ tracking: Record<string, unknown> | null }, number>({
       query: (id) => `/api/v1/drivers/${id}/tracking/latest`,
       providesTags: ['Drivers'],
@@ -800,10 +821,6 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     listDispatchTracking: builder.query<{ tracking: Record<string, unknown>[] }, number>({
       query: (id) => `/api/v1/dispatches/${id}/tracking`,
       providesTags: ['Dispatches'],
-    }),
-    recordTracking: builder.mutation<unknown, Record<string, unknown>>({
-      query: (body) => ({ url: '/api/v1/tracking', method: 'POST', body }),
-      invalidatesTags: ['Vehicles', 'Drivers', 'Dispatches'],
     }),
     getNotification: builder.query<{ notification: Record<string, unknown> }, number>({
       query: (id) => `/api/v1/notifications/${id}`,
@@ -847,11 +864,8 @@ export const adminResourcesApi = baseApi.injectEndpoints({
 
 export const {
   useGetQuotationQuery,
-  useLazyGetQuotationCurrentDocumentQuery,
   useLazyGetQuotationRenderedPdfQuery,
   useCreateQuotationMutation,
-  useDeleteQuotationMutation,
-  useSendQuotationMutation,
   useListSubscriptionPlansQuery,
   useUpdateSubscriptionPlanMutation,
   useListSubscriptionPromosQuery,
@@ -894,17 +908,18 @@ export const {
   useListBotanicalFamiliesQuery,
   useGetBotanicalNameQuery,
   useResolvePlantMutation,
+  useListMarketReportsQuery,
+  useListMarketAdsQuery,
+  useReviewMarketReportMutation,
+  useListCrashReportsQuery,
   useCreateOrderMutation,
   useDeleteOrderMutation,
   useCreateOrderItemMutation,
   useUpdateOrderItemMutation,
   useDeleteOrderItemMutation,
-  useCreateDispatchMutation,
   useCreateDriverMutation,
   useCreateNurseryMutation,
-  useCreatePlantMutation,
   useDeactivateDriverMutation,
-  useDeletePlantMutation,
   useDeleteInventoryMutation,
   useListOrderDispatchesQuery,
   useListOrderItemsQuery,
@@ -921,15 +936,10 @@ export const {
   useUpdatePaymentStatusMutation,
   useUpdatePlantMutation,
   useUpdateVehicleMutation,
-  useListPlantCategoriesQuery,
-  useCreatePlantCategoryMutation,
-  useUpdatePlantCategoryMutation,
-  useDeletePlantCategoryMutation,
   useGetVehicleQuery,
   useListVehicleTrackingQuery,
   useGetVehicleLatestTrackingQuery,
   useGetDriverQuery,
-  useUpdateDriverLocationMutation,
   useGetDriverLatestTrackingQuery,
   useGetLiveDriverLocationQuery,
   useUpdateNurseryStatusMutation,
@@ -939,7 +949,6 @@ export const {
   useGetDispatchQuery,
   useAddDispatchItemMutation,
   useListDispatchTrackingQuery,
-  useRecordTrackingMutation,
   useGetNotificationQuery,
   useMarkNotificationReadMutation,
   useMarkAllNotificationsReadMutation,

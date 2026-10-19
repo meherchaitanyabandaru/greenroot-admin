@@ -14,13 +14,9 @@ import {
   DialogTitle,
   Divider,
   Drawer,
-  FormControl,
   Grid,
   IconButton,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   Stack,
   Tab,
   Table,
@@ -45,7 +41,7 @@ import { TableSkeleton } from '../../components/feedback/LoadingState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { PageHeader } from '../../components/page/PageHeader';
 import { SearchInput } from '../../components/forms/SearchInput';
-import { useToast } from '../../components/feedback/ToastProvider';
+import { useToast } from '../../components/feedback/toastContext';
 import { normalizeApiError } from '../../utils/apiError';
 import { formatDate } from '../../utils/labels';
 
@@ -460,7 +456,8 @@ export function NurseryApplicationsPage() {
     page,
     per_page: 20,
     search: search || undefined,
-    ...(statusFilter !== 'ALL' ? { status: statusFilter.toLowerCase() } : {}),
+    // The API filters on nursery_status; an unknown "status" param was silently ignored.
+    ...(statusFilter !== 'ALL' ? { nursery_status: statusFilter } : {}),
   }), [page, search, statusFilter]);
 
   const { data, isLoading, isFetching, error, refetch } = useListResourceQuery({
@@ -496,20 +493,6 @@ export function NurseryApplicationsPage() {
             placeholder="Search by name, code, mobile…"
           />
         </Box>
-        <FormControl size="small" sx={{ minWidth: 160 }}>
-          <InputLabel>Status</InputLabel>
-          <Select
-            value={statusFilter}
-            label="Status"
-            onChange={(e) => { setStatusFilter(e.target.value as StatusFilter); setPage(1); }}
-          >
-            {STATUS_TABS.map((s) => (
-              <MenuItem key={s} value={s}>
-                {s === 'ALL' ? 'All Statuses' : s.charAt(0) + s.slice(1).toLowerCase()}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
       </Stack>
 
       {/* Status tabs */}
@@ -537,7 +520,7 @@ export function NurseryApplicationsPage() {
         <Table size="small">
           <TableHead>
             <TableRow>
-              {['Code', 'Nursery Name', 'Owner ID', 'Mobile', 'Status', 'Registered', 'Actions'].map((h) => (
+              {['Code', 'Nursery Name', 'Owner', 'Mobile', 'Status', 'Registered', 'Actions'].map((h) => (
                 <TableCell key={h} sx={{ fontWeight: 700, fontSize: 12 }}>{h}</TableCell>
               ))}
             </TableRow>
@@ -576,7 +559,7 @@ export function NurseryApplicationsPage() {
                       <Typography fontSize={13.5} fontWeight={600}>{txt(row.name)}</Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography fontSize={12} color="text.secondary">{txt(row.owner_user_id)}</Typography>
+                      <Typography fontSize={13}>{txt(row.owner_name ?? (row.owner_user_id ? `User #${String(row.owner_user_id)}` : null))}</Typography>
                     </TableCell>
                     <TableCell>
                       <Typography fontSize={13}>{txt(row.mobile)}</Typography>

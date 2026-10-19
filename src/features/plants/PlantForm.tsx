@@ -12,7 +12,6 @@ const schema = z.object({
   plant_type: z.string().optional(),
   light_requirement: z.string().optional(),
   water_requirement: z.string().optional(),
-  category_ids: z.string().optional(),
   sunlight: z.string().optional(),
   watering: z.string().optional(),
   soil: z.string().optional(),
@@ -29,7 +28,7 @@ export function PlantForm({
   onSubmit,
   loading,
 }: {
-  initial?: Partial<PlantFormValues> & { categories?: Array<{ id?: unknown }> };
+  initial?: Partial<PlantFormValues>;
   onSubmit: (values: Record<string, unknown>) => void;
   loading?: boolean;
 }) {
@@ -43,13 +42,6 @@ export function PlantForm({
       plant_type: initial?.plant_type ?? 'TREE',
       light_requirement: initial?.light_requirement ?? 'FULL_SUN',
       water_requirement: initial?.water_requirement ?? 'MEDIUM',
-      category_ids:
-        initial?.category_ids ??
-        initial?.categories
-          ?.map((category) => category.id)
-          .filter(Boolean)
-          .join(',') ??
-        '',
       sunlight: initial?.sunlight ?? '',
       watering: initial?.watering ?? '',
       soil: initial?.soil ?? '',
@@ -63,10 +55,6 @@ export function PlantForm({
   const wfoId = useWatch({ control, name: 'wfo_id' }) ?? '';
 
   function submit(values: PlantFormValues) {
-    const categoryIDs = String(values.category_ids ?? '')
-      .split(',')
-      .map((value) => Number(value.trim()))
-      .filter((value) => Number.isFinite(value) && value > 0);
     onSubmit({
       scientific_name: values.scientific_name,
       // "" unlinks: the admin typed a name instead of picking one.
@@ -76,7 +64,6 @@ export function PlantForm({
       plant_type: values.plant_type || null,
       light_requirement: values.light_requirement || null,
       water_requirement: values.water_requirement || null,
-      category_ids: categoryIDs,
       care_guide: {
         sunlight: values.sunlight || null,
         watering: values.watering || null,
@@ -113,7 +100,6 @@ export function PlantForm({
           'plant_type',
           'light_requirement',
           'water_requirement',
-          'category_ids',
           'sunlight',
           'watering',
           'soil',
@@ -133,7 +119,7 @@ export function PlantForm({
               error={!!fieldState.error}
               fullWidth
               helperText={fieldState.error?.message}
-              label={name === 'category_ids' ? 'category ids, comma separated' : name.replaceAll('_', ' ')}
+              label={name.replaceAll('_', ' ')}
               multiline={['english_description', 'care_notes'].includes(name)}
               minRows={['english_description', 'care_notes'].includes(name) ? 3 : undefined}
             />

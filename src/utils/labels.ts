@@ -1,9 +1,13 @@
+/** Words that stay upper case in labels ("UPI", not "Upi"). */
+const ACRONYMS = new Set(['UPI', 'NEFT', 'RTGS', 'IMPS', 'OTP', 'SMS', 'GST', 'PDF', 'QR', 'DLT', 'ID', 'API', 'URL', 'IP', 'PE', 'TM', 'WFO', 'KM']);
+
 export function toLabel(snakeOrEnum: string): string {
   if (!snakeOrEnum) return '—';
   return snakeOrEnum
-    .toLowerCase()
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+    .split('_')
+    .filter(Boolean)
+    .map((word) => (ACRONYMS.has(word.toUpperCase()) ? word.toUpperCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()))
+    .join(' ');
 }
 
 export function formatCurrency(amount: unknown): string {

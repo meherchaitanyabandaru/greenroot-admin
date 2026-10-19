@@ -28,6 +28,7 @@ export const baseApi = createApi({
     'SecurityLogs',
     'SMS',
     'Email',
+    'Market',
   ],
   endpoints: () => ({}),
 });

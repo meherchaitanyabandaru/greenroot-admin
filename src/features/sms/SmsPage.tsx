@@ -30,7 +30,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import dayjs from 'dayjs';
 import { PageHeader } from '../../components/page/PageHeader';
 import { ReadinessCard, StatusChip, StepsCard } from '../messaging/shared';
-import { useToast } from '../../components/feedback/ToastProvider';
+import { useToast } from '../../components/feedback/toastContext';
 import { normalizeApiError } from '../../utils/apiError';
 import {
   DLT_OPERATORS,
@@ -58,7 +58,7 @@ export function SmsPage() {
   const { data: status } = useGetSmsStatusQuery();
 
   return (
-    <Box p={3}>
+    <Box>
       <PageHeader
         title="SMS / TRAI DLT"
         description="Principal Entity, sender headers and content templates registered on the DLT portal, and every SMS the platform sends."
@@ -106,9 +106,9 @@ function ReadinessTab() {
           'Register GreenRoot as a Principal Entity on one operator DLT portal (Jio, Airtel, Vi, BSNL, Tata or SmartPing). Enter the PE ID under Principal Entity.',
           'Register the sender header. Service/transactional headers are exactly 6 letters (proposed: GRROOT). Phones will show it with a suffix such as JM-GRROOT-S.',
           'Register each template under Templates exactly as written — use "Copy for DLT". All GreenRoot system SMS are SERVICE_IMPLICIT (TRANSACTIONAL is for banks only).',
-          'Pick an SMS aggregator (telemarketer) and bind it to the PE on the DLT portal (PE–TM chain). Enter its TM ID under Principal Entity.',
+          'Bind AWS End User Messaging SMS as your telemarketer on the DLT portal (PE–TM chain), and register the sender ID GRROOT for India in AWS with the PE ID and template IDs.',
           'When DLT approves, enter each DLT template ID and set the status to APPROVED.',
-          'Once this checklist is all green, implement the aggregator in platform/sms and set SMS_PROVIDER. Real OTPs start immediately.',
+          'Once this checklist is all green, give the API permission to send (IAM role with sms-voice:SendTextMessage) and set SMS_PROVIDER=aws and AWS_REGION=ap-south-1. Real OTPs start immediately.',
         ]}
       />
     </Stack>

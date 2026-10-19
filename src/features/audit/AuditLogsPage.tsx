@@ -33,6 +33,7 @@ type AuditRow = {
   old_data: string | null;
   new_data: string | null;
   user_id: number | null;
+  user_name?: string | null;
   request_id: string | null;
   nursery_id: number | null;
   source_ip: string | null;
@@ -64,8 +65,14 @@ function prettyJSON(raw: string | null | undefined): string {
   }
 }
 
+// Database triggers log INSERT/UPDATE/DELETE; services log CREATE/UPDATE/…
+// Show both the same way.
+const ACTION_ALIASES: Record<string, string> = { INSERT: 'CREATE' };
+const actionLabel = (action: string) => toLabel(ACTION_ALIASES[action] ?? action).replace(/^Create$/, 'Created').replace(/^Update$/, 'Updated').replace(/^Delete$/, 'Deleted');
+
 const ACTION_COLORS: Record<string, 'success' | 'primary' | 'error' | 'warning' | 'default'> = {
   CREATE: 'success',
+  INSERT: 'success',
   UPDATE: 'primary',
   DELETE: 'error',
   CANCEL: 'warning',
@@ -126,7 +133,7 @@ function DiffDrawer({
           </Typography>
           <Typography fontSize={12} color="text.secondary" mt={0.25}>
             {formatDateTime(row.changed_at)}
-            {row.user_id ? ` · User #${row.user_id}` : ''}
+            {row.user_id ? ` · ${row.user_name ?? `User #${row.user_id}`}` : ''}
             {row.module ? ` · ${row.module}` : ''}
           </Typography>
         </Box>
@@ -140,7 +147,7 @@ function DiffDrawer({
         <Stack direction="row" spacing={1} mb={2.5} flexWrap="wrap">
           {row.action_type && (
             <Chip
-              label={row.action_type}
+              label={actionLabel(row.action_type)}
               size="small"
               color={ACTION_COLORS[row.action_type] ?? 'default'}
               variant="outlined"
@@ -273,16 +280,8 @@ export function AuditLogsPage() {
         header: 'By',
         cell: ({ row }) =>
           row.original.user_id != null ? (
-            <Typography
-              fontSize={12}
-              fontFamily="monospace"
-              sx={{
-                display: 'inline-block', bgcolor: 'background.default',
-                px: 0.75, py: 0.25, borderRadius: 1,
-                border: '1px solid', borderColor: 'divider',
-              }}
-            >
-              #{row.original.user_id}
+            <Typography fontSize={13} fontWeight={500}>
+              {row.original.user_name ?? `User #${row.original.user_id}`}
             </Typography>
           ) : (
             <Typography color="text.disabled" fontSize={13}>—</Typography>
@@ -330,7 +329,7 @@ export function AuditLogsPage() {
           if (!action) return <Typography color="text.disabled" fontSize={13}>—</Typography>;
           return (
             <Chip
-              label={action}
+              label={actionLabel(action)}
               size="small"
               color={ACTION_COLORS[action] ?? 'default'}
               sx={{ height: 20, fontSize: 11, fontWeight: 700, '& .MuiChip-label': { px: 1 } }}

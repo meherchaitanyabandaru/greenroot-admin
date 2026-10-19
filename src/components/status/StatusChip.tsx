@@ -1,4 +1,5 @@
 import { Chip } from '@mui/material';
+import { toLabel } from '../../utils/labels';
 
 type StatusConfig = { label: string; color: string; bg: string };
 
@@ -58,6 +59,35 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   ACCEPTED:            { label: 'Accepted',            color: '#17803D', bg: '#D1FAE5' },
   SYNONYM:             { label: 'Synonym',             color: '#2563EB', bg: '#DBEAFE' },
   UNCHECKED:           { label: 'Unchecked',           color: '#667085', bg: '#F2F4F7' },
+
+  // Nursery applications
+  APPROVED:            { label: 'Approved',            color: '#17803D', bg: '#D1FAE5' },
+  REJECTED:            { label: 'Rejected',            color: '#C2410C', bg: '#FEE2E2' },
+
+  // Orders (loading) and dispatches
+  LOADING:             { label: 'Loading',             color: '#2563EB', bg: '#DBEAFE' },
+  LOADED:              { label: 'Loaded',              color: '#7C3AED', bg: '#EDE9FE' },
+
+  // Quotations
+  DRAFT:               { label: 'Draft',               color: '#667085', bg: '#F2F4F7' },
+  CUSTOMER_DRAFT:      { label: 'Draft',               color: '#667085', bg: '#F2F4F7' },
+  CUSTOMER_SENT:       { label: 'Sent to customer',    color: '#2563EB', bg: '#DBEAFE' },
+  CUSTOMER_ACCEPTED:   { label: 'Accepted',            color: '#17803D', bg: '#D1FAE5' },
+  CUSTOMER_REJECTED:   { label: 'Rejected',            color: '#C2410C', bg: '#FEE2E2' },
+  INTERNAL_DRAFT:      { label: 'Internal draft',      color: '#667085', bg: '#F2F4F7' },
+  INTERNAL_FINAL:      { label: 'Internal final',      color: '#7C3AED', bg: '#EDE9FE' },
+  CONVERTED:           { label: 'Converted to order',  color: '#17803D', bg: '#D1FAE5' },
+
+  // Local market ads and reports
+  PUBLISHED:           { label: 'Published',           color: '#17803D', bg: '#D1FAE5' },
+  ARCHIVED:            { label: 'Archived',            color: '#667085', bg: '#F2F4F7' },
+  REVIEWED:            { label: 'Action taken',        color: '#17803D', bg: '#D1FAE5' },
+  DISMISSED:           { label: 'Dismissed',           color: '#667085', bg: '#F2F4F7' },
+
+  // Messages (SMS / email)
+  MOCKED:              { label: 'Mocked',              color: '#B7791F', bg: '#FEF3C7' },
+  BLOCKED:             { label: 'Blocked',             color: '#C2410C', bg: '#FEE2E2' },
+  BOUNCED:             { label: 'Bounced',             color: '#C2410C', bg: '#FEE2E2' },
 };
 
 export function StatusChip({ value }: { value?: unknown }) {
@@ -68,11 +98,12 @@ export function StatusChip({ value }: { value?: unknown }) {
     if (!key || key === 'UNKNOWN') {
       return <Chip size="small" label="—" sx={{ fontSize: 11, height: 22 }} />;
     }
+    // Unknown status: readable label, neutral colours (never a raw CODE_VALUE).
     return (
       <Chip
         size="small"
-        label={key}
-        sx={{ fontSize: 11, height: 22, '& .MuiChip-label': { px: 1 } }}
+        label={toLabel(key)}
+        sx={{ fontSize: 11, height: 22, color: '#475467', bgcolor: '#F2F4F7', '& .MuiChip-label': { px: 1 } }}
       />
     );
   }

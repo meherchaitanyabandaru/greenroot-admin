@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import SendIcon from '@mui/icons-material/Send';
-import { useToast } from '../../components/feedback/ToastProvider';
+import { useToast } from '../../components/feedback/toastContext';
 import { normalizeApiError } from '../../utils/apiError';
 import {
   usePreviewEmailTemplateMutation,

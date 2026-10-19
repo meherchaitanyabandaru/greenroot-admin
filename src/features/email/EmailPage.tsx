@@ -25,7 +25,7 @@ import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import dayjs from 'dayjs';
 import { PageHeader } from '../../components/page/PageHeader';
-import { useToast } from '../../components/feedback/ToastProvider';
+import { useToast } from '../../components/feedback/toastContext';
 import { normalizeApiError } from '../../utils/apiError';
 import { ReadinessCard, StatusChip, StepsCard } from '../messaging/shared';
 import {
@@ -47,7 +47,7 @@ export function EmailPage() {
   const { data: status } = useGetEmailStatusQuery();
 
   return (
-    <Box p={3}>
+    <Box>
       <PageHeader
         title="Email"
         description="Sender identity, email templates and every email the platform sends. Templates that share a code with an SMS template go out together for the same event."
@@ -88,10 +88,10 @@ function ReadinessTab() {
       <StepsCard
         title="How to go live"
         steps={[
-          'Pick an email provider (e.g. Amazon SES, SendGrid, Postmark) and verify the sending domain there.',
+          'In Amazon SES (region ap-south-1), verify the sending domain and request production access (new accounts can only mail verified addresses).',
           'Publish the SPF, DKIM and DMARC DNS records the provider gives you, then tick "Domain verified" under Sender.',
           'Set the From address (e.g. no-reply@yourdomain) and an optional Reply-To under Sender.',
-          'Implement the provider in platform/email and set EMAIL_PROVIDER. Verification codes become random immediately.',
+          'Give the API permission to send (IAM role with ses:SendEmail) and set EMAIL_PROVIDER=ses and AWS_REGION=ap-south-1. Verification codes become random immediately.',
         ]}
       />
     </Stack>

@@ -39,7 +39,7 @@ import {
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
-import { useToast } from '../../components/feedback/ToastProvider';
+import { useToast } from '../../components/feedback/toastContext';
 import { normalizeApiError } from '../../utils/apiError';
 
 function text(value: unknown) {

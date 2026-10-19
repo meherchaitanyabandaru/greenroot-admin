@@ -21,7 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { Controller, useFieldArray, useForm, type Resolver } from 'react-hook-form';
+import { Controller, useFieldArray, useForm, useWatch, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import { useCreateOrderMutation, useCreateOrderItemMutation } from '../../api/adminResources';
 import { normalizeApiError } from '../../utils/apiError';
@@ -63,7 +63,7 @@ export function OrderCreateDrawer({
   const [createOrderItem] = useCreateOrderItemMutation();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const { control, handleSubmit, reset, watch } = useForm<OrderFormValues>({
+  const { control, handleSubmit, reset } = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema) as Resolver<OrderFormValues>,
     defaultValues: {
       buyer_user_id: undefined,
@@ -74,7 +74,7 @@ export function OrderCreateDrawer({
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
-  const watchedItems: ItemFormValues[] = watch('items');
+  const watchedItems: ItemFormValues[] = useWatch({ control, name: 'items' });
 
   const grandTotal = watchedItems.reduce(
     (sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unit_price) || 0),

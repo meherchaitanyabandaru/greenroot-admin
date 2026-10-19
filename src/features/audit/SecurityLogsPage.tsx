@@ -27,6 +27,7 @@ type SecurityLogRow = {
   event_type: string | null;
   description: string | null;
   user_id: number | null;
+  user_name?: string | null;
   nursery_id: number | null;
   request_id: string | null;
   ip_address: string | null;
@@ -112,7 +113,7 @@ function DetailDrawer({
           </Stack>
           <Typography fontSize={12} color="text.secondary" mt={0.5}>
             {formatDateTime(row.created_at)}
-            {row.user_id ? ` · User #${row.user_id}` : ''}
+            {row.user_id ? ` · ${row.user_name ?? `User #${row.user_id}`}` : ''}
           </Typography>
         </Box>
         <IconButton onClick={onClose} size="small">
@@ -129,7 +130,7 @@ function DetailDrawer({
         {/* Key fields */}
         <Stack spacing={0.75} mb={3}>
           {[
-            { label: 'User ID',    value: row.user_id != null ? `#${row.user_id}` : null },
+            { label: 'User',       value: row.user_id != null ? `${row.user_name ?? ''} (#${row.user_id})`.trim() : null },
             { label: 'Nursery ID', value: row.nursery_id != null ? `#${row.nursery_id}` : null },
             { label: 'Source IP',  value: row.ip_address },
             { label: 'Request ID', value: row.request_id },
@@ -231,16 +232,8 @@ export function SecurityLogsPage() {
         header: 'User',
         cell: ({ row }) =>
           row.original.user_id != null ? (
-            <Typography
-              fontSize={12}
-              fontFamily="monospace"
-              sx={{
-                display: 'inline-block', bgcolor: 'background.default',
-                px: 0.75, py: 0.25, borderRadius: 1,
-                border: '1px solid', borderColor: 'divider',
-              }}
-            >
-              #{row.original.user_id}
+            <Typography fontSize={13} fontWeight={500}>
+              {row.original.user_name ?? `User #${row.original.user_id}`}
             </Typography>
           ) : (
             <Typography color="text.disabled" fontSize={13}>—</Typography>

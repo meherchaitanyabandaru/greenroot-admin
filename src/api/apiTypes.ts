@@ -50,6 +50,18 @@ export type DashboardSummary = {
   notifications: number;
   active_drivers: number;
   revenue: number;
+  /** "Today" = business day (Asia/Kolkata), computed by the API. */
+  orders_today: number;
+  dispatches_today: number;
+  active_trips: number;
+  pending_payments: number;
+  order_revenue: number;
+  subscription_revenue: number;
+  failed_logins_24h: number;
+  crash_reports_24h: number;
+  botanical_names: number;
+  /** Last 7 business days, oldest first. */
+  trend: Array<{ day: string; orders: number; dispatches: number }>;
 };
 
 export type DashboardResponse = {

@@ -23,7 +23,7 @@ import {
   useGetVehicleLatestTrackingQuery,
 } from '../../api/adminResources';
 import { ErrorState } from '../../components/feedback/ErrorState';
-import { useToast } from '../../components/feedback/ToastProvider';
+import { useToast } from '../../components/feedback/toastContext';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
 import { normalizeApiError } from '../../utils/apiError';

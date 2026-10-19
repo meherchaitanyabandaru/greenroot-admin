@@ -150,7 +150,7 @@ export function SubscriptionsPage() {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: 'grey.50' }}>
-              {['Code', 'User ID', 'Plan', 'Status', 'Days Left', 'End Date', 'Auto Renew', 'Created'].map((h) => (
+              {['Code', 'Subscriber', 'Plan', 'Status', 'Days Left', 'End Date', 'Auto Renew', 'Created'].map((h) => (
                 <TableCell key={h} sx={{ fontWeight: 700, fontSize: 12, color: 'text.secondary', py: 1.25 }}>{h}</TableCell>
               ))}
             </TableRow>
@@ -185,7 +185,8 @@ export function SubscriptionsPage() {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">{String(row.user_id ?? '—')}</Typography>
+                      <Typography variant="body2" fontWeight={500}>{String(row.user_name ?? `User #${String(row.user_id ?? '—')}`)}</Typography>
+                      <Typography variant="caption" color="text.secondary">{[row.nursery_name, row.user_mobile].filter(Boolean).map(String).join(' · ')}</Typography>
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={0.75} alignItems="center">

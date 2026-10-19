@@ -2,24 +2,16 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Alert, Snackbar } from '@mui/material';
-import { createContext, useCallback, useContext, useState } from 'react';
+import { useCallback, useState } from 'react';
 
-type Severity = 'success' | 'error' | 'info' | 'warning';
+import { type Severity, ToastContext } from './toastContext';
 
 interface Toast {
   message: string;
   severity: Severity;
 }
 
-interface ToastContextValue {
-  showToast: (message: string, severity?: Severity) => void;
-}
 
-const ToastContext = createContext<ToastContextValue>({ showToast: () => {} });
-
-export function useToast() {
-  return useContext(ToastContext);
-}
 
 const ICONS: Record<Severity, React.ReactNode> = {
   success: <CheckCircleOutlineIcon fontSize="small" />,

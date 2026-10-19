@@ -194,7 +194,7 @@ export function TrackingPage() {
     <Box>
       <PageHeader
         title="Live Tracking"
-        description="IN_TRANSIT dispatches — auto-refreshes every 30 seconds."
+        description="Trips on the road right now. Refreshes every 30 seconds."
       />
       {isFetching && <LoadingState />}
       {error && <ErrorState message={normalizeApiError(error).message} onRetry={refetch} />}
@@ -212,7 +212,7 @@ export function TrackingPage() {
               {dispatches.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6}>
-                    <Alert severity="info">No dispatches currently IN_TRANSIT.</Alert>
+                    <Alert severity="info">No trips on the road right now.</Alert>
                   </TableCell>
                 </TableRow>
               ) : (

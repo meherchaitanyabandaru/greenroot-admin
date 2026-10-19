@@ -17,6 +17,12 @@ const ResourceListPage = lazy(() =>
 const BotanicalNamesPage = lazy(() =>
   import('../features/plants/BotanicalNamesPage').then((m) => ({ default: m.BotanicalNamesPage })),
 );
+const MarketPage = lazy(() =>
+  import('../features/market/MarketPage').then((m) => ({ default: m.MarketPage })),
+);
+const CrashReportsPage = lazy(() =>
+  import('../features/crashes/CrashReportsPage').then((m) => ({ default: m.CrashReportsPage })),
+);
 const PlantFamiliesPage = lazy(() =>
   import('../features/plants/PlantFamiliesPage').then((m) => ({ default: m.PlantFamiliesPage })),
 );
@@ -75,6 +81,8 @@ export function AppRouter() {
             {/* Master Data */}
             <Route path="/plants" element={<BotanicalNamesPage />} />
             <Route path="/plants/categories" element={<PlantFamiliesPage />} />
+            <Route path="/market" element={<MarketPage />} />
+            <Route path="/crash-reports" element={<CrashReportsPage />} />
 
             {/* Business Monitoring (read-only for Super Admin) */}
             <Route path="/quotations" element={<ResourceListPage resource="quotations" />} />

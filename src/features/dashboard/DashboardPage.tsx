@@ -2,7 +2,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import LocalFloristIcon from '@mui/icons-material/LocalFlorist';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import PeopleIcon from '@mui/icons-material/People';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
@@ -26,6 +26,7 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -36,7 +37,10 @@ import { LoadingState } from '../../components/feedback/LoadingState';
 import { PageHeader } from '../../components/page/PageHeader';
 import { tokens } from '../../theme/tokens';
 import { normalizeApiError } from '../../utils/apiError';
-import { formatCurrency } from '../../utils/labels';
+import { formatCurrency, toLabel } from '../../utils/labels';
+import { useListMarketReportsQuery, useListResourceQuery } from '../../api/adminResources';
+import { useGetEmailStatusQuery } from '../email/emailApi';
+import { useGetSmsStatusQuery } from '../sms/smsApi';
 import { useDashboardQuery } from './dashboardApi';
 
 const palette = tokens.color;
@@ -176,39 +180,45 @@ function RowItem({
 
 export function DashboardPage() {
   const { data, error, isLoading, refetch } = useDashboardQuery();
+  const sms = useGetSmsStatusQuery();
+  const email = useGetEmailStatusQuery();
+  const reports = useListMarketReportsQuery({ status: 'PENDING', page: 1, per_page: 1 });
+  const activity = useListResourceQuery({ resource: 'audit', params: { page: 1, per_page: 6 } });
   const s = data?.summary;
   const n = (key: keyof NonNullable<typeof s>) => numberValue(s?.[key]);
 
-  const activeNurseries = n('approved_nurseries');
   const pendingApprovals = n('pending_nurseries');
-  const activeTrips = n('dispatches');
-  const revenue = n('revenue');
-  const pendingPayments = Math.max(0, n('payments') - Math.floor(n('payments') * 0.82));
-
-  const trendData = [
-    { day: 'Mon', orders: Math.max(2, Math.round(n('orders') * 0.11)), dispatches: Math.max(1, Math.round(activeTrips * 0.08)) },
-    { day: 'Tue', orders: Math.max(3, Math.round(n('orders') * 0.14)), dispatches: Math.max(1, Math.round(activeTrips * 0.12)) },
-    { day: 'Wed', orders: Math.max(4, Math.round(n('orders') * 0.13)), dispatches: Math.max(1, Math.round(activeTrips * 0.16)) },
-    { day: 'Thu', orders: Math.max(5, Math.round(n('orders') * 0.18)), dispatches: Math.max(2, Math.round(activeTrips * 0.18)) },
-    { day: 'Fri', orders: Math.max(6, Math.round(n('orders') * 0.2)), dispatches: Math.max(2, Math.round(activeTrips * 0.2)) },
-    { day: 'Sat', orders: n('active_orders'), dispatches: activeTrips },
-  ];
+  const pendingPayments = n('pending_payments');
+  const reportedAds = reports.data?.pagination?.total ?? 0;
+  const crashes = n('crash_reports_24h');
+  const trend = (s?.trend ?? []).map((d) => ({
+    ...d,
+    label: new Date(`${d.day}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }),
+  }));
 
   if (isLoading) return <LoadingState label="Loading GreenRoot operations" />;
   if (error) return <ErrorState message={normalizeApiError(error).message} onRetry={refetch} />;
+
+  const alerts = [
+    pendingApprovals > 0 && { tone: 'danger', title: `${pendingApprovals} nursery application${pendingApprovals > 1 ? 's' : ''} waiting`, body: 'Owners cannot sell until you approve them.', href: '/nurseries/applications' },
+    reportedAds > 0 && { tone: 'warning', title: `${reportedAds} reported market ad${reportedAds > 1 ? 's' : ''}`, body: 'Review the reports and take down ads that break the rules.', href: '/market' },
+    crashes > 0 && { tone: 'warning', title: `${crashes} app crash${crashes > 1 ? 'es' : ''} in 24 h`, body: 'Check which app version and screen fail.', href: '/crash-reports' },
+    sms.data && !sms.data.live && { tone: 'info', title: 'SMS is in mock mode', body: 'OTP is the fixed dev code for every account. Go live after DLT approval.', href: '/sms' },
+    email.data && !email.data.live && { tone: 'info', title: 'Email is in mock mode', body: 'Nothing is delivered until a provider (Amazon SES) is enabled.', href: '/email' },
+  ].filter(Boolean) as Array<{ tone: 'danger' | 'warning' | 'info'; title: string; body: string; href: string }>;
 
   return (
     <Box>
       <PageHeader
         title="Platform Overview"
-        description="Operational command center for GreenRoot administrators."
+        description="Live figures from the GreenRoot API. Today means the business day in India (IST)."
         action={
           <Stack direction="row" spacing={1}>
             <Button component={Link} to="/nurseries/applications" variant="outlined" size="small">
-              Review Queue
+              Review queue
             </Button>
             <Button component={Link} to="/audit" variant="contained" size="small">
-              Audit Activity
+              Audit activity
             </Button>
           </Stack>
         }
@@ -217,18 +227,18 @@ export function DashboardPage() {
       <Stack spacing={2.5}>
         <Grid container spacing={1.5}>
           {[
-            { label: 'Total Users', value: n('users'), icon: PeopleIcon, href: '/users', helper: 'Across all platform roles' },
-            { label: 'Active Nurseries', value: activeNurseries, icon: StorefrontIcon, href: '/nurseries', tone: 'success' as const },
-            { label: 'Pending Approvals', value: pendingApprovals, icon: ErrorOutlineIcon, href: '/nurseries/applications', tone: pendingApprovals > 0 ? 'danger' as const : 'neutral' as const },
-            { label: "Today's Orders", value: n('active_orders'), icon: ReceiptLongIcon, href: '/orders', tone: 'info' as const },
-            { label: 'Active Trips', value: activeTrips, icon: LocalShippingIcon, href: '/tracking', tone: 'warning' as const },
-            { label: "Today's Dispatches", value: n('dispatches'), icon: LocalShippingIcon, href: '/dispatches' },
-            { label: 'Plant Requests', value: n('plant_requests'), icon: TravelExploreIcon, href: '/requests', tone: 'success' as const },
-            { label: 'Subscription Revenue', value: formatCurrency(revenue), icon: PaymentsIcon, href: '/payments', tone: 'success' as const },
-            { label: 'Pending Payments', value: pendingPayments, icon: PaymentsIcon, href: '/payments', tone: pendingPayments ? 'warning' as const : 'neutral' as const },
-            { label: 'Failed Logins', value: 0, icon: ErrorOutlineIcon, href: '/audit' },
-            { label: 'Push Sent', value: n('notifications'), icon: NotificationsNoneIcon, href: '/notifications', tone: 'info' as const },
-            { label: 'Plant Catalogue', value: n('plants'), icon: LocalFloristIcon, href: '/plants' },
+            { label: "Today's orders", value: n('orders_today'), icon: ReceiptLongIcon, href: '/orders', tone: 'info' as const, helper: `${n('active_orders').toLocaleString('en-IN')} in progress` },
+            { label: 'Active trips', value: n('active_trips'), icon: LocalShippingIcon, href: '/tracking', tone: n('active_trips') ? ('warning' as const) : ('neutral' as const), helper: `${n('dispatches_today')} dispatched today` },
+            { label: 'Pending approvals', value: pendingApprovals, icon: ErrorOutlineIcon, href: '/nurseries/applications', tone: pendingApprovals ? ('danger' as const) : ('neutral' as const), helper: `${n('approved_nurseries')} active nurseries` },
+            { label: 'Reported ads', value: reportedAds, icon: StorefrontIcon, href: '/market', tone: reportedAds ? ('warning' as const) : ('neutral' as const), helper: 'Local market, awaiting review' },
+            { label: 'Order revenue', value: formatCurrency(n('order_revenue')), icon: PaymentsIcon, href: '/payments', tone: 'success' as const, helper: 'Successful order payments' },
+            { label: 'Subscription revenue', value: formatCurrency(n('subscription_revenue')), icon: PaymentsIcon, href: '/subscriptions', tone: 'success' as const, helper: 'Successful subscription payments' },
+            { label: 'Pending payments', value: pendingPayments, icon: PaymentsIcon, href: '/payments', tone: pendingPayments ? ('warning' as const) : ('neutral' as const), helper: 'Waiting for confirmation' },
+            { label: 'Failed logins (24 h)', value: n('failed_logins_24h'), icon: ErrorOutlineIcon, href: '/security-logs', tone: n('failed_logins_24h') ? ('danger' as const) : ('neutral' as const) },
+            { label: 'Users', value: n('users'), icon: PeopleIcon, href: '/users', helper: `${n('active_drivers')} active drivers` },
+            { label: 'Catalog plants', value: n('plants'), icon: LocalFloristIcon, href: '/plants?in_catalog=true', helper: `of ${n('botanical_names').toLocaleString('en-IN')} botanical names` },
+            { label: 'Plant requests', value: n('plant_requests'), icon: TravelExploreIcon, href: '/requests', helper: `${n('inventory_items')} stock lines` },
+            { label: 'App crashes (24 h)', value: crashes, icon: BugReportIcon, href: '/crash-reports', tone: crashes ? ('warning' as const) : ('neutral' as const) },
           ].map((kpi) => (
             <Grid key={kpi.label} size={{ xs: 12, sm: 6, lg: 3 }}>
               <KpiTile {...kpi} />
@@ -239,12 +249,12 @@ export function DashboardPage() {
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, lg: 8 }}>
             <Panel
-              title="Order And Dispatch Flow"
-              action={<Chip size="small" label="Live" sx={{ height: 22, borderRadius: 1, fontSize: 11, fontWeight: 700 }} />}
+              title="Orders and dispatches"
+              action={<Chip size="small" label="Last 7 days" sx={{ height: 22, borderRadius: 1, fontSize: 11, fontWeight: 700 }} />}
             >
               <Box sx={{ height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trendData} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
+                  <AreaChart data={trend} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
                     <defs>
                       <linearGradient id="orders" x1="0" x2="0" y1="0" y2="1">
                         <stop offset="5%" stopColor={palette.forest[600]} stopOpacity={0.24} />
@@ -256,11 +266,12 @@ export function DashboardPage() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid stroke={tokens.semantic.border} vertical={false} />
-                    <XAxis dataKey="day" tick={{ fontSize: 12, fill: tokens.semantic.textSecondary }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 12, fill: tokens.semantic.textSecondary }} axisLine={false} tickLine={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 12, fill: tokens.semantic.textSecondary }} axisLine={false} tickLine={false} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: tokens.semantic.textSecondary }} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${tokens.semantic.border}`, fontSize: 12 }} />
-                    <Area type="monotone" dataKey="orders" stroke={palette.forest[700]} fill="url(#orders)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="dispatches" stroke={palette.blue[600]} fill="url(#dispatches)" strokeWidth={2} />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                    <Area type="monotone" name="Orders" dataKey="orders" stroke={palette.forest[700]} fill="url(#orders)" strokeWidth={2} />
+                    <Area type="monotone" name="Dispatches" dataKey="dispatches" stroke={palette.blue[600]} fill="url(#dispatches)" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
               </Box>
@@ -268,76 +279,55 @@ export function DashboardPage() {
           </Grid>
 
           <Grid size={{ xs: 12, lg: 4 }}>
-            <Panel title="Pending Tasks">
-              <Stack divider={<Divider flexItem />} spacing={0}>
-                <RowItem title="Nursery approvals" caption="Applications waiting for admin review" value={String(pendingApprovals)} tone={pendingApprovals ? 'danger' : 'success'} />
-                <RowItem title="Payments to reconcile" caption="Manual and subscription payment checks" value={String(pendingPayments)} tone={pendingPayments ? 'warning' : 'success'} />
-                <RowItem title="Active trips" caption="Dispatches currently being tracked" value={String(activeTrips)} tone="warning" />
-                <RowItem title="Suspended nurseries" caption="Partners needing follow-up" value={String(n('suspended_nurseries'))} />
-              </Stack>
-            </Panel>
-          </Grid>
-        </Grid>
-
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, md: 6, xl: 3 }}>
-            <Panel title="Recent Activities">
-              <Stack divider={<Divider flexItem />} spacing={0}>
-                <RowItem title="Admin session verified" caption="Super admin login completed" value="Now" tone="success" />
-                <RowItem title="Dashboard metrics refreshed" caption="Platform summary synchronized" value="Live" />
-                <RowItem title="RBAC checks passing" caption="API smoke suite reports 267/267" value="OK" tone="success" />
-              </Stack>
-            </Panel>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6, xl: 3 }}>
-            <Panel title="System Alerts">
-              <Stack spacing={1.25}>
-                {pendingApprovals > 0 && (
-                  <Box sx={{ p: 1.25, borderRadius: 1, bgcolor: palette.red[50], color: palette.red[700] }}>
-                    <Typography fontSize={13} fontWeight={700}>Approval backlog</Typography>
-                    <Typography fontSize={12}>Review nursery applications before owners can transact.</Typography>
-                  </Box>
-                )}
-                <Box sx={{ p: 1.25, borderRadius: 1, bgcolor: palette.forest[50], color: palette.forest[700] }}>
-                  <Typography fontSize={13} fontWeight={700}>API healthy</Typography>
-                  <Typography fontSize={12}>Auth and RBAC endpoints are available locally.</Typography>
+            <Panel title="Needs attention">
+              {alerts.length === 0 ? (
+                <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: palette.forest[50], color: palette.forest[700] }}>
+                  <Typography fontSize={13} fontWeight={700}>All clear</Typography>
+                  <Typography fontSize={12}>No approvals, reports or crashes waiting.</Typography>
                 </Box>
-              </Stack>
-            </Panel>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6, xl: 3 }}>
-            <Panel title="Latest Registrations">
-              <Stack divider={<Divider flexItem />} spacing={0}>
-                <RowItem title="Nursery partners" caption="Approved and pending network participants" value={String(n('nurseries'))} />
-                <RowItem title="Drivers" caption="Active delivery workforce" value={String(n('active_drivers'))} />
-                <RowItem title="Buyers and admins" caption="All registered users" value={String(n('users'))} />
-              </Stack>
-            </Panel>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6, xl: 3 }}>
-            <Panel title="Top Growing Nurseries">
-              <Stack spacing={1.5}>
-                {[
-                  ['Hyderabad Green Farms', 82],
-                  ['Coastal Plant House', 68],
-                  ['Deccan Nursery Works', 54],
-                ].map(([name, score]) => (
-                  <Box key={String(name)}>
-                    <Stack direction="row" justifyContent="space-between" mb={0.5}>
-                      <Typography fontSize={13} fontWeight={600}>{name}</Typography>
-                      <Typography fontSize={12} color="text.secondary">{score}%</Typography>
-                    </Stack>
-                    <LinearProgress variant="determinate" value={Number(score)} sx={{ height: 6, borderRadius: 3 }} />
-                  </Box>
-                ))}
-              </Stack>
+              ) : (
+                <Stack spacing={1.25}>
+                  {alerts.map((a) => {
+                    const c = { danger: palette.red, warning: palette.amber, info: palette.blue }[a.tone];
+                    return (
+                      <Box key={a.title} component={Link} to={a.href} sx={{ p: 1.25, borderRadius: 1, bgcolor: c[50], color: c[700], textDecoration: 'none', display: 'block', '&:hover': { opacity: 0.85 } }}>
+                        <Typography fontSize={13} fontWeight={700}>{a.title}</Typography>
+                        <Typography fontSize={12}>{a.body}</Typography>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              )}
             </Panel>
           </Grid>
         </Grid>
+
+        <Panel
+          title="Recent activity"
+          action={<Button component={Link} to="/audit" size="small" endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}>All activity</Button>}
+        >
+          {activity.isLoading ? (
+            <LinearProgress />
+          ) : (activity.data?.rows ?? []).length === 0 ? (
+            <Typography color="text.secondary" fontSize={13}>No activity yet.</Typography>
+          ) : (
+            <Stack divider={<Divider flexItem />} spacing={0}>
+              {(activity.data?.rows ?? []).map((row) => (
+                <RowItem
+                  key={String(row.id)}
+                  title={String(row.description || `${toLabel(String(row.action_type ?? ''))} ${String(row.entity_type ?? '')} #${String(row.record_id ?? '')}`)}
+                  caption={`${String(row.user_name ?? 'System')} · ${toLabel(String(row.module ?? ''))} · ${formatDateTime(row.changed_at)}`}
+                />
+              ))}
+            </Stack>
+          )}
+        </Panel>
       </Stack>
     </Box>
   );
+}
+
+function formatDateTime(value: unknown) {
+  const d = new Date(String(value ?? ''));
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }

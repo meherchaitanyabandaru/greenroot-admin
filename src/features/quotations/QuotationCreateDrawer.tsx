@@ -19,7 +19,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { Controller, useFieldArray, useForm, type Resolver } from 'react-hook-form';
+import { Controller, useFieldArray, useForm, useWatch, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateQuotationMutation } from '../../api/adminResources';
@@ -59,7 +59,7 @@ export function QuotationCreateDrawer({
   const [createQuotation, createState] = useCreateQuotationMutation();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const { control, handleSubmit, reset, watch } = useForm<QuotationFormValues>({
+  const { control, handleSubmit, reset } = useForm<QuotationFormValues>({
     resolver: zodResolver(quotationSchema) as Resolver<QuotationFormValues>,
     defaultValues: {
       nursery_id: undefined,
@@ -71,7 +71,7 @@ export function QuotationCreateDrawer({
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
-  const watchedItems: ItemFormValues[] = watch('items');
+  const watchedItems: ItemFormValues[] = useWatch({ control, name: 'items' });
   const grandTotal = watchedItems.reduce((sum, item) => sum + lineTotal(item), 0);
 
   async function onSubmit(values: QuotationFormValues) {

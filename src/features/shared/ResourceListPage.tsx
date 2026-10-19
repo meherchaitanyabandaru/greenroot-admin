@@ -24,10 +24,8 @@ import {
   useCreateInventoryMutation,
   useCreateManualPaymentMutation,
   useCreateNurseryMutation,
-  useCreatePlantMutation,
   useDeactivateDriverMutation,
   useDeleteInventoryMutation,
-  useDeletePlantMutation,
   useListResourceQuery,
   useUpdateDispatchStatusMutation,
   useUpdateDriverMutation,
@@ -42,7 +40,7 @@ import { AppDataTable } from '../../components/data-table/AppDataTable';
 import { TableAvatar } from '../../components/data-table/TableAvatar';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { TableSkeleton } from '../../components/feedback/LoadingState';
-import { useToast } from '../../components/feedback/ToastProvider';
+import { useToast } from '../../components/feedback/toastContext';
 import { FormDrawer } from '../../components/forms/FormDrawer';
 import { SearchInput } from '../../components/forms/SearchInput';
 import { PageHeader } from '../../components/page/PageHeader';
@@ -58,8 +56,7 @@ import { OrderDetailPanel } from '../orders/OrderDetailPanel';
 import { UserDetailPanel } from '../users/UserDetailPanel';
 import { PaymentForm } from '../payments/PaymentForm';
 import { PaymentStatusForm } from '../payments/PaymentStatusForm';
-import { PlantDetailPanel } from '../plants/PlantDetailPanel';
-import { PlantForm } from '../plants/PlantForm';
+import { InventoryFilters } from '../inventory/InventoryFilters';
 import { RequestDetailPanel } from '../plant_requests/RequestDetailPanel';
 import { SubscriptionDetailPanel } from '../subscriptions/SubscriptionDetailPanel';
 import { VehicleDetailPanel } from '../vehicles/VehicleDetailPanel';
@@ -75,7 +72,6 @@ type ResourceKey = keyof typeof resourceConfigs;
 
 const meta: Record<ResourceKey, { title: string; description: string; searchable?: boolean }> = {
   users:                 { title: 'Users',                  description: 'Inspect platform users, roles, and access.' },
-  plants:                { title: 'Plants',                 description: 'Manage GreenRoot plant catalog and care data.', searchable: true },
   nurseries:             { title: 'Nurseries',              description: 'Manage nursery partners and operational status.', searchable: true },
   inventory:             { title: 'Inventory',              description: 'Monitor nursery stock and availability.' },
   plantRequests:         { title: 'Plant Requests',         description: 'Track plant demand and supplier responses.' },
@@ -85,7 +81,6 @@ const meta: Record<ResourceKey, { title: string; description: string; searchable
   dispatches:            { title: 'Dispatches',             description: 'Monitor dispatch workflows and status.' },
   vehicles:              { title: 'Vehicles',               description: 'Manage fleet records.' },
   drivers:               { title: 'Drivers',                description: 'Manage driver records and location readiness.' },
-  plantCategories:       { title: 'Plant Categories',       description: 'Manage plant classification categories.' },
   tracking:              { title: 'Tracking',               description: 'Tracking search will be expanded with map views.' },
   notifications:         { title: 'Notifications',          description: 'Review notifications and templates.' },
   notificationDevices:   { title: 'Notification Devices',   description: 'Inspect registered FCM-capable devices.' },
@@ -125,7 +120,11 @@ function CellValue({ value, colKey }: { value: unknown; colKey: string }) {
     colKey === 'water_requirement' ||
     colKey === 'payment_for' ||
     colKey === 'payment_method' ||
-    colKey === 'vehicle_type'
+    colKey === 'vehicle_type' ||
+    colKey === 'notification_type' ||
+    colKey === 'channel' ||
+    colKey === 'quotation_type' ||
+    colKey === 'post_type'
   ) {
     return <Typography fontSize={13.5}>{toLabel(String(value))}</Typography>;
   }
@@ -219,25 +218,11 @@ function columnsFor(
   };
 
   // Virtual plant thumbnail column
-  const plantThumbCol: ColumnDef<Record<string, unknown>> = {
-    id: '_thumb',
-    header: '',
-    cell: ({ row }) => (
-      <TableAvatar
-        src={String(row.original.primary_image_url ?? '')}
-        name={String(row.original.common_name ?? row.original.scientific_name ?? '')}
-        size={32}
-        variant="rounded"
-      />
-    ),
-  };
 
   const dataKeys =
     resource === 'users'
       ? ['mobile', 'status', 'roles']
-      : resource === 'plants'
-        ? ['common_name', 'scientific_name', 'plant_type', 'light_requirement', 'wfo_id']
-        : resource === 'nurseries'
+      : resource === 'nurseries'
           ? ['nursery_code', 'name', 'mobile', 'email', 'status']
           : resource === 'orders'
             ? ['order_number', 'buyer_name', 'seller_nursery', 'total_amount', 'order_status']
@@ -279,13 +264,10 @@ function columnsFor(
   const leadCols: ColumnDef<Record<string, unknown>>[] =
     resource === 'users'
       ? [userCol]
-      : resource === 'plants'
-        ? [plantThumbCol]
-        : [];
+      : [];
 
   const hasActions =
     resource === 'users' ||
-    resource === 'plants' ||
     resource === 'orders' ||
     resource === 'inventory' ||
     resource === 'payments' ||
@@ -303,7 +285,6 @@ function columnsFor(
 
   const isViewOnly =
     resource === 'orders' ||
-    resource === 'plants' ||
     resource === 'users' ||
     resource === 'nurseries' ||
     resource === 'plantRequests' ||
@@ -317,7 +298,6 @@ function columnsFor(
   const hasDeactivate =
     resource === 'drivers' ||
     resource === 'inventory' ||
-    resource === 'plants' ||
     resource === 'vehicles';
 
   const deactivateLabel =
@@ -325,9 +305,7 @@ function columnsFor(
       ? 'Deactivate driver'
       : resource === 'inventory'
         ? 'Delete entry'
-        : resource === 'plants'
-          ? 'Delete plant'
-          : 'Retire vehicle';
+        : 'Retire vehicle';
 
   const actionCol: ColumnDef<Record<string, unknown>> = {
     id: 'actions',
@@ -400,9 +378,6 @@ function capability(row: Record<string, unknown>, key: string): boolean | undefi
 
 // ─── Filter option sets ───────────────────────────────────────────────────────
 const REQUEST_STATUSES = ['DRAFT', 'OPEN', 'PARTIALLY_ACCEPTED', 'ACCEPTED', 'REJECTED', 'CLOSED'];
-const PLANT_TYPES = ['TREE', 'SHRUB', 'HERB', 'CLIMBER', 'GRASS', 'SUCCULENT', 'AQUATIC', 'OTHER'];
-const LIGHT_OPTS = ['FULL_SUN', 'PARTIAL_SUN', 'SHADE', 'INDIRECT_LIGHT'];
-const WATER_OPTS = ['LOW', 'MEDIUM', 'HIGH', 'DAILY', 'WEEKLY'];
 const PAYMENT_FOR_OPTS = ['ORDER', 'SUBSCRIPTION'];
 const PAYMENT_METHOD_OPTS = ['UPI', 'CARD', 'CASH', 'BANK_TRANSFER', 'NET_BANKING', 'WALLET', 'COD', 'CHEQUE', 'OTHER'];
 const USER_ROLES = ['ADMIN', 'BUYER', 'NURSERY_OWNER', 'DRIVER'];
@@ -420,7 +395,6 @@ const QUOTATION_STATUSES = ['INTERNAL_DRAFT', 'CUSTOMER_DRAFT', 'CUSTOMER_SENT',
 // ─── Add button labels ────────────────────────────────────────────────────────
 // Only resources where admin can create records; read-only monitoring pages excluded
 const addLabel: Partial<Record<ResourceKey, string>> = {
-  plants:      'Plant',
   nurseries:   'Nursery',
   inventory:   'Inventory',
   payments:    'Payment',
@@ -440,8 +414,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
   const [paymentFor, setPaymentFor] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [plantType, setPlantType] = useState('');
-  const [lightRequirement, setLightRequirement] = useState('');
-  const [waterRequirement, setWaterRequirement] = useState('');
   const [sortBy, setSortBy] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -454,7 +426,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
   const [quotationAmountMin, setQuotationAmountMin] = useState('');
   const [quotationAmountMax, setQuotationAmountMax] = useState('');
 
-  const [createPlant, plantState] = useCreatePlantMutation();
   const [createNursery, nurseryState] = useCreateNurseryMutation();
   const [updateDispatchStatus, updateDispatchStatusState] = useUpdateDispatchStatusMutation();
   const [createDriver, createDriverState] = useCreateDriverMutation();
@@ -466,7 +437,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
   const [createInventory, createInventoryState] = useCreateInventoryMutation();
   const [updateInventory, updateInventoryState] = useUpdateInventoryMutation();
   const [deleteInventory, deleteInventoryState] = useDeleteInventoryMutation();
-  const [deletePlant, deletePlantState] = useDeletePlantMutation();
   const [createManualPayment, createManualPaymentState] = useCreateManualPaymentMutation();
   const [updatePaymentStatus, updatePaymentStatusState] = useUpdatePaymentStatusMutation();
   const [markAllRead, markAllReadState] = useMarkAllNotificationsReadMutation();
@@ -480,9 +450,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
         page: page + 1,
         per_page: rowsPerPage,
         search,
-        plant_type: resource === 'plants' ? plantType : undefined,
-        light_requirement: resource === 'plants' ? lightRequirement : undefined,
-        water_requirement: resource === 'plants' ? waterRequirement : undefined,
         status:
           resource === 'quotations'
             ? status || undefined
@@ -528,10 +495,9 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
             showToast('Vehicle retired');
           }
           if (resource === 'inventory' && id > 0) { await deleteInventory(id).unwrap(); showToast('Inventory item removed'); }
-          if (resource === 'plants' && id > 0) { await deletePlant(id).unwrap(); showToast('Plant deleted'); }
         },
       }),
-    [deactivateDriver, deleteInventory, deletePlant, resource, retireVehicle, rows, showToast],
+    [deactivateDriver, deleteInventory, resource, retireVehicle, rows, showToast],
   );
 
   const canCreate = resource in addLabel;
@@ -539,7 +505,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
   async function submitForm(values: Record<string, unknown>) {
     const isEdit = Number(editingRow?.id) > 0;
     const resourceLabel = meta[resource]?.title.replace(/s$/, '') ?? 'Record';
-    if (resource === 'plants') await createPlant(values).unwrap();
     if (resource === 'nurseries') await createNursery(values).unwrap();
     if (resource === 'inventory') {
       const id = Number(editingRow?.id);
@@ -645,7 +610,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
   // Determine drawer width
   const wideDrawer =
     resource === 'orders' ||
-    resource === 'plants' ||
     resource === 'users' ||
     resource === 'nurseries' ||
     resource === 'plantRequests' ||
@@ -704,25 +668,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
             </Box>
           )}
 
-          {resource === 'plants' && (
-            <>
-              <TextField select label="Type" value={plantType} size="small" sx={{ minWidth: 150 }}
-                onChange={(e) => { setPlantType(e.target.value); setPage(0); }}>
-                <MenuItem value="">All types</MenuItem>
-                {PLANT_TYPES.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
-              </TextField>
-              <TextField select label="Light" value={lightRequirement} size="small" sx={{ minWidth: 150 }}
-                onChange={(e) => { setLightRequirement(e.target.value); setPage(0); }}>
-                <MenuItem value="">All light</MenuItem>
-                {LIGHT_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
-              </TextField>
-              <TextField select label="Water" value={waterRequirement} size="small" sx={{ minWidth: 150 }}
-                onChange={(e) => { setWaterRequirement(e.target.value); setPage(0); }}>
-                <MenuItem value="">All water</MenuItem>
-                {WATER_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
-              </TextField>
-            </>
-          )}
 
           {resource === 'sourcingPosts' && (
             <TextField select label="Type" value={plantType} size="small" sx={{ minWidth: 150 }}
@@ -756,26 +701,12 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
           )}
 
           {resource === 'inventory' && (
-            <>
-              <TextField
-                label="Nursery ID"
-                size="small"
-                type="number"
-                sx={{ minWidth: 130 }}
-                value={inventoryNurseryId}
-                onChange={(e) => { setInventoryNurseryId(e.target.value); setPage(0); }}
-                inputProps={{ min: 1 }}
-              />
-              <TextField
-                label="Plant ID"
-                size="small"
-                type="number"
-                sx={{ minWidth: 120 }}
-                value={inventoryPlantId}
-                onChange={(e) => { setInventoryPlantId(e.target.value); setPage(0); }}
-                inputProps={{ min: 1 }}
-              />
-            </>
+            <InventoryFilters
+              nurseryId={inventoryNurseryId}
+              plantId={inventoryPlantId}
+              onNurseryChange={(id) => { setInventoryNurseryId(id); setPage(0); }}
+              onPlantChange={(id) => { setInventoryPlantId(id); setPage(0); }}
+            />
           )}
 
           {showStatusFilter && (
@@ -836,11 +767,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
           {normalizeApiError(createDriverState.error || updateDriverState.error || deactivateDriverState.error).message}
         </Alert>
       )}
-      {(plantState.isError || deletePlantState.isError) && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {normalizeApiError(plantState.error || deletePlantState.error).message}
-        </Alert>
-      )}
       {updateDispatchStatusState.isError && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {normalizeApiError(updateDispatchStatusState.error).message}
@@ -894,12 +820,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
       >
         {resource === 'users' && editingRow ? (
           <UserDetailPanel userId={Number(editingRow.id)} />
-        ) : resource === 'plants' ? (
-          editingRow ? (
-            <PlantDetailPanel plantId={Number(editingRow.id)} />
-          ) : (
-            <PlantForm loading={plantState.isLoading} onSubmit={submitForm} />
-          )
         ) : resource === 'nurseries' ? (
           editingRow ? (
             <NurseryDetailPanel nurseryId={Number(editingRow.id)} />

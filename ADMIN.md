@@ -53,15 +53,17 @@ Source of truth for APIs: `greenroot-api/docs/swagger/openapi.yaml`
 | Module | Status | What's Done | What's Missing |
 |---|---|---|---|
 | Auth | ✅ Live | Login, token refresh, logout, me | — |
-| Dashboard | ✅ Live | Cards + charts via `/api/v1/admin/dashboard` | — |
-| Audit | ✅ Live | Read-only audit log table | — |
+| Dashboard | ✅ Live | **Real figures only** from `/api/v1/admin/dashboard` (today's orders/dispatches in IST, active trips, order vs subscription revenue, pending payments, failed logins and app crashes in 24 h, catalog vs botanical names), real 7-day chart, *Needs attention* (approvals, reported ads, crashes, SMS/email mock mode), recent audit activity. The earlier invented numbers, chart and panels were removed. | — |
+| Audit | ✅ Live | Read-only audit and security logs with user names; trigger (`INSERT`) and service (`CREATE`) entries shown alike | — |
+| Local Market | ✅ Live | `/market`: reported-ads queue (dismiss / take down ad) and published ads | — |
+| App Crash Reports | ✅ Live | `/crash-reports`: mobile/web crashes with platform, version, fatal filters and stack trace | — |
 | Plants | ✅ Live | **`/plants` lists all 16,57,866 World Flora Online names** (`BotanicalNamesPage`: search ranked by best match, status/rank/catalog filters, family filter from the URL, server paging). A name's drawer shows family/genus/rank, accepted name, synonyms, and its catalog plant (existing `PlantDetailPanel` editor) or **Add to catalog**. **`/plants/categories` lists the 735 plant families** (`PlantFamiliesPage`) with name/accepted/in-catalog counts; a family opens `/plants?family=…`. The old category CRUD page is removed. Plant edit form: scientific-name autocomplete fills `wfo_id`. | Filter for catalog plants that still need a common name |
 | Nurseries | ✅ Live | List, CRUD, detail panel (addresses add/edit/delete, team, status actions, edit) | — |
 | Inventory | ✅ Live | List, CRUD, **nursery_id + plant_id filter inputs** | — |
 | Plant Requests | ✅ Live | Global list, **response matching detail panel** (select/reject per supplier) | — |
 | Orders | ✅ Live | List, detail panel, status update, inline item edit/delete, payments, dispatches, **create drawer** | — |
 | Payments | ✅ Live | List, manual record (ORDER + **SUBSCRIPTION**), status/provider update | — |
-| Subscriptions | ✅ Live | List, plans list, **lifecycle detail panel (renew dialog, cancel dialog, payment history)** | — |
+| Subscriptions | ✅ Live | List with subscriber name, nursery and mobile (searchable), plans list, **lifecycle detail panel (renew dialog, cancel dialog, payment history)** | — |
 | Vehicles | ✅ Live | List, CRUD, retire, **detail panel (info, tracking history, last known location)** | — |
 | Drivers | ✅ Live | List, CRUD, deactivate, **detail panel (location, approve, edit)** | — |
 | Dispatches | ✅ Live | List, create, status update, **detail panel (items, tracking, trip UUID)** | — |
@@ -82,7 +84,9 @@ All 7 priority items and all 6 module gap items are now **complete**. See NEXT_W
 
 > Use npm ≥ 11 for `npm audit fix` (npm 10.9.2 crashes with `edgesOut`): `npx npm@11.21.0 audit fix`.
 
-**Remaining (pre-production):** Playwright e2e in CI; generated TypeScript client from the OpenAPI spec (Phase 3, A1); clear the 3 lint warnings; branch protection on `master` (owner action).
+**Remaining (pre-production):** Playwright e2e in CI; generated TypeScript client from the OpenAPI spec (Phase 3, A1); branch protection on `master` (owner action). Lint is clean (0 errors, 0 warnings, 2026-10-19).
+
+**UI rules (2026-10-19):** never show invented numbers; show names, not database ids (`user_name`, `owner_name`, `nursery_name` come from the API); statuses go through `StatusChip` (unknown codes render humanized, never raw); enum columns through `toLabel` (keeps acronyms such as UPI, OTP).
 
 ---
 

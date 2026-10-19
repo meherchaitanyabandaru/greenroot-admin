@@ -1,6 +1,8 @@
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import BugReportIcon from '@mui/icons-material/BugReport';
+import CampaignIcon from '@mui/icons-material/Campaign';
 import CategoryIcon from '@mui/icons-material/Category';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -59,6 +61,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { label: 'Network Members', path: '/sourcing-network', icon: StorefrontIcon },
       { label: 'Need & Availability Posts', path: '/sourcing-posts', icon: TravelExploreIcon },
+      { label: 'Local Market', path: '/market', icon: CampaignIcon },
     ],
   },
   {
@@ -107,6 +110,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { label: 'Audit Logs',    path: '/audit',         icon: HistoryIcon },
       { label: 'Security Logs', path: '/security-logs', icon: GppMaybeIcon },
+      { label: 'App Crash Reports', path: '/crash-reports', icon: BugReportIcon },
     ],
   },
 ];
