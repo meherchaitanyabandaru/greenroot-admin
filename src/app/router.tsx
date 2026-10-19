@@ -14,10 +14,11 @@ const DashboardPage = lazy(() =>
 const ResourceListPage = lazy(() =>
   import('../features/shared/ResourceListPage').then((m) => ({ default: m.ResourceListPage })),
 );
-const CategoryManagementPage = lazy(() =>
-  import('../features/plants/CategoryManagementPage').then((m) => ({
-    default: m.CategoryManagementPage,
-  })),
+const BotanicalNamesPage = lazy(() =>
+  import('../features/plants/BotanicalNamesPage').then((m) => ({ default: m.BotanicalNamesPage })),
+);
+const PlantFamiliesPage = lazy(() =>
+  import('../features/plants/PlantFamiliesPage').then((m) => ({ default: m.PlantFamiliesPage })),
 );
 const NurseryApplicationsPage = lazy(() =>
   import('../features/nurseries/NurseryApplicationsPage').then((m) => ({
@@ -72,8 +73,8 @@ export function AppRouter() {
             <Route path="/inventory" element={<ResourceListPage resource="inventory" />} />
 
             {/* Master Data */}
-            <Route path="/plants" element={<ResourceListPage resource="plants" />} />
-            <Route path="/plants/categories" element={<CategoryManagementPage />} />
+            <Route path="/plants" element={<BotanicalNamesPage />} />
+            <Route path="/plants/categories" element={<PlantFamiliesPage />} />
 
             {/* Business Monitoring (read-only for Super Admin) */}
             <Route path="/quotations" element={<ResourceListPage resource="quotations" />} />

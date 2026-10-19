@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Stack, TextField } from '@mui/material';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
+import { BotanicalNameField } from './BotanicalNameField';
 
 const schema = z.object({
   scientific_name: z.string().min(1, 'Scientific name is required'),
+  wfo_id: z.string().optional(),
   common_name: z.string().optional(),
   english_description: z.string().optional(),
   plant_type: z.string().optional(),
@@ -31,10 +33,11 @@ export function PlantForm({
   onSubmit: (values: Record<string, unknown>) => void;
   loading?: boolean;
 }) {
-  const { control, handleSubmit } = useForm<PlantFormValues>({
+  const { control, handleSubmit, setValue } = useForm<PlantFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       scientific_name: initial?.scientific_name ?? '',
+      wfo_id: initial?.wfo_id ?? '',
       common_name: initial?.common_name ?? '',
       english_description: initial?.english_description ?? '',
       plant_type: initial?.plant_type ?? 'TREE',
@@ -57,6 +60,8 @@ export function PlantForm({
     },
   });
 
+  const wfoId = useWatch({ control, name: 'wfo_id' }) ?? '';
+
   function submit(values: PlantFormValues) {
     const categoryIDs = String(values.category_ids ?? '')
       .split(',')
@@ -64,6 +69,8 @@ export function PlantForm({
       .filter((value) => Number.isFinite(value) && value > 0);
     onSubmit({
       scientific_name: values.scientific_name,
+      // "" unlinks: the admin typed a name instead of picking one.
+      wfo_id: values.wfo_id ?? '',
       common_name: values.common_name || null,
       english_description: values.english_description || null,
       plant_type: values.plant_type || null,
@@ -84,9 +91,23 @@ export function PlantForm({
 
   return (
     <Stack component="form" onSubmit={handleSubmit(submit)} spacing={2}>
+      <Controller
+        control={control}
+        name="scientific_name"
+        render={({ field, fieldState }) => (
+          <BotanicalNameField
+            value={field.value}
+            wfoId={wfoId}
+            error={fieldState.error?.message}
+            onChange={(name, wfoId) => {
+              field.onChange(name);
+              setValue('wfo_id', wfoId);
+            }}
+          />
+        )}
+      />
       {(
         [
-          'scientific_name',
           'common_name',
           'english_description',
           'plant_type',

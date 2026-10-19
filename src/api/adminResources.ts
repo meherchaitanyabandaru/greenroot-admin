@@ -143,6 +143,70 @@ export type PlantDetailResponse = {
   plant: Record<string, unknown>;
 };
 
+/** A World Flora Online name not in the catalog yet (GET /plants/lookup). */
+export type BotanicalName = {
+  wfo_id: string;
+  scientific_name: string;
+  authorship?: string;
+  family?: string;
+  taxon_rank: string;
+  status: 'ACCEPTED' | 'SYNONYM' | 'UNCHECKED';
+  accepted_wfo_id?: string;
+  accepted_name?: string;
+};
+
+/** Exactly one of plant (already in the catalog) or name is set. */
+export type PlantLookupResult = {
+  plant?: Record<string, unknown>;
+  name?: BotanicalName;
+};
+
+export type PlantLookupResponse = {
+  results: PlantLookupResult[];
+};
+
+/** A row on Admin → Plants: one of the ~1.66 M botanical names. */
+export type BotanicalRow = BotanicalName & {
+  genus?: string;
+  catalog_plant_id?: number;
+  catalog_plant_code?: string;
+  /** The catalog plant's common name; World Flora Online has none. */
+  english_name?: string;
+  /** Old names (synonyms) pointing to this name. */
+  synonym_count?: number;
+  /** The old name that matched the search, when this row's own name did not. */
+  matched_name?: string;
+};
+
+export type BotanicalListParams = {
+  page: number;
+  per_page: number;
+  search?: string;
+  family?: string;
+  status?: string;
+  rank?: string;
+  in_catalog?: string;
+  show_synonyms?: string;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+};
+
+export type BotanicalListResponse = {
+  names: BotanicalRow[];
+  pagination: Pagination;
+};
+
+export type BotanicalFamily = { family: string; names: number; accepted: number; in_catalog: number };
+
+export type BotanicalFamiliesResponse = { families: BotanicalFamily[]; total_names: number };
+
+export type BotanicalDetailResponse = {
+  name: BotanicalRow;
+  accepted?: BotanicalRow;
+  synonyms: BotanicalRow[];
+  synonym_count: number;
+};
+
 export type PlantCareGuideResponse = {
   care_guide: Record<string, unknown>;
 };
@@ -322,6 +386,26 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     }),
     getPlant: builder.query<PlantDetailResponse, number>({
       query: (id) => `/api/v1/plants/${id}`,
+      providesTags: ['Plants'],
+    }),
+    listBotanicalNames: builder.query<BotanicalListResponse, BotanicalListParams>({
+      query: (params) => `/api/v1/botanical-names?${toQuery(params)}`,
+      providesTags: ['Plants'],
+    }),
+    listBotanicalFamilies: builder.query<BotanicalFamiliesResponse, void>({
+      query: () => '/api/v1/botanical-names/families',
+      providesTags: ['Plants'],
+    }),
+    getBotanicalName: builder.query<BotanicalDetailResponse, string>({
+      query: (wfoId) => `/api/v1/botanical-names/${encodeURIComponent(wfoId)}`,
+      providesTags: ['Plants'],
+    }),
+    resolvePlant: builder.mutation<PlantDetailResponse, string>({
+      query: (wfoId) => ({ url: '/api/v1/plants/resolve', method: 'POST', body: { wfo_id: wfoId } }),
+      invalidatesTags: ['Plants', 'Dashboard'],
+    }),
+    lookupPlants: builder.query<PlantLookupResponse, string>({
+      query: (q) => `/api/v1/plants/lookup?${new URLSearchParams({ q, limit: '15' })}`,
       providesTags: ['Plants'],
     }),
     getPlantCareGuide: builder.query<PlantCareGuideResponse, number>({
@@ -805,6 +889,11 @@ export const {
   useGetOrderQuery,
   useGetPlantCareGuideQuery,
   useGetPlantQuery,
+  useLookupPlantsQuery,
+  useListBotanicalNamesQuery,
+  useListBotanicalFamiliesQuery,
+  useGetBotanicalNameQuery,
+  useResolvePlantMutation,
   useCreateOrderMutation,
   useDeleteOrderMutation,
   useCreateOrderItemMutation,

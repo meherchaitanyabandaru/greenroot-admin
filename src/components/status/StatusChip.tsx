@@ -53,6 +53,11 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   SENT:                { label: 'Sent',                color: '#17803D', bg: '#D1FAE5' },
   READ:                { label: 'Read',                color: '#667085', bg: '#F2F4F7' },
   UNREAD:              { label: 'Unread',              color: '#2563EB', bg: '#DBEAFE' },
+
+  // Botanical names (World Flora Online)
+  ACCEPTED:            { label: 'Accepted',            color: '#17803D', bg: '#D1FAE5' },
+  SYNONYM:             { label: 'Synonym',             color: '#2563EB', bg: '#DBEAFE' },
+  UNCHECKED:           { label: 'Unchecked',           color: '#667085', bg: '#F2F4F7' },
 };
 
 export function StatusChip({ value }: { value?: unknown }) {

@@ -55,7 +55,7 @@ Source of truth for APIs: `greenroot-api/docs/swagger/openapi.yaml`
 | Auth | ✅ Live | Login, token refresh, logout, me | — |
 | Dashboard | ✅ Live | Cards + charts via `/api/v1/admin/dashboard` | — |
 | Audit | ✅ Live | Read-only audit log table | — |
-| Plants | ✅ Live | List, CRUD, images, care guide, detail panel, **category CRUD page** | — |
+| Plants | ✅ Live | **`/plants` lists all 16,57,866 World Flora Online names** (`BotanicalNamesPage`: search ranked by best match, status/rank/catalog filters, family filter from the URL, server paging). A name's drawer shows family/genus/rank, accepted name, synonyms, and its catalog plant (existing `PlantDetailPanel` editor) or **Add to catalog**. **`/plants/categories` lists the 735 plant families** (`PlantFamiliesPage`) with name/accepted/in-catalog counts; a family opens `/plants?family=…`. The old category CRUD page is removed. Plant edit form: scientific-name autocomplete fills `wfo_id`. | Filter for catalog plants that still need a common name |
 | Nurseries | ✅ Live | List, CRUD, detail panel (addresses add/edit/delete, team, status actions, edit) | — |
 | Inventory | ✅ Live | List, CRUD, **nursery_id + plant_id filter inputs** | — |
 | Plant Requests | ✅ Live | Global list, **response matching detail panel** (select/reject per supplier) | — |

@@ -236,7 +236,7 @@ function columnsFor(
     resource === 'users'
       ? ['mobile', 'status', 'roles']
       : resource === 'plants'
-        ? ['common_name', 'scientific_name', 'plant_type', 'light_requirement']
+        ? ['common_name', 'scientific_name', 'plant_type', 'light_requirement', 'wfo_id']
         : resource === 'nurseries'
           ? ['nursery_code', 'name', 'mobile', 'email', 'status']
           : resource === 'orders'

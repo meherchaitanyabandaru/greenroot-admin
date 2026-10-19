@@ -350,6 +350,7 @@ function EditTab({
     ...plant,
     categories,
     scientific_name: optionalText(plant.scientific_name),
+    wfo_id: optionalText(plant.wfo_id),
     common_name: optionalText(plant.common_name),
     english_description: optionalText(plant.english_description),
     plant_type: optionalText(plant.plant_type),
@@ -465,6 +466,21 @@ export function PlantDetailPanel({ plantId }: { plantId: number }) {
             </Stack>
 
             <Stack direction="row" flexWrap="wrap" gap={0.75}>
+              {plant.wfo_id ? (
+                <Chip
+                  label={`WFO ${String(plant.wfo_id)}`}
+                  size="small"
+                  color="success"
+                  variant="outlined"
+                  component="a"
+                  clickable
+                  href={`https://www.worldfloraonline.org/taxon/${String(plant.wfo_id)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                />
+              ) : (
+                <Chip label="Not linked to a botanical name" size="small" color="warning" variant="outlined" />
+              )}
               {Boolean(plant.plant_type) && (
                 <Chip label={toLabel(String(plant.plant_type))} size="small" variant="outlined" />
               )}
