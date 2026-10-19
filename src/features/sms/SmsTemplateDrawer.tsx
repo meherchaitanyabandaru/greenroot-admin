@@ -38,7 +38,7 @@ const TAG_RE = /\{#([^{}#]*)#\}/g;
 const SAMPLE_BY_TAG: Record<string, string> = {
   numeric: '123456',
   alphanumeric: 'ABC123',
-  email: 'support@greenroot.in',
+  email: 'them87.bussiness@gmail.com',
 };
 
 const SAMPLE_BY_NAME: Record<string, string> = {
