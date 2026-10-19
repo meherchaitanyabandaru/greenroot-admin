@@ -237,7 +237,7 @@ export function DashboardPage() {
             { label: 'Failed logins (24 h)', value: n('failed_logins_24h'), icon: ErrorOutlineIcon, href: '/security-logs', tone: n('failed_logins_24h') ? ('danger' as const) : ('neutral' as const) },
             { label: 'Users', value: n('users'), icon: PeopleIcon, href: '/users', helper: `${n('active_drivers')} active drivers` },
             { label: 'Catalog plants', value: n('plants'), icon: LocalFloristIcon, href: '/plants?in_catalog=true', helper: `of ${n('botanical_names').toLocaleString('en-IN')} botanical names` },
-            { label: 'Plant requests', value: n('plant_requests'), icon: TravelExploreIcon, href: '/requests', helper: `${n('inventory_items')} stock lines` },
+            { label: 'Plant requests', value: n('plant_requests'), icon: TravelExploreIcon, href: '/requests', helper: `${n('top_items')} top items` },
             { label: 'App crashes (24 h)', value: crashes, icon: BugReportIcon, href: '/crash-reports', tone: crashes ? ('warning' as const) : ('neutral' as const) },
           ].map((kpi) => (
             <Grid key={kpi.label} size={{ xs: 12, sm: 6, lg: 3 }}>

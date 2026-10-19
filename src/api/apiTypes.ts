@@ -41,7 +41,7 @@ export type DashboardSummary = {
   approved_nurseries: number;
   suspended_nurseries: number;
   plants: number;
-  inventory_items: number;
+  top_items: number;
   plant_requests: number;
   orders: number;
   active_orders: number;

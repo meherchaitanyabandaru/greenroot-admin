@@ -24,13 +24,14 @@ import {
   useCreatePlantImageMutation,
   useGetPlantCareGuideQuery,
   useGetPlantQuery,
+  useListPlantTopItemsQuery,
   useUpdatePlantMutation,
 } from '../../api/adminResources';
 import { ErrorState } from '../../components/feedback/ErrorState';
-import { DetailSkeleton } from '../../components/feedback/LoadingState';
+import { DetailSkeleton, LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
 import { normalizeApiError } from '../../utils/apiError';
-import { toLabel } from '../../utils/labels';
+import { formatCurrency, toLabel } from '../../utils/labels';
 import { PlantForm } from './PlantForm';
 import { PlantImageForm } from './PlantImageForm';
 
@@ -259,16 +260,11 @@ function ImagesTab({
   );
 }
 
-function InventoryPreviewTab({ plant }: { plant: Record<string, unknown> }) {
-  const inventory = asRows(plant.inventory ?? []);
-
-  const stockConfig: Record<string, { label: string; color: string; bg: string }> = {
-    AVAILABLE:    { label: 'In Stock',   color: '#17803D', bg: '#D1FAE5' },
-    LOW_STOCK:    { label: 'Low Stock',  color: '#B7791F', bg: '#FEF3C7' },
-    OUT_OF_STOCK: { label: 'No Stock',   color: '#C2410C', bg: '#FEE2E2' },
-    RESERVED:     { label: 'Reserved',   color: '#2563EB', bg: '#DBEAFE' },
-    DISCONTINUED: { label: 'Discontinued', color: '#667085', bg: '#F2F4F7' },
-  };
+function NurseriesTab({ plantId }: { plantId: number }) {
+  const query = useListPlantTopItemsQuery(plantId);
+  const items = query.data?.top_items ?? [];
+  if (query.isLoading) return <LoadingState />;
+  if (query.error) return <ErrorState message={normalizeApiError(query.error).message} onRetry={query.refetch} />;
 
   return (
     <Paper variant="outlined" sx={{ borderRadius: 2 }}>
@@ -277,53 +273,28 @@ function InventoryPreviewTab({ plant }: { plant: Record<string, unknown> }) {
           <TableRow>
             <TableCell>Nursery</TableCell>
             <TableCell>Size</TableCell>
-            <TableCell>Quantity</TableCell>
-            <TableCell>Status</TableCell>
+            <TableCell>Price</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {inventory.length === 0 ? (
+          {items.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} sx={{ border: 0, py: 3, textAlign: 'center' }}>
-                <Typography color="text.secondary" fontSize={13}>No inventory records for this plant.</Typography>
+              <TableCell colSpan={3} sx={{ border: 0, py: 3, textAlign: 'center' }}>
+                <Typography color="text.secondary" fontSize={13}>No nursery lists this plant among its top items yet.</Typography>
               </TableCell>
             </TableRow>
           ) : (
-            inventory.map((item, i) => {
-              const s = String(item.inventory_status ?? '').toUpperCase();
-              const cfg = stockConfig[s] ?? { label: s || '—', color: '#667085', bg: '#F2F4F7' };
-              const qty = Number(item.available_quantity ?? 0);
-              return (
-                <TableRow key={i}>
-                  <TableCell>
-                    <Typography fontSize={13.5} fontWeight={500}>{text(item.nursery_name ?? item.nursery_id)}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography fontSize={13.5} color="text.secondary">
-                      {text(item.size_name ?? item.size_code ?? item.size_id)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography fontSize={13.5} fontWeight={600}>{qty}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={cfg.label}
-                      size="small"
-                      sx={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        height: 22,
-                        bgcolor: cfg.bg,
-                        color: cfg.color,
-                        border: 'none',
-                        '& .MuiChip-label': { px: 1 },
-                      }}
-                    />
-                  </TableCell>
-                </TableRow>
-              );
-            })
+            items.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>
+                  <Typography fontSize={13.5} fontWeight={500}>{item.nursery_name}</Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography fontSize={13.5} color="text.secondary">{item.size_name}</Typography>
+                </TableCell>
+                <TableCell>{item.unit_price != null ? formatCurrency(item.unit_price) : '—'}</TableCell>
+              </TableRow>
+            ))
           )}
         </TableBody>
       </Table>
@@ -374,7 +345,7 @@ function EditTab({
 
 // ─── Main panel ───────────────────────────────────────────────────────────────
 
-const TABS = ['Overview', 'Care Guide', 'Images', 'Inventory', 'Edit'];
+const TABS = ['Overview', 'Care Guide', 'Images', 'Nurseries', 'Edit'];
 
 export function PlantDetailPanel({ plantId }: { plantId: number }) {
   const plantQuery = useGetPlantQuery(plantId);
@@ -524,7 +495,7 @@ export function PlantDetailPanel({ plantId }: { plantId: number }) {
             onSubmit={submitImage}
           />
         )}
-        {tab === 3 && <InventoryPreviewTab plant={plant} />}
+        {tab === 3 && <NurseriesTab plantId={Number(plant.id)} />}
         {tab === 4 && (
           <EditTab
             plant={plant}

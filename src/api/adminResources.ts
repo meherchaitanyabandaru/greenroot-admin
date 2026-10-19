@@ -7,7 +7,7 @@ export type ResourceConfig = {
     | 'Users'
     | 'Plants'
     | 'Nurseries'
-    | 'Inventory'
+    | 'TopItems'
     | 'PlantRequests'
     | 'Orders'
     | 'Quotations'
@@ -161,6 +161,41 @@ export type PlantLookupResult = {
   name?: BotanicalName;
 };
 
+/** A nursery's top item: its showcase, not stock (max 20 per nursery). */
+export type TopItem = {
+  id: number;
+  top_item_code: string;
+  nursery_id: number;
+  nursery_name: string;
+  plant_id: number;
+  scientific_name: string;
+  common_name?: string;
+  size_id: number;
+  size_code: string;
+  size_name: string;
+  unit_price?: number;
+  display_order: number;
+  quality_notes?: string;
+  photos: string[];
+  updated_at: string;
+  version: number;
+  capabilities?: { can_edit: boolean; can_delete: boolean };
+};
+
+export type TopItemListResponse = { top_items: TopItem[]; pagination: Pagination };
+
+export type TopItemInput = {
+  nursery_id?: number;
+  plant_id: number;
+  size_id: number;
+  unit_price?: number | null;
+  display_order?: number;
+  quality_notes?: string | null;
+  photos?: string[];
+};
+
+export type PlantSize = { id: number; size_code: string; display_name: string };
+
 export type PlantLookupResponse = {
   results: PlantLookupResult[];
 };
@@ -283,12 +318,6 @@ export const resourceConfigs = {
     tag: 'Nurseries',
     path: '/api/v1/nurseries',
     collectionKey: 'nurseries',
-  },
-  inventory: {
-    key: 'inventory',
-    tag: 'Inventory',
-    path: '/api/v1/inventory',
-    collectionKey: 'inventory',
   },
   plantRequests: {
     key: 'plantRequests',
@@ -766,25 +795,36 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (id) => `/api/v1/nurseries/${id}/managers`,
       providesTags: ['Nurseries'],
     }),
-    listNurseryInventory: builder.query<{ inventory: Record<string, unknown>[] }, number>({
-      query: (nurseryId) => `/api/v1/nurseries/${nurseryId}/inventory`,
-      providesTags: ['Inventory'],
+    listTopItems: builder.query<TopItemListResponse, ListParams>({
+      query: (params) => `/api/v1/top-items?${toQuery(params)}`,
+      providesTags: ['TopItems'],
+    }),
+    listNurseryTopItems: builder.query<TopItemListResponse, number>({
+      query: (nurseryId) => `/api/v1/nurseries/${nurseryId}/top-items?per_page=20`,
+      providesTags: ['TopItems'],
+    }),
+    listPlantTopItems: builder.query<TopItemListResponse, number>({
+      query: (plantId) => `/api/v1/plants/${plantId}/top-items?per_page=50`,
+      providesTags: ['TopItems'],
+    }),
+    listPlantSizes: builder.query<{ sizes: PlantSize[] }, void>({
+      query: () => '/api/v1/plants/sizes',
     }),
     deleteNursery: builder.mutation<unknown, number>({
       query: (id) => ({ url: `/api/v1/nurseries/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Nurseries', 'Dashboard'],
     }),
-    createInventory: builder.mutation<unknown, Record<string, unknown>>({
-      query: (body) => ({ url: '/api/v1/inventory', method: 'POST', body }),
-      invalidatesTags: ['Inventory', 'Dashboard'],
+    createTopItem: builder.mutation<{ top_item: TopItem }, TopItemInput>({
+      query: (body) => ({ url: '/api/v1/top-items', method: 'POST', body }),
+      invalidatesTags: ['TopItems', 'Dashboard'],
     }),
-    updateInventory: builder.mutation<unknown, { id: number; body: Record<string, unknown> }>({
-      query: ({ id, body }) => ({ url: `/api/v1/inventory/${id}`, method: 'PUT', body }),
-      invalidatesTags: ['Inventory', 'Dashboard'],
+    updateTopItem: builder.mutation<{ top_item: TopItem }, { id: number; body: TopItemInput }>({
+      query: ({ id, body }) => ({ url: `/api/v1/top-items/${id}`, method: 'PUT', body }),
+      invalidatesTags: ['TopItems'],
     }),
-    deleteInventory: builder.mutation<unknown, number>({
-      query: (id) => ({ url: `/api/v1/inventory/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['Inventory', 'Dashboard'],
+    deleteTopItem: builder.mutation<unknown, number>({
+      query: (id) => ({ url: `/api/v1/top-items/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['TopItems', 'Dashboard'],
     }),
     getVehicle: builder.query<{ vehicle: Record<string, unknown> }, number>({
       query: (id) => `/api/v1/vehicles/${id}`,
@@ -895,9 +935,12 @@ export const {
   useUpdateNurseryAddressMutation,
   useDeleteNurseryAddressMutation,
   useListNurseryUsersQuery,
-  useListNurseryInventoryQuery,
+  useListNurseryTopItemsQuery,
+  useListPlantTopItemsQuery,
+  useListTopItemsQuery,
+  useListPlantSizesQuery,
   useDeleteNurseryMutation,
-  useCreateInventoryMutation,
+  useCreateTopItemMutation,
   useCreateManualPaymentMutation,
   useCreatePlantImageMutation,
   useGetOrderQuery,
@@ -920,7 +963,7 @@ export const {
   useCreateDriverMutation,
   useCreateNurseryMutation,
   useDeactivateDriverMutation,
-  useDeleteInventoryMutation,
+  useDeleteTopItemMutation,
   useListOrderDispatchesQuery,
   useListOrderItemsQuery,
   useListOrderPaymentsQuery,
@@ -929,7 +972,7 @@ export const {
   useRetireVehicleMutation,
   useUpdateDispatchStatusMutation,
   useUpdateDriverMutation,
-  useUpdateInventoryMutation,
+  useUpdateTopItemMutation,
   useUpdateNurseryMutation,
   useUpdateOrderStatusMutation,
   useUpdateOrderDeliveryMutation,

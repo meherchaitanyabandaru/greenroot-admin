@@ -10,7 +10,7 @@ export const baseApi = createApi({
     'Users',
     'Plants',
     'Nurseries',
-    'Inventory',
+    'TopItems',
     'Requests',
     'PlantRequests',
     'Orders',

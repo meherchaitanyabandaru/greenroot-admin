@@ -18,7 +18,7 @@ const ENTITY_TYPES = [
   'DISPATCH',
   'NURSERY',
   'PLANT',
-  'INVENTORY',
+  'TOP_ITEM',
   'USER',
   'VEHICLE',
   'DRIVER',

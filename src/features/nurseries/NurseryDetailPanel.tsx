@@ -36,7 +36,7 @@ import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import {
   useGetNurseryQuery,
   useListNurseryAddressesQuery,
-  useListNurseryInventoryQuery,
+  useListNurseryTopItemsQuery,
   useListNurseryUsersQuery,
   useUpdateNurseryMutation,
   useUpdateNurseryStatusMutation,
@@ -49,6 +49,7 @@ import { ErrorState } from '../../components/feedback/ErrorState';
 import { DetailSkeleton, LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
 import { normalizeApiError } from '../../utils/apiError';
+import { formatCurrency } from '../../utils/labels';
 import { formatDate, toLabel } from '../../utils/labels';
 import { TableAvatar } from '../../components/data-table/TableAvatar';
 import { NurseryForm } from './NurseryForm';
@@ -296,67 +297,48 @@ function AddressesTab({ nurseryId }: { nurseryId: number }) {
   );
 }
 
-function StockBadge({ status, qty }: { status: unknown; qty: unknown }) {
-  const q = Number(qty ?? 0);
-  const s = String(status ?? '').toUpperCase();
-  const config: Record<string, { label: string; color: string; bg: string }> = {
-    AVAILABLE:    { label: `In Stock (${q})`,    color: '#17803D', bg: '#D1FAE5' },
-    LOW_STOCK:    { label: `Low Stock (${q})`,   color: '#B7791F', bg: '#FEF3C7' },
-    OUT_OF_STOCK: { label: 'Out of Stock',        color: '#C2410C', bg: '#FEE2E2' },
-    RESERVED:     { label: `Reserved (${q})`,     color: '#2563EB', bg: '#DBEAFE' },
-    DISCONTINUED: { label: 'Discontinued',        color: '#667085', bg: '#F2F4F7' },
-  };
-  const cfg = config[s] ?? { label: s || '—', color: '#667085', bg: '#F2F4F7' };
-  return (
-    <Chip
-      label={cfg.label}
-      size="small"
-      sx={{ fontSize: 11, fontWeight: 600, height: 22, bgcolor: cfg.bg, color: cfg.color, border: 'none', '& .MuiChip-label': { px: 1 } }}
-    />
-  );
-}
+function TopItemsTab({ nurseryId }: { nurseryId: number }) {
+  const query = useListNurseryTopItemsQuery(nurseryId);
+  const items = query.data?.top_items ?? [];
 
-function InventoryTab({ nurseryId }: { nurseryId: number }) {
-  const inventoryQuery = useListNurseryInventoryQuery(nurseryId);
-  const inventory: Record<string, unknown>[] = Array.isArray(inventoryQuery.data?.inventory)
-    ? (inventoryQuery.data!.inventory as Record<string, unknown>[])
-    : [];
-
-  if (inventoryQuery.isLoading) return <LoadingState />;
-  if (inventoryQuery.error) return <ErrorState message={normalizeApiError(inventoryQuery.error).message} onRetry={inventoryQuery.refetch} />;
+  if (query.isLoading) return <LoadingState />;
+  if (query.error) return <ErrorState message={normalizeApiError(query.error).message} onRetry={query.refetch} />;
 
   return (
     <Paper variant="outlined" sx={{ borderRadius: 2 }}>
       <Table size="small">
         <TableHead>
           <TableRow>
+            <TableCell>#</TableCell>
             <TableCell>Plant</TableCell>
             <TableCell>Size</TableCell>
-            <TableCell>Stock</TableCell>
+            <TableCell>Price</TableCell>
+            <TableCell>Notes</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {inventory.length === 0 ? (
+          {items.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={3} sx={{ border: 0 }}>
-                <Typography color="text.secondary" fontSize={13} py={2}>No inventory items.</Typography>
+              <TableCell colSpan={5} sx={{ border: 0 }}>
+                <Typography color="text.secondary" fontSize={13} py={2}>This nursery has not listed any top items yet.</Typography>
               </TableCell>
             </TableRow>
           ) : (
-            inventory.map((item, i) => (
-              <TableRow key={i}>
+            items.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>{item.display_order + 1}</TableCell>
                 <TableCell>
-                  <Typography fontSize={13.5} fontWeight={500}>
-                    {text(item.common_name ?? item.plant_name ?? item.plant_id)}
-                  </Typography>
+                  <Typography fontSize={13.5} fontWeight={500}>{item.common_name || item.scientific_name}</Typography>
+                  {item.common_name && <Typography fontSize={12} color="text.secondary" fontStyle="italic">{item.scientific_name}</Typography>}
                 </TableCell>
                 <TableCell>
-                  <Typography fontSize={13.5} color="text.secondary">
-                    {text(item.size_name ?? item.size_code ?? item.size_id)}
-                  </Typography>
+                  <Typography fontSize={13.5} color="text.secondary">{item.size_name}</Typography>
                 </TableCell>
+                <TableCell>{item.unit_price != null ? formatCurrency(item.unit_price) : '—'}</TableCell>
                 <TableCell>
-                  <StockBadge status={item.inventory_status} qty={item.available_quantity} />
+                  <Typography fontSize={12.5} color="text.secondary">
+                    {item.quality_notes || '—'}{item.photos.length > 0 ? ` · ${item.photos.length} photo${item.photos.length > 1 ? 's' : ''}` : ''}
+                  </Typography>
                 </TableCell>
               </TableRow>
             ))
@@ -378,7 +360,7 @@ const STATUS_ACTION_CFG: Record<StatusAction, { title: string; verb: string; req
 export function NurseryDetailPanel({ nurseryId }: { nurseryId: number }) {
   const nurseryQuery = useGetNurseryQuery(nurseryId);
   const usersQuery = useListNurseryUsersQuery(nurseryId);
-  const inventoryQuery = useListNurseryInventoryQuery(nurseryId);
+  const topItemsQuery = useListNurseryTopItemsQuery(nurseryId);
   const [updateNursery, updateState] = useUpdateNurseryMutation();
   const [updateStatus, statusState] = useUpdateNurseryStatusMutation();
   const [updateStatusAdmin, statusAdminState] = useUpdateNurseryStatusAdminMutation();
@@ -626,38 +608,10 @@ export function NurseryDetailPanel({ nurseryId }: { nurseryId: number }) {
       <Grid container spacing={1.5}>
         {[
           {
-            label: 'Inventory Items',
-            value: inventoryQuery.isLoading
-              ? null
-              : Array.isArray(inventoryQuery.data?.inventory)
-                ? inventoryQuery.data!.inventory.length
-                : 0,
+            label: 'Top Items (of 20)',
+            value: topItemsQuery.isLoading ? null : topItemsQuery.data?.pagination?.total ?? 0,
             color: '#17803D',
             bg: '#D1FAE5',
-          },
-          {
-            label: 'In Stock',
-            value: inventoryQuery.isLoading
-              ? null
-              : Array.isArray(inventoryQuery.data?.inventory)
-                ? (inventoryQuery.data!.inventory as Record<string, unknown>[]).filter(
-                    (i) => String(i.inventory_status) === 'AVAILABLE',
-                  ).length
-                : 0,
-            color: '#2563EB',
-            bg: '#DBEAFE',
-          },
-          {
-            label: 'Low / Out of Stock',
-            value: inventoryQuery.isLoading
-              ? null
-              : Array.isArray(inventoryQuery.data?.inventory)
-                ? (inventoryQuery.data!.inventory as Record<string, unknown>[]).filter((i) =>
-                    ['LOW_STOCK', 'OUT_OF_STOCK'].includes(String(i.inventory_status)),
-                  ).length
-                : 0,
-            color: '#B7791F',
-            bg: '#FEF3C7',
           },
           {
             label: 'Team Members',
@@ -700,13 +654,13 @@ export function NurseryDetailPanel({ nurseryId }: { nurseryId: number }) {
           TabIndicatorProps={{ style: { height: 2 } }}
         >
           <Tab label="Addresses" sx={{ minHeight: 40, fontSize: 13, textTransform: 'none', fontWeight: 600 }} />
-          <Tab label="Inventory" sx={{ minHeight: 40, fontSize: 13, textTransform: 'none', fontWeight: 600 }} />
+          <Tab label="Top Items" sx={{ minHeight: 40, fontSize: 13, textTransform: 'none', fontWeight: 600 }} />
           <Tab label="Team" sx={{ minHeight: 40, fontSize: 13, textTransform: 'none', fontWeight: 600 }} />
         </Tabs>
 
         {tab === 0 && <AddressesTab nurseryId={nurseryId} />}
 
-        {tab === 1 && <InventoryTab nurseryId={nurseryId} />}
+        {tab === 1 && <TopItemsTab nurseryId={nurseryId} />}
 
         {tab === 2 && (
           <Paper variant="outlined" sx={{ borderRadius: 2 }}>

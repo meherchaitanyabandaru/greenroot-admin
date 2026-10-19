@@ -17,12 +17,8 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   COMPLETED:           { label: 'Completed',           color: '#17803D', bg: '#D1FAE5' },
   CANCELLED:           { label: 'Cancelled',           color: '#C2410C', bg: '#FEE2E2' },
 
-  // Inventory
+  // Plant-request responses and sourcing posts
   AVAILABLE:           { label: 'Available',           color: '#17803D', bg: '#D1FAE5' },
-  LOW_STOCK:           { label: 'Low Stock',           color: '#B7791F', bg: '#FEF3C7' },
-  OUT_OF_STOCK:        { label: 'Out of Stock',        color: '#C2410C', bg: '#FEE2E2' },
-  RESERVED:            { label: 'Reserved',            color: '#2563EB', bg: '#DBEAFE' },
-  DISCONTINUED:        { label: 'Discontinued',        color: '#667085', bg: '#F2F4F7' },
 
   // Payments
   SUCCESS:             { label: 'Paid',                color: '#17803D', bg: '#D1FAE5' },

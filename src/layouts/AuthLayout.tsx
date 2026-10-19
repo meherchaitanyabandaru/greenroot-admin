@@ -40,7 +40,7 @@ export function AuthLayout() {
           <Typography variant="h3">Nurturing plants, growing futures.</Typography>
           <Typography sx={{ mt: 2, maxWidth: 560 }}>
             GreenRoot Admin gives platform operators clear control over catalog, nurseries,
-            inventory, orders, dispatches, and audit activity.
+            top items, orders, dispatches, and audit activity.
           </Typography>
         </Box>
       </Box>

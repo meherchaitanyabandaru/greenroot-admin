@@ -17,6 +17,9 @@ const ResourceListPage = lazy(() =>
 const BotanicalNamesPage = lazy(() =>
   import('../features/plants/BotanicalNamesPage').then((m) => ({ default: m.BotanicalNamesPage })),
 );
+const TopItemsPage = lazy(() =>
+  import('../features/topItems/TopItemsPage').then((m) => ({ default: m.TopItemsPage })),
+);
 const MarketPage = lazy(() =>
   import('../features/market/MarketPage').then((m) => ({ default: m.MarketPage })),
 );
@@ -76,7 +79,7 @@ export function AppRouter() {
 
             {/* Nurseries */}
             <Route path="/nurseries" element={<ResourceListPage resource="nurseries" />} />
-            <Route path="/inventory" element={<ResourceListPage resource="inventory" />} />
+            <Route path="/top-items" element={<TopItemsPage />} />
 
             {/* Master Data */}
             <Route path="/plants" element={<BotanicalNamesPage />} />

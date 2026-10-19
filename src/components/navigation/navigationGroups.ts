@@ -11,7 +11,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import GppMaybeIcon from '@mui/icons-material/GppMaybe';
 import HistoryIcon from '@mui/icons-material/History';
-import InventoryIcon from '@mui/icons-material/Inventory';
+import StarOutlineIcon from '@mui/icons-material/StarOutline';
 import LocalFloristIcon from '@mui/icons-material/LocalFlorist';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
@@ -46,7 +46,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { label: 'All Nurseries', path: '/nurseries', icon: StorefrontIcon },
       { label: 'Pending Approvals', path: '/nurseries/applications', icon: CheckCircleOutlineIcon },
-      { label: 'Inventory', path: '/inventory', icon: InventoryIcon },
+      { label: 'Top Items', path: '/top-items', icon: StarOutlineIcon },
     ],
   },
   {
