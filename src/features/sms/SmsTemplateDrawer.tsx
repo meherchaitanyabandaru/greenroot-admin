@@ -304,7 +304,7 @@ export function SmsTemplateDrawer({ template, headers, live, onClose }: Props) {
             <Stack direction="row" justifyContent="space-between" alignItems="center" mt={0.5}>
               <FormControlLabel
                 control={<Switch checked={form.is_unicode} onChange={(e) => set('is_unicode', e.target.checked)} disabled={contentLocked} />}
-                label={<Typography variant="body2">Unicode (Hindi/Telugu, ₹ etc. — 70 chars per SMS instead of 160)</Typography>}
+                label={<Typography variant="body2">Unicode characters (such as ₹ — 70 chars per SMS instead of 160)</Typography>}
               />
               <Button size="small" startIcon={<ContentCopyIcon fontSize="small" />} onClick={copyBody} disabled={!form.body}>
                 Copy for DLT
