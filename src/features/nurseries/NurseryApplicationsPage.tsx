@@ -44,6 +44,7 @@ import { SearchInput } from '../../components/forms/SearchInput';
 import { useToast } from '../../components/feedback/toastContext';
 import { normalizeApiError } from '../../utils/apiError';
 import { formatDate } from '../../utils/labels';
+import { tone } from '../../theme/tone';
 
 // ─── Status chip colours ──────────────────────────────────────────────────────
 const STATUS_COLORS: Record<string, { label: string; color: string; bg: string }> = {
@@ -62,15 +63,14 @@ function StatusBadge({ status }: { status: unknown }) {
     <Chip
       label={cfg.label}
       size="small"
-      sx={{
+      sx={(t) => ({
         fontSize: 11,
         fontWeight: 700,
         height: 22,
-        bgcolor: cfg.bg,
-        color: cfg.color,
+        ...tone(t, cfg.color, cfg.bg),
         border: 'none',
         '& .MuiChip-label': { px: 1 },
-      }}
+      })}
     />
   );
 }

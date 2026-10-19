@@ -20,6 +20,7 @@ import {
   LinearProgress,
   Stack,
   Typography,
+  useTheme,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import {
@@ -36,6 +37,7 @@ import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { PageHeader } from '../../components/page/PageHeader';
 import { tokens } from '../../theme/tokens';
+import { tone as toneColors } from '../../theme/tone';
 import { normalizeApiError } from '../../utils/apiError';
 import { formatCurrency, toLabel } from '../../utils/labels';
 import { useListMarketReportsQuery, useListResourceQuery } from '../../api/adminResources';
@@ -82,14 +84,14 @@ function KpiTile({
         display: 'block',
         height: '100%',
         textDecoration: 'none',
-        borderColor: tone === 'danger' ? palette.red[100] : 'divider',
+        borderColor: tone === 'danger' ? 'error.main' : 'divider',
         '&:hover': { boxShadow: tokens.shadow.cardHover, transform: 'translateY(-1px)' },
       }}
     >
       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
         <Stack spacing={1.5}>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Box sx={{ width: 34, height: 34, borderRadius: 1.5, bgcolor: tones.bg, color: tones.fg, display: 'grid', placeItems: 'center' }}>
+            <Box sx={(t) => ({ width: 34, height: 34, borderRadius: 1.5, ...toneColors(t, tones.fg, tones.bg), display: 'grid', placeItems: 'center' })}>
               <Icon sx={{ fontSize: 18 }} />
             </Box>
             <ArrowForwardIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
@@ -171,7 +173,7 @@ function RowItem({
         <Chip
           size="small"
           label={value}
-          sx={{ height: 22, borderRadius: 1, fontSize: 11, fontWeight: 700, color, bgcolor: 'background.default' }}
+          sx={(t) => ({ height: 22, borderRadius: 1, fontSize: 11, fontWeight: 700, color: toneColors(t, color, '').color, bgcolor: 'background.default' })}
         />
       )}
     </Stack>
@@ -179,6 +181,7 @@ function RowItem({
 }
 
 export function DashboardPage() {
+  const theme = useTheme();
   const { data, error, isLoading, refetch } = useDashboardQuery();
   const sms = useGetSmsStatusQuery();
   const email = useGetEmailStatusQuery();
@@ -265,12 +268,12 @@ export function DashboardPage() {
                         <stop offset="95%" stopColor={palette.blue[600]} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid stroke={tokens.semantic.border} vertical={false} />
-                    <XAxis dataKey="label" tick={{ fontSize: 12, fill: tokens.semantic.textSecondary }} axisLine={false} tickLine={false} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: tokens.semantic.textSecondary }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${tokens.semantic.border}`, fontSize: 12 }} />
+                    <CartesianGrid stroke={theme.palette.divider} vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 12, fill: theme.palette.text.secondary }} axisLine={false} tickLine={false} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: theme.palette.text.secondary }} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${theme.palette.divider}`, background: theme.palette.background.paper, color: theme.palette.text.primary, fontSize: 12 }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-                    <Area type="monotone" name="Orders" dataKey="orders" stroke={palette.forest[700]} fill="url(#orders)" strokeWidth={2} />
+                    <Area type="monotone" name="Orders" dataKey="orders" stroke={theme.palette.primary.main} fill="url(#orders)" strokeWidth={2} />
                     <Area type="monotone" name="Dispatches" dataKey="dispatches" stroke={palette.blue[600]} fill="url(#dispatches)" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -281,7 +284,7 @@ export function DashboardPage() {
           <Grid size={{ xs: 12, lg: 4 }}>
             <Panel title="Needs attention">
               {alerts.length === 0 ? (
-                <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: palette.forest[50], color: palette.forest[700] }}>
+                <Box sx={(t) => ({ p: 1.5, borderRadius: 1, ...toneColors(t, palette.forest[700], palette.forest[50]) })}>
                   <Typography fontSize={13} fontWeight={700}>All clear</Typography>
                   <Typography fontSize={12}>No approvals, reports or crashes waiting.</Typography>
                 </Box>
@@ -290,7 +293,7 @@ export function DashboardPage() {
                   {alerts.map((a) => {
                     const c = { danger: palette.red, warning: palette.amber, info: palette.blue }[a.tone];
                     return (
-                      <Box key={a.title} component={Link} to={a.href} sx={{ p: 1.25, borderRadius: 1, bgcolor: c[50], color: c[700], textDecoration: 'none', display: 'block', '&:hover': { opacity: 0.85 } }}>
+                      <Box key={a.title} component={Link} to={a.href} sx={(t) => ({ p: 1.25, borderRadius: 1, ...toneColors(t, c[700], c[50]), textDecoration: 'none', display: 'block', '&:hover': { opacity: 0.85 } })}>
                         <Typography fontSize={13} fontWeight={700}>{a.title}</Typography>
                         <Typography fontSize={12}>{a.body}</Typography>
                       </Box>

@@ -92,6 +92,44 @@ export const tokens = {
     infoBg:        '#dbeafe',
   },
 
+  // ── Semantic aliases (dark mode) ───────────────────────────────────────────
+  // Same keys as `semantic`: deep green-grey surfaces, light text, and a
+  // brighter brand green so links and buttons stay readable.
+  semanticDark: {
+    bg:           '#0f1713',
+    surface:      '#16211b',
+    surfaceHover: '#1b2821',
+    surfaceRaised:'#1b2821',
+
+    textPrimary:   '#e7efe9',
+    textSecondary: '#9fb0a6',
+    textMuted:     '#6b7d72',
+    textInverse:   '#0f172a',
+
+    border:        '#26352d',
+    borderStrong:  '#34453b',
+    borderFocus:   '#22c55e',
+
+    primaryMain:   '#22c55e',
+    primaryHover:  '#16a34a',
+    primaryActive: '#15803d',
+    primaryLight:  'rgba(34,197,94,0.15)',
+    primaryMid:    '#22c55e',
+
+    accentMain:    '#84cc16',
+    accentHover:   '#a3e635',
+    accentLight:   'rgba(132,204,22,0.15)',
+
+    successText:   '#86efac',
+    successBg:     'rgba(34,197,94,0.15)',
+    warningText:   '#fcd34d',
+    warningBg:     'rgba(245,158,11,0.15)',
+    errorText:     '#fca5a5',
+    errorBg:       'rgba(239,68,68,0.15)',
+    infoText:      '#93c5fd',
+    infoBg:        'rgba(59,130,246,0.15)',
+  },
+
   // ── Sidebar-specific tokens ─────────────────────────────────────────────────
   sidebar: {
     bg:             '#0c1e10',   // very deep forest

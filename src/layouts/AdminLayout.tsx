@@ -29,12 +29,13 @@ import { baseApi } from '../api/baseApi';
 import { getStoredAuth } from '../api/authStorage';
 import { navigationGroups, type NavGroup } from '../components/navigation/navigationGroups';
 import { useNavBadge } from '../components/navigation/useNavBadge';
+import { ColorModeMenu } from '../components/navigation/ColorModeMenu';
 import { useLogoutMutation } from '../features/auth/authApi';
 import { clearAuth } from '../features/auth/authSlice';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { tokens } from '../theme/tokens';
 
-const { sidebar: sb, semantic, shadow, transition, radius } = tokens;
+const { sidebar: sb, shadow, transition, radius } = tokens;
 
 const DRAWER_FULL = 272;
 const DRAWER_MINI = 64;
@@ -602,11 +603,13 @@ export function AdminLayout() {
 
             <Box sx={{ flex: 1 }} />
 
+            <ColorModeMenu />
+
             {/* User */}
             <Stack direction="row" alignItems="center" spacing={1}>
               <Avatar
                 sx={{
-                  bgcolor: semantic.primaryMain,
+                  bgcolor: 'primary.main',
                   width: 28,
                   height: 28,
                   fontSize: 11.5,
@@ -634,8 +637,8 @@ export function AdminLayout() {
                   onClick={handleLogout}
                   aria-label="Sign out"
                   sx={{
-                    color: semantic.textSecondary,
-                    '&:hover': { color: tokens.color.red[600], bgcolor: tokens.color.red[50] },
+                    color: 'text.secondary',
+                    '&:hover': { color: 'error.main', bgcolor: 'action.hover' },
                   }}
                 >
                   {logoutState.isLoading
@@ -660,7 +663,8 @@ export function AdminLayout() {
         <Box
           component="footer"
           sx={{
-            borderTop: `1px solid ${semantic.border}`,
+            borderTop: 1,
+            borderColor: 'divider',
             px: { xs: 2, md: 3 },
             py: 1.5,
             display: 'flex',
@@ -668,7 +672,7 @@ export function AdminLayout() {
             justifyContent: 'space-between',
             flexWrap: 'wrap',
             gap: 1,
-            bgcolor: semantic.surface,
+            bgcolor: 'background.paper',
           }}
         >
           <Typography fontSize={12} color="text.disabled" letterSpacing="-0.01em">

@@ -22,6 +22,8 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { useListSubscriptionPlansQuery, type SubscriptionPlan } from '../../api/adminResources';
+import { alpha, useTheme } from '@mui/material/styles';
+import { tone } from '../../theme/tone';
 import { PlanEditDrawer } from './PlanEditDrawer';
 
 const PLAN_META: Record<string, { accent: string; headerBg: string }> = {
@@ -50,8 +52,18 @@ const FEATURE_ROWS: { label: string; key: string; type: 'bool' | 'text' | 'manag
   { label: 'Support',                key: 'support',               type: 'text' },
 ];
 
+/** A plan's accent and header tint, readable in the current colour mode. */
+function usePlanMeta() {
+  const theme = useTheme();
+  return (code: string) => {
+    const base = PLAN_META[code] ?? { accent: '#64748b', headerBg: '#f8fafc' };
+    const t = tone(theme, base.accent, base.headerBg);
+    return { accent: t.color, headerBg: t.bgcolor };
+  };
+}
+
 function FeatureCell({ plan, row }: { plan: SubscriptionPlan; row: typeof FEATURE_ROWS[0] }) {
-  const meta = PLAN_META[plan.plan_code] ?? { accent: '#64748b', headerBg: '#f8fafc' };
+  const meta = usePlanMeta()(plan.plan_code);
 
   if (row.type === 'managers') {
     const val = plan.max_managers;
@@ -79,16 +91,16 @@ function FeatureCell({ plan, row }: { plan: SubscriptionPlan; row: typeof FEATUR
     const on = raw === true || raw === 'true';
     return on
       ? <CheckIcon sx={{ fontSize: 18, color: meta.accent }} />
-      : <RemoveIcon sx={{ fontSize: 18, color: '#cbd5e1' }} />;
+      : <RemoveIcon sx={{ fontSize: 18, color: 'text.disabled' }} />;
   }
 
   // text
-  if (!raw) return <RemoveIcon sx={{ fontSize: 18, color: '#cbd5e1' }} />;
+  if (!raw) return <RemoveIcon sx={{ fontSize: 18, color: 'text.disabled' }} />;
   return (
     <Chip
       label={String(raw)}
       size="small"
-      sx={{ bgcolor: meta.accent + '18', color: meta.accent, fontWeight: 700, fontSize: 11, textTransform: 'capitalize' }}
+      sx={{ bgcolor: alpha(meta.accent, 0.1), color: meta.accent, fontWeight: 700, fontSize: 11, textTransform: 'capitalize' }}
     />
   );
 }
@@ -97,6 +109,7 @@ export function SubscriptionPlansPage() {
   const { data, isLoading, error } = useListSubscriptionPlansQuery();
   const [editing, setEditing] = useState<SubscriptionPlan | null>(null);
 
+  const planMeta = usePlanMeta();
   const plans = (data?.plans ?? []).filter(
     (p) => p.plan_code !== 'FREE' && p.plan_code !== 'PRO',
   );
@@ -125,10 +138,10 @@ export function SubscriptionPlansPage() {
             {/* Plan name row */}
             <TableRow>
               <TableCell
-                sx={{ width: 200, minWidth: 200, bgcolor: '#f8fafc', borderRight: '1px solid', borderColor: 'divider' }}
+                sx={{ width: 200, minWidth: 200, bgcolor: 'action.hover', borderRight: '1px solid', borderColor: 'divider' }}
               />
               {plans.map((plan) => {
-                const meta = PLAN_META[plan.plan_code] ?? { accent: '#64748b', headerBg: '#f8fafc' };
+                const meta = planMeta(plan.plan_code);
                 return (
                   <TableCell
                     key={plan.id}
@@ -175,19 +188,19 @@ export function SubscriptionPlansPage() {
             </TableRow>
 
             {/* 6-Month Price */}
-            <TableRow sx={{ bgcolor: '#fafafa' }}>
+            <TableRow sx={{ bgcolor: 'action.hover' }}>
               <TableCell sx={{ borderRight: '1px solid', borderColor: 'divider', py: 2 }}>
                 <Typography variant="body2" fontWeight={700} color="text.secondary">6-Month Price</Typography>
               </TableCell>
               {plans.map((plan) => {
-                const meta = PLAN_META[plan.plan_code] ?? { accent: '#64748b', headerBg: '#f8fafc' };
+                const meta = planMeta(plan.plan_code);
                 const mrp = plan.features?.mrp_six_month as number | undefined;
                 const disc = mrpDiscount(plan.six_month_price, mrp);
                 return (
                   <TableCell key={plan.id} align="center" sx={{ borderRight: '1px solid', borderColor: 'divider', py: 2 }}>
                     <Stack alignItems="center" gap={0.25}>
                       {mrp && disc && (
-                        <Typography variant="caption" sx={{ textDecoration: 'line-through', color: '#94a3b8' }}>
+                        <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.disabled' }}>
                           {fmt(mrp)}
                         </Typography>
                       )}
@@ -196,7 +209,7 @@ export function SubscriptionPlansPage() {
                       </Typography>
                       {disc ? (
                         <Chip label={`${disc}% off`} size="small"
-                          sx={{ bgcolor: '#fef9c3', color: '#854d0e', fontWeight: 800, fontSize: 10, height: 18 }} />
+                          sx={(t) => ({ ...tone(t, '#854d0e', '#fef9c3'), fontWeight: 800, fontSize: 10, height: 18 })} />
                       ) : !plan.six_month_price ? (
                         <Typography variant="caption" color="success.main" fontWeight={600}>Free</Typography>
                       ) : (
@@ -214,14 +227,14 @@ export function SubscriptionPlansPage() {
                 <Typography variant="body2" fontWeight={700} color="text.secondary">Yearly Price</Typography>
               </TableCell>
               {plans.map((plan) => {
-                const meta = PLAN_META[plan.plan_code] ?? { accent: '#64748b', headerBg: '#f8fafc' };
+                const meta = planMeta(plan.plan_code);
                 const mrp = plan.features?.mrp_yearly as number | undefined;
                 const disc = mrpDiscount(plan.yearly_price, mrp);
                 return (
                   <TableCell key={plan.id} align="center" sx={{ borderRight: '1px solid', borderColor: 'divider', py: 2 }}>
                     <Stack alignItems="center" gap={0.25}>
                       {mrp && disc && (
-                        <Typography variant="caption" sx={{ textDecoration: 'line-through', color: '#94a3b8' }}>
+                        <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.disabled' }}>
                           {fmt(mrp)}
                         </Typography>
                       )}
@@ -230,7 +243,7 @@ export function SubscriptionPlansPage() {
                       </Typography>
                       {disc ? (
                         <Chip label={`${disc}% off`} size="small"
-                          sx={{ bgcolor: '#dcfce7', color: '#15803d', fontWeight: 800, fontSize: 10, height: 18 }} />
+                          sx={(t) => ({ ...tone(t, '#15803d', '#dcfce7'), fontWeight: 800, fontSize: 10, height: 18 })} />
                       ) : !plan.yearly_price ? (
                         <Typography variant="caption" color="success.main" fontWeight={600}>Free</Typography>
                       ) : (
@@ -246,7 +259,7 @@ export function SubscriptionPlansPage() {
             <TableRow>
               <TableCell
                 colSpan={plans.length + 1}
-                sx={{ bgcolor: '#f1f5f9', py: 1, borderTop: '1px solid', borderColor: 'divider' }}
+                sx={{ bgcolor: 'action.selected', py: 1, borderTop: '1px solid', borderColor: 'divider' }}
               >
                 <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ letterSpacing: 0.8, textTransform: 'uppercase' }}>
                   Features
@@ -256,7 +269,7 @@ export function SubscriptionPlansPage() {
 
             {/* Feature rows */}
             {FEATURE_ROWS.map((row, i) => (
-              <TableRow key={row.key} sx={{ bgcolor: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+              <TableRow key={row.key} sx={{ bgcolor: i % 2 === 0 ? 'background.paper' : 'action.hover' }}>
                 <TableCell sx={{ borderRight: '1px solid', borderColor: 'divider', py: 1.5 }}>
                   <Typography variant="body2" color="text.primary">{row.label}</Typography>
                 </TableCell>
@@ -269,7 +282,7 @@ export function SubscriptionPlansPage() {
             ))}
 
             {/* Billing Cycles */}
-            <TableRow sx={{ bgcolor: '#fafafa' }}>
+            <TableRow sx={{ bgcolor: 'action.hover' }}>
               <TableCell sx={{ borderRight: '1px solid', borderColor: 'divider', py: 1.5 }}>
                 <Typography variant="body2" color="text.primary">Billing Cycles</Typography>
               </TableCell>

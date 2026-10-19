@@ -1,4 +1,5 @@
 import { Chip } from '@mui/material';
+import { tone } from '../../theme/tone';
 import { toLabel } from '../../utils/labels';
 
 type StatusConfig = { label: string; color: string; bg: string };
@@ -99,7 +100,7 @@ export function StatusChip({ value }: { value?: unknown }) {
       <Chip
         size="small"
         label={toLabel(key)}
-        sx={{ fontSize: 11, height: 22, color: '#475467', bgcolor: '#F2F4F7', '& .MuiChip-label': { px: 1 } }}
+        sx={(t) => ({ fontSize: 11, height: 22, ...tone(t, '#475467', '#F2F4F7'), '& .MuiChip-label': { px: 1 } })}
       />
     );
   }
@@ -108,15 +109,14 @@ export function StatusChip({ value }: { value?: unknown }) {
     <Chip
       size="small"
       label={cfg.label}
-      sx={{
+      sx={(t) => ({
         fontSize: 11,
         fontWeight: 600,
         height: 22,
-        bgcolor: cfg.bg,
-        color: cfg.color,
+        ...tone(t, cfg.color, cfg.bg),
         border: 'none',
         '& .MuiChip-label': { px: 1 },
-      }}
+      })}
     />
   );
 }
