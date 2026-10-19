@@ -20,8 +20,11 @@ const BotanicalNamesPage = lazy(() =>
 const TopItemsPage = lazy(() =>
   import('../features/topItems/TopItemsPage').then((m) => ({ default: m.TopItemsPage })),
 );
-const MarketPage = lazy(() =>
-  import('../features/market/MarketPage').then((m) => ({ default: m.MarketPage })),
+const MarketReviewPage = lazy(() =>
+  import('../features/market/MarketPage').then((m) => ({ default: m.MarketReviewPage })),
+);
+const MarketAdsPage = lazy(() =>
+  import('../features/market/MarketPage').then((m) => ({ default: m.MarketAdsPage })),
 );
 const CrashReportsPage = lazy(() =>
   import('../features/crashes/CrashReportsPage').then((m) => ({ default: m.CrashReportsPage })),
@@ -84,7 +87,9 @@ export function AppRouter() {
             {/* Master Data */}
             <Route path="/plants" element={<BotanicalNamesPage />} />
             <Route path="/plants/categories" element={<PlantFamiliesPage />} />
-            <Route path="/market" element={<MarketPage />} />
+            <Route path="/market" element={<Navigate replace to="/market/review" />} />
+            <Route path="/market/review" element={<MarketReviewPage />} />
+            <Route path="/market/ads" element={<MarketAdsPage />} />
             <Route path="/crash-reports" element={<CrashReportsPage />} />
 
             {/* Business Monitoring (read-only for Super Admin) */}

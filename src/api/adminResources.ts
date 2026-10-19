@@ -300,6 +300,7 @@ export type AdminMarketAd = {
 
 export type AdminMarketAdsResponse = { ads: AdminMarketAd[]; pagination: Pagination };
 export type ModerationOutcome = { strikes: number; blocked_until?: string };
+export type BlockedNursery = { nursery_id: number; nursery_name: string; strikes: number; blocked_until: string };
 
 /** An uncaught error reported by the mobile or web app. */
 export type CrashReport = {
@@ -481,6 +482,10 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     >({
       query: ({ id, ...body }) => ({ url: `/api/v1/market/admin/ads/${id}/moderate`, method: 'POST', body }),
       invalidatesTags: ['Market', 'Dashboard'],
+    }),
+    listMarketBlockedNurseries: builder.query<{ nurseries: BlockedNursery[] }, void>({
+      query: () => '/api/v1/market/admin/blocked-nurseries',
+      providesTags: ['Market'],
     }),
     unblockMarketNursery: builder.mutation<{ nursery_id: number }, number>({
       query: (id) => ({ url: `/api/v1/market/admin/nurseries/${id}/unblock`, method: 'POST' }),
@@ -989,6 +994,7 @@ export const {
   useListMarketAdminAdsQuery,
   useModerateMarketAdMutation,
   useUnblockMarketNurseryMutation,
+  useListMarketBlockedNurseriesQuery,
   useReviewMarketReportMutation,
   useListCrashReportsQuery,
   useCreateOrderMutation,

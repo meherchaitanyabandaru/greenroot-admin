@@ -201,7 +201,7 @@ export function DashboardPage() {
 
   const alerts = [
     pendingApprovals > 0 && { tone: 'danger', title: `${pendingApprovals} nursery application${pendingApprovals > 1 ? 's' : ''} waiting`, body: 'Owners cannot sell until you approve them.', href: '/nurseries/applications' },
-    reportedAds > 0 && { tone: 'warning', title: `${reportedAds} reported market ad${reportedAds > 1 ? 's' : ''}`, body: 'Check the photos, then restore or remove the ads.', href: '/market' },
+    reportedAds > 0 && { tone: 'warning', title: `${reportedAds} reported market ad${reportedAds > 1 ? 's' : ''}`, body: 'Check the photos, then restore or remove the ads.', href: '/market/review' },
     crashes > 0 && { tone: 'warning', title: `${crashes} app crash${crashes > 1 ? 'es' : ''} in 24 h`, body: 'Check which app version and screen fail.', href: '/crash-reports' },
     sms.data && !sms.data.live && { tone: 'info', title: 'SMS is in mock mode', body: 'OTP is the fixed dev code for every account. Go live after DLT approval.', href: '/sms' },
     email.data && !email.data.live && { tone: 'info', title: 'Email is in mock mode', body: 'Nothing is delivered until a provider (Amazon SES) is enabled.', href: '/email' },
@@ -230,7 +230,7 @@ export function DashboardPage() {
             { label: "Today's orders", value: n('orders_today'), icon: ReceiptLongIcon, href: '/orders', tone: 'info' as const, helper: `${n('active_orders').toLocaleString('en-IN')} in progress` },
             { label: 'Active trips', value: n('active_trips'), icon: LocalShippingIcon, href: '/tracking', tone: n('active_trips') ? ('warning' as const) : ('neutral' as const), helper: `${n('dispatches_today')} dispatched today` },
             { label: 'Pending approvals', value: pendingApprovals, icon: ErrorOutlineIcon, href: '/nurseries/applications', tone: pendingApprovals ? ('danger' as const) : ('neutral' as const), helper: `${n('approved_nurseries')} active nurseries` },
-            { label: 'Reported ads', value: reportedAds, icon: StorefrontIcon, href: '/market', tone: reportedAds ? ('warning' as const) : ('neutral' as const), helper: 'Local market, awaiting review' },
+            { label: 'Reported ads', value: reportedAds, icon: StorefrontIcon, href: '/market/review', tone: reportedAds ? ('warning' as const) : ('neutral' as const), helper: 'Local market, awaiting review' },
             { label: 'Order revenue', value: formatCurrency(n('order_revenue')), icon: PaymentsIcon, href: '/payments', tone: 'success' as const, helper: 'Successful order payments' },
             { label: 'Subscription revenue', value: formatCurrency(n('subscription_revenue')), icon: PaymentsIcon, href: '/subscriptions', tone: 'success' as const, helper: 'Successful subscription payments' },
             { label: 'Pending payments', value: pendingPayments, icon: PaymentsIcon, href: '/payments', tone: pendingPayments ? ('warning' as const) : ('neutral' as const), helper: 'Waiting for confirmation' },

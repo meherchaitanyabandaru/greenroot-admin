@@ -28,6 +28,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { baseApi } from '../api/baseApi';
 import { getStoredAuth } from '../api/authStorage';
 import { navigationGroups, type NavGroup } from '../components/navigation/navigationGroups';
+import { useNavBadge } from '../components/navigation/useNavBadge';
 import { useLogoutMutation } from '../features/auth/authApi';
 import { clearAuth } from '../features/auth/authSlice';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
@@ -76,6 +77,8 @@ function NavItem({
   onNavigate?: () => void;
 }) {
   const Icon = item.icon;
+  const live = useNavBadge(item.path);
+  const badge = live ?? item.badge;
   return (
     <ListItemButton
       component={NavLink}
@@ -133,7 +136,7 @@ function NavItem({
           letterSpacing: '-0.003em',
         }}
       />
-      {item.badge && (
+      {badge && (
         <Box
           sx={{
             minWidth: 18,
@@ -142,13 +145,14 @@ function NavItem({
             borderRadius: 9,
             display: 'grid',
             placeItems: 'center',
-            bgcolor: 'rgba(255,255,255,0.1)',
-            color: 'inherit',
+            // Live counts are work waiting for the admin: make them stand out.
+            bgcolor: live ? 'error.main' : 'rgba(255,255,255,0.1)',
+            color: live ? 'common.white' : 'inherit',
             fontSize: 10,
             fontWeight: 700,
           }}
         >
-          {item.badge}
+          {badge}
         </Box>
       )}
     </ListItemButton>

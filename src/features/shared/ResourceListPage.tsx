@@ -82,8 +82,8 @@ const meta: Record<ResourceKey, { title: string; description: string; searchable
   subscriptions:         { title: 'Subscriptions',          description: 'Monitor user subscription lifecycle.' },
   subscriptionPlans:     { title: 'Subscription Plans',     description: 'Review active subscription catalog plans.' },
   attachments:           { title: 'Attachments',            description: 'Inspect uploaded metadata and linked entities.' },
-  sourcingPosts:         { title: 'Sourcing Posts',         description: 'Monitor private nursery sourcing needs and availability.' },
-  sourcingNetwork:       { title: 'Sourcing Network',       description: 'Review approved nurseries participating in sourcing discovery.' },
+  sourcingPosts:         { title: 'Need & Availability Posts', description: 'What sourcing-network nurseries need or have available, shared only inside the network.' },
+  sourcingNetwork:       { title: 'Network Members',          description: 'Nurseries that joined the private sourcing network: location, access for vehicles and their top items.' },
   audit:                 { title: 'Audit Logs',             description: 'Read-only platform audit activity.' },
   securityLogs:          { title: 'Security Logs',          description: 'Platform security event log.' },
 };
@@ -92,6 +92,13 @@ const meta: Record<ResourceKey, { title: string; description: string; searchable
 function CellValue({ value, colKey }: { value: unknown; colKey: string }) {
   if (value === null || value === undefined || value === '') {
     return <Typography color="text.disabled" fontSize={13.5}>—</Typography>;
+  }
+
+  if (typeof value === 'boolean') {
+    return <Typography fontSize={13.5} color={value ? 'text.primary' : 'text.secondary'}>{value ? 'Yes' : 'No'}</Typography>;
+  }
+  if (Array.isArray(value)) {
+    return <Typography fontSize={13.5}>{value.length}</Typography>;
   }
 
   // Status columns
@@ -235,7 +242,7 @@ function columnsFor(
                           : resource === 'sourcingPosts'
                             ? ['post_code', 'nursery_name', 'post_type', 'plant_name', 'quantity', 'status']
                           : resource === 'sourcingNetwork'
-                            ? ['nursery_name', 'village', 'distance_km', 'road_accessible', 'lorry_accessible']
+                            ? ['nursery_name', 'village', 'contact_number', 'road_accessible', 'lorry_accessible', 'top_items']
                           : resource === 'notifications'
                             ? ['notification_type', 'title', 'channel', 'notification_status']
                             : resource === 'subscriptions'

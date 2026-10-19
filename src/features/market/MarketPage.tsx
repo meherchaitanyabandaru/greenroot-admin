@@ -1,7 +1,6 @@
 import {
   Alert,
   Avatar,
-  Badge,
   Box,
   Button,
   Chip,
@@ -12,8 +11,6 @@ import {
   Divider,
   Paper,
   Stack,
-  Tab,
-  Tabs,
   TextField,
   Typography,
 } from '@mui/material';
@@ -23,6 +20,7 @@ import {
   type AdminMarketAd,
   type MarketReport,
   useListMarketAdminAdsQuery,
+  useListMarketBlockedNurseriesQuery,
   useListMarketReportsQuery,
   useModerateMarketAdMutation,
   useReviewMarketReportMutation,
@@ -121,34 +119,69 @@ function PhotoStrip({ photos }: { photos: string[] }) {
 }
 
 /**
- * Admin → Local Market. Reports: the queue nurseries fill; ads reported for
- * explicit images or banned items are already hidden. All ads: every ad in
- * any status, where an admin can hide, restore or remove one directly and
- * lift a nursery's posting block.
+ * Admin → Local Market → Review Queue: everything waiting for an admin.
+ * Reports first (ads hidden by a serious report at the top), then nurseries
+ * blocked from posting, which an admin can unblock early.
  */
-export function MarketPage() {
-  const [tab, setTab] = useState<'reports' | 'ads'>('reports');
-  const { data: pending } = useListMarketReportsQuery({ status: 'PENDING', page: 1, per_page: 1 });
-  const open = pending?.pagination?.total ?? 0;
+export function MarketReviewPage() {
   return (
     <Box>
       <PageHeader
-        title="Local Market"
-        description="Nursery-to-nursery ads. Reports of explicit images or banned items hide the ad at once; check the photos, then restore or remove. Removed ads are strikes: the 2nd blocks posting for 30 days, the 3rd for 90."
+        title="Review Queue"
+        description="Reports from nurseries. Ads reported for explicit images or banned items are already hidden: check the photos, then restore or remove. Each removed ad is a strike: the 2nd blocks posting for 30 days, the 3rd for 90."
       />
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Tab
-          value="reports"
-          label={
-            <Badge color="error" badgeContent={open} max={99} sx={{ '& .MuiBadge-badge': { right: -14 } }}>
-              Reports
-            </Badge>
-          }
-        />
-        <Tab value="ads" label="All ads" />
-      </Tabs>
-      {tab === 'reports' ? <ReportsTab /> : <AdsTab />}
+      <ReportsTab />
+      <BlockedNurseries />
     </Box>
+  );
+}
+
+/** Admin → Local Market → All Ads: every ad in any status, with direct actions. */
+export function MarketAdsPage() {
+  return (
+    <Box>
+      <PageHeader
+        title="All Ads"
+        description="Every Local Market ad in any status. Open one to see its photos, then hide it for review, restore it or remove it, even without a report."
+      />
+      <AdsTab />
+    </Box>
+  );
+}
+
+function BlockedNurseries() {
+  const { showToast } = useToast();
+  const { data } = useListMarketBlockedNurseriesQuery();
+  const [unblock, unblockState] = useUnblockMarketNurseryMutation();
+  const rows = data?.nurseries ?? [];
+  if (rows.length === 0) return null;
+  return (
+    <Paper variant="outlined" sx={{ mt: 3, p: 2 }}>
+      <Typography fontWeight={700} mb={0.5}>Nurseries blocked from posting</Typography>
+      <Typography fontSize={13} color="text.secondary" mb={1.5}>
+        Blocked automatically after a 2nd or later removed ad. Unblock early if the nursery fixed the problem.
+      </Typography>
+      {unblockState.error && <Alert severity="error" sx={{ mb: 1 }}>{normalizeApiError(unblockState.error).message}</Alert>}
+      <Stack divider={<Divider flexItem />}>
+        {rows.map((n) => (
+          <Stack key={n.nursery_id} direction="row" alignItems="center" spacing={2} py={1}>
+            <Typography fontSize={13.5} fontWeight={600} sx={{ flex: 1 }}>{n.nursery_name}</Typography>
+            <StrikesChip strikes={n.strikes} />
+            <Typography fontSize={13} color="error.main" sx={{ minWidth: 190 }}>Blocked until {formatDate(n.blocked_until)}</Typography>
+            <Button
+              size="small"
+              disabled={unblockState.isLoading}
+              onClick={async () => {
+                await unblock(n.nursery_id).unwrap();
+                showToast(`${n.nursery_name} can post ads again`);
+              }}
+            >
+              Unblock
+            </Button>
+          </Stack>
+        ))}
+      </Stack>
+    </Paper>
   );
 }
 

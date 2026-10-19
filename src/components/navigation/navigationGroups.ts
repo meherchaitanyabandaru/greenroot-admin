@@ -59,9 +59,15 @@ export const navigationGroups: NavGroup[] = [
   {
     section: 'Sourcing Network',
     items: [
-      { label: 'Network Members', path: '/sourcing-network', icon: StorefrontIcon },
+      { label: 'Network Members', path: '/sourcing-network', icon: AccountTreeIcon },
       { label: 'Need & Availability Posts', path: '/sourcing-posts', icon: TravelExploreIcon },
-      { label: 'Local Market', path: '/market', icon: CampaignIcon },
+    ],
+  },
+  {
+    section: 'Local Market',
+    items: [
+      { label: 'Review Queue', path: '/market/review', icon: GppMaybeIcon },
+      { label: 'All Ads', path: '/market/ads', icon: CampaignIcon },
     ],
   },
   {
