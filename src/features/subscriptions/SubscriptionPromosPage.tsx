@@ -32,7 +32,6 @@ import {
   type SubscriptionPromo,
 } from '../../api/adminResources';
 import { PromoCreateDrawer } from './PromoCreateDrawer';
-import { tone } from '../../theme/tone';
 
 function discountLabel(promo: SubscriptionPromo) {
   return promo.discount_type === 'PERCENTAGE'
@@ -79,7 +78,7 @@ function BlastDialog({ promo, onClose }: BlastDialogProps) {
             <Typography variant="body2" color="text.secondary" mb={2}>
               This will send an in-app notification with promo code <strong>{promo.promo_code}</strong> ({discountLabel(promo)}) to all nursery owners who don't have an active subscription.
             </Typography>
-            <Box sx={(t) => ({ bgcolor: tone(t, '#15803d', '#f0fdf4').bgcolor, borderRadius: 2, p: 2, border: 1, borderColor: 'divider' })}>
+            <Box sx={{ bgcolor: '#f0fdf4', borderRadius: 2, p: 2, border: '1px solid #bbf7d0' }}>
               <Stack direction="row" gap={1} alignItems="center" mb={0.5}>
                 <LocalOfferIcon sx={{ fontSize: 18, color: 'success.main' }} />
                 <Typography variant="subtitle2" fontWeight={700}>{promo.name}</Typography>
@@ -159,7 +158,7 @@ export function SubscriptionPromosPage() {
         <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
           <Table size="small">
             <TableHead>
-              <TableRow sx={{ bgcolor: 'action.hover' }}>
+              <TableRow sx={{ bgcolor: '#f8fafc' }}>
                 <TableCell sx={{ fontWeight: 700 }}>Code</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Discount</TableCell>
@@ -189,7 +188,7 @@ export function SubscriptionPromosPage() {
                     <Chip
                       label={discountLabel(promo)}
                       size="small"
-                      sx={(t) => ({ ...tone(t, '#854d0e', '#fef9c3'), fontWeight: 700, fontSize: 11 })}
+                      sx={{ bgcolor: '#fef9c3', color: '#854d0e', fontWeight: 700, fontSize: 11 }}
                     />
                     {promo.max_discount_cap && (
                       <Typography variant="caption" color="text.secondary" display="block">
@@ -256,7 +255,7 @@ export function SubscriptionPromosPage() {
       )}
 
       <Divider sx={{ my: 3 }} />
-      <Box sx={(t) => ({ bgcolor: tone(t, '#0369a1', '#f0f9ff').bgcolor, borderRadius: 2, p: 2 })}>
+      <Box sx={{ bgcolor: '#f0f9ff', borderRadius: 2, p: 2 }}>
         <Typography variant="subtitle2" fontWeight={700} mb={0.5}>How it works</Typography>
         <Stack component="ol" sx={{ m: 0, pl: 2.5, gap: 0.5 }}>
           {[

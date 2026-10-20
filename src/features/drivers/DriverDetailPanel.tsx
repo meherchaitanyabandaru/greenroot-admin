@@ -28,7 +28,6 @@ import { LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
 import { normalizeApiError } from '../../utils/apiError';
 import { DriverForm } from './DriverForm';
-import { tone } from '../../theme/tone';
 
 function text(value: unknown) {
   if (value === null || value === undefined || value === '') return '-';
@@ -141,12 +140,10 @@ export function DriverDetailPanel({ driverId }: { driverId: number }) {
           {/* Approval & Profile status row */}
           <Paper
             variant="outlined"
-            sx={(t) => ({
+            sx={{
               p: 1.5,
-              bgcolor: approvalStatus === 'PENDING'
-                ? tone(t, '#B45309', '#FFFBEB').bgcolor
-                : approvalStatus === 'APPROVED' ? tone(t, '#15803D', '#F0FDF4').bgcolor : 'background.paper',
-            })}
+              bgcolor: approvalStatus === 'PENDING' ? '#FFFBEB' : approvalStatus === 'APPROVED' ? '#F0FDF4' : 'background.paper',
+            }}
           >
             <Stack direction="row" spacing={3} alignItems="center" justifyContent="space-between">
               <Stack direction="row" spacing={3}>

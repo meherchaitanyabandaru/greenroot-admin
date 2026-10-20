@@ -20,7 +20,6 @@ import {
   Typography,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
-import { tone } from '../../theme/tone';
 import {
   useCreateSubscriptionPromoMutation,
   useUpdateSubscriptionPromoMutation,
@@ -205,8 +204,8 @@ export function PromoCreateDrawer({ open, promo, onClose }: Props) {
         </Stack>
 
         {discountNum > 0 && (
-          <Box sx={(t) => ({ ...tone(t, '#854d0e', '#fef9c3'), borderRadius: 2, px: 2, py: 1.5, border: 1, borderColor: 'divider' })}>
-            <Typography variant="body2" fontWeight={700} color="inherit">
+          <Box sx={{ bgcolor: '#fef9c3', borderRadius: 2, px: 2, py: 1.5, border: '1px solid #fde68a' }}>
+            <Typography variant="body2" fontWeight={700} color="#854d0e">
               Preview: {previewSaving}
             </Typography>
           </Box>

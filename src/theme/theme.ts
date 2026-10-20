@@ -2,37 +2,17 @@ import { createTheme } from '@mui/material/styles';
 import { tokens } from './tokens';
 import { typography } from './typography';
 
-const { shadow, radius, transition } = tokens;
+const { semantic, shadow, radius, transition, color } = tokens;
 
-export type ColorMode = 'light' | 'dark';
-
-type Shades = { [K in keyof typeof tokens.color]: Record<number, string> };
-
-// The raw shades the overrides below use, re-picked for dark backgrounds:
-// light tints (50–200) become translucent washes, dark text shades (700–900)
-// become light ones. slate[900] stays a dark tooltip, a step above the page.
-const darkShades: Shades = {
-  ...tokens.color,
-  slate: { 50: '#1b2821', 100: '#22302a', 200: '#2c3b33', 300: '#3a4a42', 400: '#5c6e64', 500: '#8a9b91', 600: '#a9b8af', 700: '#c7d3cc', 800: '#dfe7e2', 900: '#2a3a32', 950: '#0f1713' },
-  forest: { 50: 'rgba(34,197,94,0.10)', 100: 'rgba(34,197,94,0.16)', 200: 'rgba(34,197,94,0.30)', 400: '#4ade80', 500: '#4ade80', 600: '#22c55e', 700: '#22c55e', 800: '#16a34a', 900: '#bbf7d0', 950: '#dcfce7' },
-  amber: { 50: 'rgba(245,158,11,0.10)', 100: 'rgba(245,158,11,0.28)', 500: '#f59e0b', 600: '#fbbf24', 700: '#fcd34d' },
-  red: { 50: 'rgba(239,68,68,0.10)', 100: 'rgba(239,68,68,0.28)', 500: '#ef4444', 600: '#f87171', 700: '#fca5a5' },
-  blue: { 50: 'rgba(59,130,246,0.10)', 100: 'rgba(59,130,246,0.28)', 500: '#3b82f6', 600: '#60a5fa', 700: '#93c5fd' },
-};
-
-export function createAppTheme(mode: ColorMode) {
-  const semantic = mode === 'dark' ? tokens.semanticDark : tokens.semantic;
-  const color: Shades = mode === 'dark' ? darkShades : tokens.color;
-  return createTheme({
+export const theme = createTheme({
   // ── Palette ──────────────────────────────────────────────────────────────
   palette: {
-    mode,
+    mode: 'light',
     primary: {
       main:         semantic.primaryMain,
       dark:         semantic.primaryHover,
       light:        color.forest[500],
-      // Bright green in dark mode needs dark text on it.
-      contrastText: mode === 'dark' ? '#052e16' : '#ffffff',
+      contrastText: '#ffffff',
       50:           color.forest[50],
     },
     success: { main: semantic.primaryMid, light: semantic.primaryLight },
@@ -369,7 +349,7 @@ export function createAppTheme(mode: ColorMode) {
           '& .MuiTableRow-root': {
             transition: `background-color ${transition.fast}`,
             '&:hover': {
-              backgroundColor: semantic.surfaceHover,
+              backgroundColor: '#f8fafc',
               '& .MuiTableCell-root': { color: semantic.textPrimary },
             },
             '&:last-child .MuiTableCell-root': { borderBottom: 0 },
@@ -711,7 +691,3 @@ export function createAppTheme(mode: ColorMode) {
     },
   },
 });
-}
-
-/** The light theme, for code that does not care about the mode (tests). */
-export const theme = createAppTheme('light');

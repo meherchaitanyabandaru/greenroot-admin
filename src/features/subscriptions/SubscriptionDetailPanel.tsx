@@ -48,7 +48,6 @@ import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
 import { normalizeApiError } from '../../utils/apiError';
-import { tone } from '../../theme/tone';
 
 function fmtDate(dateStr: unknown): string {
   if (!dateStr) return '—';
@@ -112,7 +111,7 @@ function RenewDialog({ open, onClose, onSubmit, loading }: {
                   <Typography variant="body2" fontWeight={600}>Yearly</Typography>
                   <Stack direction="row" alignItems="center" spacing={0.5}>
                     <Typography variant="caption" color="text.secondary">₹4,999/yr</Typography>
-                    <Chip size="small" label="Save 17%" sx={(t) => ({ ...tone(t, '#16A34A', '#D1FAE5'), fontWeight: 700, fontSize: 9, height: 16 })} />
+                    <Chip size="small" label="Save 17%" sx={{ bgcolor: '#D1FAE5', color: '#16A34A', fontWeight: 700, fontSize: 9, height: 16 }} />
                   </Stack>
                 </Stack>
               </ToggleButton>
@@ -312,12 +311,13 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
         <Stack direction="row" alignItems="flex-start" justifyContent="space-between">
           <Stack direction="row" spacing={1.5} alignItems="center">
             <Box
-              sx={(t) => ({
+              sx={{
                 p: 1,
-                ...(isCancelled || isExpired ? { bgcolor: 'action.hover', color: 'text.disabled' } : tone(t, '#16A34A', '#ECFDF5')),
+                bgcolor: isCancelled || isExpired ? '#F3F4F6' : '#ECFDF5',
                 borderRadius: 2,
+                color: isCancelled || isExpired ? 'text.disabled' : '#16A34A',
                 display: 'flex',
-              })}
+              }}
             >
               <WorkspacePremiumIcon />
             </Box>
@@ -344,18 +344,14 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
         {/* Status hero card */}
         <Paper
           variant="outlined"
-          sx={(t) => {
-            // Grey for ended, amber when ending soon, green otherwise.
-            const [fg, from, to] = isCancelled || isExpired
-              ? ['#6B7280', '#F9FAFB', '#F3F4F6']
+          sx={{
+            p: 2.5,
+            borderRadius: 2,
+            background: isCancelled || isExpired
+              ? 'linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%)'
               : days !== null && days <= 14
-                ? ['#B45309', '#FFFBEB', '#FEF3C7']
-                : ['#16A34A', '#F0FDF4', '#DCFCE7'];
-            return {
-              p: 2.5,
-              borderRadius: 2,
-              background: t.palette.mode === 'dark' ? tone(t, fg, to).bgcolor : `linear-gradient(135deg, ${from} 0%, ${to} 100%)`,
-            };
+              ? 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)'
+              : 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
           }}
         >
           <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={1}>
@@ -364,7 +360,7 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
               <Typography variant="h6" fontWeight={700} lineHeight={1.3}>
                 {String(sub.plan_name ?? '—')}
                 {sub.plan_code === 'TRIAL' && (
-                  <Chip size="small" label="Trial" sx={(t) => ({ ml: 1, ...tone(t, '#0E7490', '#CFFAFE'), fontWeight: 700, fontSize: 10, height: 18 })} />
+                  <Chip size="small" label="Trial" sx={{ ml: 1, bgcolor: '#CFFAFE', color: '#0E7490', fontWeight: 700, fontSize: 10, height: 18 }} />
                 )}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>

@@ -29,7 +29,6 @@ import { PageHeader } from '../../components/page/PageHeader';
 import { StatusChip } from '../../components/status/StatusChip';
 import { SubscriptionCreateDrawer } from './SubscriptionCreateDrawer';
 import { SubscriptionDetailPanel } from './SubscriptionDetailPanel';
-import { tone } from '../../theme/tone';
 
 const STATUS_FILTERS = ['ALL', 'ACTIVE', 'PAUSED', 'CANCELLED', 'EXPIRED'] as const;
 
@@ -47,9 +46,9 @@ function fmtDate(dateStr: unknown): string {
 function DaysChip({ endDate }: { endDate: unknown }) {
   const days = daysUntil(endDate);
   if (days === null) return <Typography variant="body2" color="text.secondary">—</Typography>;
-  if (days === 0) return <Chip size="small" label="Expired" sx={(t) => ({ ...tone(t, '#C2410C', '#FEE2E2'), fontWeight: 700, fontSize: 11, height: 22 })} />;
-  if (days <= 14) return <Chip size="small" label={`${days}d`} sx={(t) => ({ ...tone(t, '#B7791F', '#FEF3C7'), fontWeight: 700, fontSize: 11, height: 22 })} />;
-  if (days <= 30) return <Chip size="small" label={`${days}d`} sx={(t) => ({ ...tone(t, '#1D4ED8', '#DBEAFE'), fontWeight: 600, fontSize: 11, height: 22 })} />;
+  if (days === 0) return <Chip size="small" label="Expired" sx={{ bgcolor: '#FEE2E2', color: '#C2410C', fontWeight: 700, fontSize: 11, height: 22 }} />;
+  if (days <= 14) return <Chip size="small" label={`${days}d`} sx={{ bgcolor: '#FEF3C7', color: '#B7791F', fontWeight: 700, fontSize: 11, height: 22 }} />;
+  if (days <= 30) return <Chip size="small" label={`${days}d`} sx={{ bgcolor: '#DBEAFE', color: '#1D4ED8', fontWeight: 600, fontSize: 11, height: 22 }} />;
   return <Typography variant="body2" color="text.secondary">{days}d</Typography>;
 }
 
@@ -193,7 +192,7 @@ export function SubscriptionsPage() {
                       <Stack direction="row" spacing={0.75} alignItems="center">
                         <Typography variant="body2" fontWeight={500}>{String(row.plan_name ?? '—')}</Typography>
                         {row.plan_code === 'TRIAL' && (
-                          <Chip size="small" label="Trial" sx={(t) => ({ ...tone(t, '#0E7490', '#CFFAFE'), fontWeight: 700, fontSize: 10, height: 18 })} />
+                          <Chip size="small" label="Trial" sx={{ bgcolor: '#CFFAFE', color: '#0E7490', fontWeight: 700, fontSize: 10, height: 18 }} />
                         )}
                       </Stack>
                     </TableCell>

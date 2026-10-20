@@ -32,7 +32,7 @@ export function StatusTimeline({
           ? '#17803D'
           : isActive
           ? '#1F7A3A'
-          : 'divider';
+          : '#DFE7E2';
 
         const textColor = isCancelled
           ? 'text.disabled'
@@ -88,7 +88,7 @@ export function StatusTimeline({
                 sx={{
                   flex: 1,
                   height: 2,
-                  bgcolor: isDone && !isCancelled ? '#17803D' : 'divider',
+                  bgcolor: isDone && !isCancelled ? '#17803D' : '#DFE7E2',
                   mt: '13px',
                   mx: 0.5,
                 }}

@@ -55,7 +55,7 @@ Source of truth for APIs: `greenroot-api/docs/swagger/openapi.yaml`
 | Auth | ✅ Live | Login, token refresh, logout, me | — |
 | Dashboard | ✅ Live | **Real figures only** from `/api/v1/admin/dashboard` (today's orders/dispatches in IST, active trips, order vs subscription revenue, pending payments, failed logins and app crashes in 24 h, catalog vs botanical names), real 7-day chart, *Needs attention* (approvals, reported ads, crashes, SMS/email mock mode), recent audit activity. The earlier invented numbers, chart and panels were removed. | — |
 | Audit | ✅ Live | Read-only audit and security logs with user names; trigger (`INSERT`) and service (`CREATE`) entries shown alike | — |
-| Local Market | ✅ Live | Own sidebar section. `/market/review` Review Queue: reports (serious ones already hidden), Restore/Dismiss or Remove (strike), nurseries blocked from posting with Unblock; live red count in the sidebar. `/market/ads` All Ads: any status, search, drawer with photos and Hide / Restore / Remove / Unblock. `/market` redirects to the queue | Plan `market_posts_per_day` is shown in Subscriptions but not enforced by the API |
+| Local Market | ✅ Live | `/market`: reported-ads queue (dismiss / take down ad) and published ads | — |
 | App Crash Reports | ✅ Live | `/crash-reports`: mobile/web crashes with platform, version, fatal filters and stack trace | — |
 | Plants | ✅ Live | **`/plants` lists all 16,57,866 World Flora Online names** (`BotanicalNamesPage`: search ranked by best match, status/rank/catalog filters, family filter from the URL, server paging). A name's drawer shows family/genus/rank, accepted name, synonyms, and its catalog plant (existing `PlantDetailPanel` editor) or **Add to catalog**. **`/plants/categories` lists the 735 plant families** (`PlantFamiliesPage`) with name/accepted/in-catalog counts; a family opens `/plants?family=…`. The old category CRUD page is removed. Plant edit form: scientific-name autocomplete fills `wfo_id`. | Filter for catalog plants that still need a common name |
 | Nurseries | ✅ Live | List, CRUD, detail panel (addresses add/edit/delete, team, status actions, edit) | — |
@@ -112,7 +112,6 @@ All 7 priority items and all 6 module gap items are now **complete**. See NEXT_W
 - **API error handling:** `401` → redirect to login; `403` → permission denied; `404` → not found; `500` → safe error message
 - **Never expose** raw errors, stack traces, SQL messages, tokens, or secrets
 - **Audit logs immutable** — no edit/delete actions on audit screen
-- **Light and dark mode.** Top-bar menu: Light / Dark / Match system (saved per browser in `greenroot.admin.colorMode`). The theme is `createAppTheme(mode)` in `src/theme/theme.ts` with `tokens.semantic` / `tokens.semanticDark`. In components use theme keys (`background.paper`, `text.secondary`, `divider`, `action.hover`) — never fixed hex for surfaces or text. For a coloured label/callout (text on a pale tint) use `tone(theme, fg, bg)` from `src/theme/tone.ts`, which turns the tint into a translucent wash in dark mode.
 
 ---
 
