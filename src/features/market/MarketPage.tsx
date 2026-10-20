@@ -53,6 +53,7 @@ const AD_FILTERS = [
   { value: 'REMOVED', label: 'Removed' },
   { value: 'ARCHIVED', label: 'Archived' },
   { value: 'DRAFT', label: 'Draft' },
+  { value: 'DELETED', label: 'Deleted by owner' },
 ];
 
 /** Market wording for ad statuses (the shared chip says "Suspended", "Published"). */
@@ -60,6 +61,7 @@ const AD_STATUS: Record<string, { label: string; color: 'success' | 'warning' | 
   PUBLISHED: { label: 'Live', color: 'success' },
   SUSPENDED: { label: 'Under review', color: 'warning' },
   REMOVED: { label: 'Removed by GreenRoot', color: 'error' },
+  DELETED: { label: 'Deleted by owner', color: 'default' },
   PAUSED: { label: 'Paused', color: 'info' },
   EXPIRED: { label: 'Expired', color: 'default' },
   ARCHIVED: { label: 'Archived', color: 'default' },
@@ -478,7 +480,7 @@ function AdReview({ ad }: { ad: AdminMarketAd }) {
 
   const canHide = ad.status === 'PUBLISHED' || ad.status === 'PAUSED';
   const canRestore = ad.status === 'SUSPENDED';
-  const canRemove = ad.status !== 'REMOVED';
+  const canRemove = ad.status !== 'REMOVED' && ad.status !== 'DELETED';
 
   async function submit() {
     if (!action) return;
