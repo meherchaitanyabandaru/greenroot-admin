@@ -1,6 +1,7 @@
 import AddIcon from '@mui/icons-material/Add';
 import BlockIcon from '@mui/icons-material/Block';
 import EditIcon from '@mui/icons-material/Edit';
+import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import {
@@ -9,14 +10,13 @@ import {
   Button,
   Chip,
   IconButton,
-  MenuItem,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   resourceConfigs,
   type ResourceConfig,
@@ -39,6 +39,7 @@ import { ErrorState } from '../../components/feedback/ErrorState';
 import { TableSkeleton } from '../../components/feedback/LoadingState';
 import { useToast } from '../../components/feedback/toastContext';
 import { FormDrawer } from '../../components/forms/FormDrawer';
+import { MultiSelectFilter } from '../../components/forms/MultiSelectFilter';
 import { SearchInput } from '../../components/forms/SearchInput';
 import { PageHeader } from '../../components/page/PageHeader';
 import { StatusChip } from '../../components/status/StatusChip';
@@ -356,14 +357,29 @@ function capability(row: Record<string, unknown>, key: string): boolean | undefi
 const REQUEST_STATUSES = ['DRAFT', 'OPEN', 'PARTIALLY_ACCEPTED', 'ACCEPTED', 'REJECTED', 'CLOSED'];
 const PAYMENT_FOR_OPTS = ['ORDER', 'SUBSCRIPTION'];
 const PAYMENT_METHOD_OPTS = ['UPI', 'CARD', 'CASH', 'BANK_TRANSFER', 'NET_BANKING', 'WALLET', 'COD', 'CHEQUE', 'OTHER'];
-const USER_ROLES = ['ADMIN', 'BUYER', 'NURSERY_OWNER', 'DRIVER'];
-const USER_STATUSES = ['ACTIVE', 'INACTIVE', 'BANNED'];
+const USER_ROLES = ['NURSERY_OWNER', 'MANAGER', 'BUYER', 'DRIVER', 'ADMIN', 'SUPER_ADMIN'];
+const USER_STATUSES = ['ACTIVE', 'SUSPENDED', 'DELETED'];
 const DRIVER_STATUSES = ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'DELETED'];
 const VEHICLE_STATUSES = ['ACTIVE', 'INACTIVE', 'MAINTENANCE', 'RETIRED'];
-const ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'PARTIALLY_FULFILLED', 'COMPLETED', 'CANCELLED'];
+const ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'LOADING', 'LOADED', 'PARTIALLY_FULFILLED', 'COMPLETED', 'CANCELLED'];
 const PAYMENT_STATUSES = ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED', 'CANCELLED'];
-const DISPATCH_STATUSES = ['PENDING', 'DISPATCHED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'];
-const QUOTATION_STATUSES = ['INTERNAL_DRAFT', 'CUSTOMER_DRAFT', 'CUSTOMER_SENT', 'CUSTOMER_ACCEPTED', 'CUSTOMER_REJECTED', 'CONVERTED'];
+const DISPATCH_STATUSES = ['PENDING', 'ACCEPTED', 'DISPATCHED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'];
+const QUOTATION_STATUSES = ['INTERNAL_DRAFT', 'CUSTOMER_DRAFT', 'CUSTOMER_SENT', 'CUSTOMER_ACCEPTED', 'CUSTOMER_REJECTED', 'CONVERTED', 'EXPIRED'];
+
+// Column id → the API's sort key, for lists the API can sort. Other lists
+// show no sort arrows rather than arrows that do nothing.
+const SORTABLE: Partial<Record<ResourceKey, Record<string, string>>> = {
+  users: { _user: 'name', mobile: 'mobile', status: 'status' },
+  orders: { order_number: 'order_number', buyer_name: 'buyer_name', seller_nursery: 'seller_nursery', total_amount: 'total_amount', order_status: 'order_status' },
+  quotations: { quotation_code: 'quotation_code', status: 'status', total_amount: 'total_amount', created_at: 'created_at' },
+  payments: { payment_code: 'payment_code', payer_name: 'payer_name', payment_for: 'payment_for', amount: 'amount', payment_method: 'payment_method', payment_status: 'payment_status' },
+  dispatches: { dispatch_number: 'dispatch_number', order_number: 'order_number', vehicle_number: 'vehicle_number', driver_name: 'driver_name', dispatch_status: 'dispatch_status' },
+  vehicles: { vehicle_code: 'vehicle_code', vehicle_number: 'vehicle_number', vehicle_type: 'vehicle_type', driver_name: 'driver_name', driver_mobile: 'driver_mobile', status: 'status' },
+  drivers: { driver_code: 'driver_code', driver_name: 'driver_name', mobile: 'mobile', license_number: 'license_number', status: 'status' },
+};
+
+/** Picks → the API's comma list (undefined when nothing is picked). */
+const list = (values: string[]) => (values.length ? values.join(',') : undefined);
 
 // ─── Add button labels ────────────────────────────────────────────────────────
 // Only resources where admin can create records; read-only monitoring pages excluded
@@ -376,17 +392,44 @@ const addLabel: Partial<Record<ResourceKey, string>> = {
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
+// Every list route renders this component; the key gives each list its own
+// state, so a Users filter never leaks into Drivers or Orders.
 export function ResourceListPage({ resource }: { resource: ResourceKey }) {
+  return <ResourceList key={resource} resource={resource} />;
+}
+
+/**
+ * State kept for this browser tab, per list: an admin who leaves a filtered
+ * list and comes back finds it as they left it.
+ */
+function useListState<T>(resource: string, name: string, initial: T) {
+  const key = `gr_list_${resource}_${name}`;
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const saved = sessionStorage.getItem(key);
+      return saved == null ? initial : (JSON.parse(saved) as T);
+    } catch {
+      return initial;
+    }
+  });
+  useEffect(() => {
+    try { sessionStorage.setItem(key, JSON.stringify(value)); } catch { /* storage full or blocked */ }
+  }, [key, value]);
+  return [value, setValue] as const;
+}
+
+function ResourceList({ resource }: { resource: ResourceKey }) {
   const { showToast } = useToast();
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
-  const [userRole, setUserRole] = useState('');
-  const [paymentFor, setPaymentFor] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
-  const [sortBy, setSortBy] = useState('');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [rowsPerPage, setRowsPerPage] = useListState(resource, 'rows', 10);
+  const [search, setSearch] = useListState(resource, 'search', '');
+  // Filters hold several picks each; the API takes them as a comma list.
+  const [status, setStatus] = useListState<string[]>(resource, 'status', []);
+  const [userRole, setUserRole] = useListState<string[]>(resource, 'role', []);
+  const [paymentFor, setPaymentFor] = useListState<string[]>(resource, 'paymentFor', []);
+  const [paymentMethod, setPaymentMethod] = useListState<string[]>(resource, 'paymentMethod', []);
+  const [sortBy, setSortBy] = useListState(resource, 'sortBy', '');
+  const [sortOrder, setSortOrder] = useListState<'asc' | 'desc'>(resource, 'sortOrder', 'asc');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<Record<string, unknown> | null>(null);
   const [orderCreateOpen, setOrderCreateOpen] = useState(false);
@@ -417,21 +460,20 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
         per_page: rowsPerPage,
         search,
         status:
-          resource === 'quotations'
-            ? status || undefined
-            : resource === 'drivers' || resource === 'users' || resource === 'plantRequests'
-              ? status
-              : undefined,
+          resource === 'quotations' || resource === 'drivers' || resource === 'users' ||
+          resource === 'plantRequests' || resource === 'vehicles'
+            ? list(status)
+            : undefined,
         date_from: resource === 'quotations' && quotationDateFrom ? quotationDateFrom : undefined,
         date_to: resource === 'quotations' && quotationDateTo ? quotationDateTo : undefined,
         amount_min: resource === 'quotations' && quotationAmountMin ? quotationAmountMin : undefined,
         amount_max: resource === 'quotations' && quotationAmountMax ? quotationAmountMax : undefined,
-        role: resource === 'users' ? userRole : undefined,
-        order_status: resource === 'orders' ? status : undefined,
-        payment_status: resource === 'payments' ? status : undefined,
-        payment_for: resource === 'payments' ? paymentFor : undefined,
-        payment_method: resource === 'payments' ? paymentMethod : undefined,
-        dispatch_status: resource === 'dispatches' ? status : undefined,
+        role: resource === 'users' ? list(userRole) : undefined,
+        order_status: resource === 'orders' ? list(status) : undefined,
+        payment_status: resource === 'payments' ? list(status) : undefined,
+        payment_for: resource === 'payments' ? list(paymentFor) : undefined,
+        payment_method: resource === 'payments' ? list(paymentMethod) : undefined,
+        dispatch_status: resource === 'dispatches' ? list(status) : undefined,
         sort_by: sortBy || undefined,
         sort_order: sortBy ? sortOrder : undefined,
       },
@@ -556,6 +598,25 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
     resource === 'plantRequests' ||
     resource === 'quotations';
 
+  const named = (prefix: string, values: string[], set: (v: string[]) => void) =>
+    values.map((v) => ({ key: `${prefix}:${v}`, label: `${prefix}: ${toLabel(v)}`, clear: () => { set(values.filter((x) => x !== v)); setPage(0); } }));
+  const activeFilters = [
+    ...(search.trim() ? [{ key: 'search', label: `Search: "${search.trim()}"`, clear: () => { setSearch(''); setPage(0); } }] : []),
+    ...named('Role', userRole, setUserRole),
+    ...named('Status', status, setStatus),
+    ...named('Type', paymentFor, setPaymentFor),
+    ...named('Method', paymentMethod, setPaymentMethod),
+    ...(quotationDateFrom ? [{ key: 'from', label: `From ${quotationDateFrom}`, clear: () => setQuotationDateFrom('') }] : []),
+    ...(quotationDateTo ? [{ key: 'to', label: `To ${quotationDateTo}`, clear: () => setQuotationDateTo('') }] : []),
+    ...(quotationAmountMin ? [{ key: 'min', label: `Min ₹${quotationAmountMin}`, clear: () => setQuotationAmountMin('') }] : []),
+    ...(quotationAmountMax ? [{ key: 'max', label: `Max ₹${quotationAmountMax}`, clear: () => setQuotationAmountMax('') }] : []),
+  ];
+  function clearAll() {
+    setSearch(''); setStatus([]); setUserRole([]); setPaymentFor([]); setPaymentMethod([]);
+    setQuotationDateFrom(''); setQuotationDateTo(''); setQuotationAmountMin(''); setQuotationAmountMax('');
+    setPage(0);
+  }
+
   // Determine drawer width
   const wideDrawer =
     resource === 'orders' ||
@@ -619,35 +680,38 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
 
           {resource === 'payments' && (
             <>
-              <TextField select label="Type" value={paymentFor} size="small" sx={{ minWidth: 150 }}
-                onChange={(e) => { setPaymentFor(e.target.value); setPage(0); }}>
-                <MenuItem value="">All types</MenuItem>
-                {PAYMENT_FOR_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
-              </TextField>
-              <TextField select label="Method" value={paymentMethod} size="small" sx={{ minWidth: 160 }}
-                onChange={(e) => { setPaymentMethod(e.target.value); setPage(0); }}>
-                <MenuItem value="">All methods</MenuItem>
-                {PAYMENT_METHOD_OPTS.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
-              </TextField>
+              <MultiSelectFilter label="Type" options={PAYMENT_FOR_OPTS} value={paymentFor}
+                onChange={(v) => { setPaymentFor(v); setPage(0); }} minWidth={150} />
+              <MultiSelectFilter label="Method" options={PAYMENT_METHOD_OPTS} value={paymentMethod}
+                onChange={(v) => { setPaymentMethod(v); setPage(0); }} minWidth={160} />
             </>
           )}
 
           {resource === 'users' && (
-            <TextField select label="Role" value={userRole} size="small" sx={{ minWidth: 170 }}
-              onChange={(e) => { setUserRole(e.target.value); setPage(0); }}>
-              <MenuItem value="">All roles</MenuItem>
-              {USER_ROLES.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
-            </TextField>
+            <MultiSelectFilter label="Role" options={USER_ROLES} value={userRole}
+              onChange={(v) => { setUserRole(v); setPage(0); }} />
           )}
 
           {showStatusFilter && (
-            <TextField select label="Status" value={status} size="small" sx={{ minWidth: 170 }}
-              onChange={(e) => { setStatus(e.target.value); setPage(0); }}>
-              <MenuItem value="">All statuses</MenuItem>
-              {statusOptions.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
-            </TextField>
+            <MultiSelectFilter label="Status" options={statusOptions} value={status}
+              onChange={(v) => { setStatus(v); setPage(0); }} />
           )}
         </Stack>
+
+        {/* What is applied, each removable, so a filtered list never looks like missing data. */}
+        {activeFilters.length > 0 && (
+          <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
+            <FilterAltIcon sx={{ fontSize: 17, color: 'text.secondary' }} />
+            {activeFilters.map((f) => (
+              <Chip key={f.key} size="small" label={f.label} onDelete={f.clear}
+                sx={{ bgcolor: '#ecfdf3', color: '#166534', fontWeight: 600, '& .MuiChip-deleteIcon': { color: '#16653499' } }} />
+            ))}
+            <Button size="small" onClick={clearAll} sx={{ ml: 0.5 }}>Clear all</Button>
+            <Typography fontSize={12.5} color="text.secondary" sx={{ ml: 'auto' }}>
+              {(data?.pagination?.total ?? rows.length).toLocaleString('en-IN')} match{(data?.pagination?.total ?? rows.length) === 1 ? '' : 'es'}
+            </Typography>
+          </Stack>
+        )}
 
         {/* Row 2: quotation-specific date & amount filters */}
         {resource === 'quotations' && (
@@ -733,7 +797,8 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
           onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(0); }}
           sortBy={sortBy}
           sortOrder={sortOrder}
-          onSortChange={handleSort}
+          onSortChange={SORTABLE[resource] ? handleSort : undefined}
+          sortableColumns={SORTABLE[resource]}
         />
       )}
 

@@ -30,6 +30,7 @@ export function AppDataTable<T>({
   sortOrder,
   onSortChange,
   maxHeight,
+  sortableColumns,
 }: {
   columns: ColumnDef<T>[];
   data: T[];
@@ -43,6 +44,11 @@ export function AppDataTable<T>({
   onSortChange?: (column: string) => void;
   /** Cap the height instead of filling the window (pages with more below the table). */
   maxHeight?: number | string;
+  /**
+   * Column id → the API's sort key. When given, only these columns sort, so
+   * a header never offers a sort the server cannot do.
+   */
+  sortableColumns?: Record<string, string>;
 }) {
   // TanStack Table intentionally returns table helper functions; this component does not pass
   // those functions into memoized children, so the React Compiler skip warning is acceptable.
@@ -58,15 +64,20 @@ export function AppDataTable<T>({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
-                  const sortable = !!onSortChange && header.id !== 'actions' && !header.id.startsWith('_');
-                  const active = sortBy === header.id;
+                  const sortKey = sortableColumns
+                    ? sortableColumns[header.id]
+                    : header.id !== 'actions' && !header.id.startsWith('_') ? header.id : undefined;
+                  const sortable = !!onSortChange && !!sortKey;
+                  const active = sortable && sortBy === sortKey;
                   return (
-                    <TableCell key={header.id} sx={{ bgcolor: 'background.default', fontWeight: 700 }}>
+                    // Header colours come from the theme (MuiTableHead).
+                    <TableCell key={header.id}>
                       {header.isPlaceholder ? null : sortable ? (
                         <TableSortLabel
                           active={active}
                           direction={active ? sortOrder : 'asc'}
-                          onClick={() => onSortChange(header.id)}
+                          onClick={() => onSortChange(sortKey)}
+                          sx={{ '&.Mui-active, &.Mui-active .MuiTableSortLabel-icon': { color: '#166534' } }}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
                         </TableSortLabel>

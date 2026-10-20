@@ -74,18 +74,12 @@ export const navigationGroups: NavGroup[] = [
     ],
   },
   {
-    section: 'Sourcing Network',
-    icon: HubIcon,
-    items: [
-      { label: 'Network Members', path: '/sourcing-network', icon: HubIcon },
-    ],
-  },
-  {
     section: 'Local Market',
     icon: StoreIcon,
     items: [
       { label: 'Review Queue', path: '/market/review', icon: GppMaybeIcon },
       { label: 'All Ads', path: '/market/ads', icon: CampaignIcon },
+      { label: 'Network Members', path: '/sourcing-network', icon: HubIcon },
     ],
   },
   {

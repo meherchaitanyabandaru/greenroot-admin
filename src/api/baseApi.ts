@@ -4,6 +4,10 @@ import { baseQueryWithReauth } from './baseQueryWithReauth';
 export const baseApi = createApi({
   reducerPath: 'greenrootApi',
   baseQuery: baseQueryWithReauth,
+  // One admin runs the console all day: when they come back to the tab or
+  // the network returns, open lists refresh themselves.
+  refetchOnFocus: true,
+  refetchOnReconnect: true,
   tagTypes: [
     'Auth',
     'Dashboard',

@@ -326,14 +326,15 @@ export const theme = createTheme({
     MuiTableHead: {
       styleOverrides: {
         root: {
+          // A light green band with dark green text: headers read at a glance.
           '& .MuiTableCell-root': {
-            backgroundColor: color.slate[50],
-            borderBottom: `1px solid ${semantic.border}`,
-            fontSize: 11,
-            fontWeight: 600,
+            backgroundColor: '#f0f7f2',
+            borderBottom: '2px solid #cfe5d6',
+            fontSize: 11.5,
+            fontWeight: 700,
             textTransform: 'uppercase' as const,
-            letterSpacing: '0.07em',
-            color: semantic.textSecondary,
+            letterSpacing: '0.05em',
+            color: '#14532d',
             paddingTop: 10,
             paddingBottom: 10,
             paddingLeft: 16,
