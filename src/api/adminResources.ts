@@ -273,6 +273,8 @@ export type MarketReportsResponse = { reports: MarketReport[]; pagination: Pagin
 export type AdminMarketAd = {
   id: number;
   code: string;
+  /** SELL offers plants; WANT asks for them (no price, no photos). */
+  ad_type: 'SELL' | 'WANT';
   title: string;
   plant_name: string;
   description?: string;

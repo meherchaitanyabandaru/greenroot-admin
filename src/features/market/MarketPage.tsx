@@ -371,7 +371,10 @@ function AdsTab() {
         <Stack direction="row" spacing={1.25} alignItems="center" sx={{ cursor: 'pointer' }} onClick={() => setOpenId(row.original.id)}>
           <Avatar variant="rounded" src={row.original.photos[0]} sx={{ width: 44, height: 44 }}>{row.original.title[0]}</Avatar>
           <Box>
-            <Typography fontSize={13.5} fontWeight={600}>{row.original.title}</Typography>
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              <Typography fontSize={13.5} fontWeight={600}>{row.original.title}</Typography>
+              {row.original.ad_type === 'WANT' && <Chip size="small" color="info" label="Wanted" sx={{ height: 20, fontSize: 10.5 }} />}
+            </Stack>
             <Typography fontSize={12} color="text.secondary">{row.original.code} · {row.original.plant_name}</Typography>
           </Box>
         </Stack>
@@ -404,7 +407,7 @@ function AdsTab() {
       id: '_price',
       header: 'Qty · price',
       cell: ({ row }) =>
-        `${row.original.quantity?.toLocaleString('en-IN') ?? '—'} · ${row.original.price_per_unit != null ? formatCurrency(row.original.price_per_unit) : '—'}`,
+        `${row.original.quantity?.toLocaleString('en-IN') ?? '—'} · ${row.original.ad_type === 'WANT' ? 'wanted' : row.original.price_per_unit != null ? formatCurrency(row.original.price_per_unit) : '—'}`,
     },
     {
       id: '_activity',
