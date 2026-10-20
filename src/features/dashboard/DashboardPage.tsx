@@ -8,7 +8,7 @@ import PaymentsIcon from '@mui/icons-material/Payments';
 import PeopleIcon from '@mui/icons-material/People';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import StorefrontIcon from '@mui/icons-material/Storefront';
-import TravelExploreIcon from '@mui/icons-material/TravelExplore';
+import CampaignIcon from '@mui/icons-material/Campaign';
 import type { SvgIconComponent } from '@mui/icons-material';
 import {
   Box,
@@ -245,7 +245,7 @@ export function DashboardPage() {
             { label: 'Failed logins (24 h)', value: n('failed_logins_24h'), icon: ErrorOutlineIcon, href: '/security-logs', tone: n('failed_logins_24h') ? ('danger' as const) : ('neutral' as const) },
             { label: 'Users', value: n('users'), icon: PeopleIcon, href: '/users', helper: `${n('active_drivers')} active drivers` },
             { label: 'Catalog plants', value: n('plants'), icon: LocalFloristIcon, href: '/plants?in_catalog=true', helper: `of ${n('botanical_names').toLocaleString('en-IN')} botanical names` },
-            { label: 'Plant requests', value: n('plant_requests'), icon: TravelExploreIcon, href: '/requests', helper: `${n('top_items')} top items` },
+            { label: 'Live market ads', value: n('live_market_ads'), icon: CampaignIcon, href: '/market/ads', helper: `${n('top_items')} top items` },
             { label: 'App crashes (24 h)', value: crashes, icon: BugReportIcon, href: '/crash-reports', tone: crashes ? ('warning' as const) : ('neutral' as const) },
           ].map((kpi) => (
             <Grid key={kpi.label} size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>

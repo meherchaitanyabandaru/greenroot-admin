@@ -15,8 +15,6 @@ export const baseApi = createApi({
     'Plants',
     'Nurseries',
     'TopItems',
-    'Requests',
-    'PlantRequests',
     'Orders',
     'Quotations',
     'Payments',

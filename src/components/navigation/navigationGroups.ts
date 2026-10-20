@@ -1,4 +1,3 @@
-import AssignmentIcon from '@mui/icons-material/Assignment';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import CampaignIcon from '@mui/icons-material/Campaign';
@@ -88,7 +87,6 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { label: 'Quotations', path: '/quotations', icon: DescriptionIcon },
       { label: 'Orders', path: '/orders', icon: ReceiptLongIcon },
-      { label: 'Plant Requests', path: '/requests', icon: AssignmentIcon },
     ],
   },
   {

@@ -8,7 +8,6 @@ export type ResourceConfig = {
     | 'Plants'
     | 'Nurseries'
     | 'TopItems'
-    | 'PlantRequests'
     | 'Orders'
     | 'Quotations'
     | 'Payments'
@@ -93,14 +92,6 @@ export type NurseryUsersResponse = {
 
 export type LiveDriverLocationResponse = {
   location: Record<string, unknown> | null;
-};
-
-export type RequestDetailResponse = {
-  request: Record<string, unknown>;
-};
-
-export type RequestResponsesResponse = {
-  responses: Record<string, unknown>[];
 };
 
 export type SubscriptionPromo = {
@@ -359,12 +350,7 @@ export const resourceConfigs = {
     path: '/api/v1/nurseries',
     collectionKey: 'nurseries',
   },
-  plantRequests: {
-    key: 'plantRequests',
-    tag: 'PlantRequests',
-    path: '/api/v1/plant-requests',
-    collectionKey: 'plant_requests',
-  },
+
   orders: { key: 'orders', tag: 'Orders', path: '/api/v1/orders', collectionKey: 'orders' },
   quotations: { key: 'quotations', tag: 'Quotations', path: '/api/v1/quotations', collectionKey: 'quotations' },
   payments: {
@@ -673,42 +659,6 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: ({ id, body }) => ({ url: `/api/v1/payments/${id}/status`, method: 'PUT', body }),
       invalidatesTags: ['Payments', 'Orders', 'Subscriptions', 'Dashboard'],
     }),
-    getRequest: builder.query<RequestDetailResponse, number>({
-      query: (id) => `/api/v1/plant-requests/${id}`,
-      providesTags: ['PlantRequests'],
-    }),
-    listRequestResponses: builder.query<RequestResponsesResponse, number>({
-      query: (id) => `/api/v1/plant-requests/${id}/responses`,
-      providesTags: ['PlantRequests'],
-    }),
-    createRequest: builder.mutation<RequestDetailResponse, Record<string, unknown>>({
-      query: (body) => ({ url: '/api/v1/plant-requests', method: 'POST', body }),
-      invalidatesTags: ['PlantRequests', 'Dashboard'],
-    }),
-    createRequestResponse: builder.mutation<unknown, { id: number; body: Record<string, unknown> }>({
-      query: ({ id, body }) => ({ url: `/api/v1/plant-requests/${id}/responses`, method: 'POST', body }),
-      invalidatesTags: ['PlantRequests'],
-    }),
-    updateRequestStatus: builder.mutation<RequestDetailResponse, { id: number; status: string }>({
-      query: ({ id, status }) => ({
-        url: `/api/v1/plant-requests/${id}/status`,
-        method: 'PUT',
-        body: { status },
-      }),
-      invalidatesTags: ['PlantRequests', 'Dashboard'],
-    }),
-    cancelRequest: builder.mutation<unknown, number>({
-      query: (id) => ({ url: `/api/v1/plant-requests/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['PlantRequests', 'Dashboard'],
-    }),
-    updateRequestResponse: builder.mutation<unknown, { responseId: number; body: { status: string } }>({
-      query: ({ responseId, body }) => ({
-        url: `/api/v1/plant-requests/responses/${responseId}`,
-        method: 'PUT',
-        body,
-      }),
-      invalidatesTags: ['PlantRequests'],
-    }),
     listSubscriptionPlans: builder.query<{ plans: SubscriptionPlan[] }, void>({
       query: () => '/api/v1/subscription-plans',
       providesTags: ['Subscriptions'],
@@ -970,13 +920,6 @@ export const {
   useCancelSubscriptionMutation,
   useUpdateSubscriptionStatusMutation,
   useListSubscriptionPaymentsQuery,
-  useGetRequestQuery,
-  useListRequestResponsesQuery,
-  useCreateRequestMutation,
-  useCreateRequestResponseMutation,
-  useUpdateRequestStatusMutation,
-  useCancelRequestMutation,
-  useUpdateRequestResponseMutation,
   useGetUserQuery,
   useListUserRolesQuery,
   useListUserSessionsQuery,

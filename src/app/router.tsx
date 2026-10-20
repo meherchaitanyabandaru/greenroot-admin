@@ -96,7 +96,6 @@ export function AppRouter() {
             <Route path="/quotations" element={<ResourceListPage resource="quotations" />} />
             <Route path="/orders" element={<ResourceListPage resource="orders" />} />
             <Route path="/dispatches" element={<ResourceListPage resource="dispatches" />} />
-            <Route path="/requests" element={<ResourceListPage resource="plantRequests" />} />
             <Route path="/sourcing-posts" element={<Navigate replace to="/market/ads" />} />
             <Route path="/sourcing-network" element={<ResourceListPage resource="sourcingNetwork" />} />
             <Route path="/notifications" element={<ResourceListPage resource="notifications" />} />
