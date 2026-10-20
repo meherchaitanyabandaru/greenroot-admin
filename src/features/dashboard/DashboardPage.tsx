@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import LocalFloristIcon from '@mui/icons-material/LocalFlorist';
@@ -114,10 +115,13 @@ function Panel({
   title,
   action,
   children,
+  scroll = true,
 }: {
   title: string;
   action?: React.ReactNode;
   children: React.ReactNode;
+  /** false for charts: a scrollable body lets a chart resize itself in a loop. */
+  scroll?: boolean;
 }) {
   return (
     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -129,7 +133,7 @@ function Panel({
           {action}
         </Stack>
         {/* Long lists scroll inside the card; the page stays one screen. */}
-        <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{children}</Box>
+        <Box sx={{ flex: 1, overflowY: scroll ? 'auto' : 'hidden', position: 'relative', minHeight: scroll ? 0 : 240 }}>{children}</Box>
       </CardContent>
     </Card>
   );
@@ -189,10 +193,16 @@ export function DashboardPage() {
   const pendingPayments = n('pending_payments');
   const reportedAds = reports.data?.pagination?.total ?? 0;
   const crashes = n('crash_reports_24h');
-  const trend = (s?.trend ?? []).map((d) => ({
-    ...d,
-    label: new Date(`${d.day}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }),
-  }));
+  // Same array until the data changes: a new one each render made the chart
+  // replay its animation whenever anything on the page re-rendered.
+  const trend = useMemo(
+    () =>
+      (s?.trend ?? []).map((d) => ({
+        ...d,
+        label: new Date(`${d.day}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' }),
+      })),
+    [s?.trend],
+  );
 
   if (isLoading) return <LoadingState label="Loading GreenRoot operations" />;
   if (error) return <ErrorState message={normalizeApiError(error).message} onRetry={refetch} />;
@@ -248,10 +258,13 @@ export function DashboardPage() {
           <Grid size={{ xs: 12, lg: 6 }} sx={{ height: { lg: '100%' } }}>
             <Panel
               title="Orders and dispatches"
+              scroll={false}
               action={<Chip size="small" label="Last 7 days" sx={{ height: 22, borderRadius: 1, fontSize: 11, fontWeight: 700 }} />}
             >
-              <Box sx={{ height: '100%', minHeight: 220 }}>
-                <ResponsiveContainer width="100%" height="100%">
+              {/* Absolutely placed: the chart takes the space it is given and
+                  never pushes back on the layout, so it cannot jitter. */}
+              <Box sx={{ position: 'absolute', inset: 0 }}>
+                <ResponsiveContainer width="100%" height="100%" debounce={150}>
                   <AreaChart data={trend} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
                     <defs>
                       <linearGradient id="orders" x1="0" x2="0" y1="0" y2="1">
@@ -268,8 +281,8 @@ export function DashboardPage() {
                     <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: tokens.semantic.textSecondary }} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${tokens.semantic.border}`, fontSize: 12 }} />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-                    <Area type="monotone" name="Orders" dataKey="orders" stroke={palette.forest[700]} fill="url(#orders)" strokeWidth={2} />
-                    <Area type="monotone" name="Dispatches" dataKey="dispatches" stroke={palette.blue[600]} fill="url(#dispatches)" strokeWidth={2} />
+                    <Area type="monotone" name="Orders" dataKey="orders" stroke={palette.forest[700]} fill="url(#orders)" strokeWidth={2} isAnimationActive={false} />
+                    <Area type="monotone" name="Dispatches" dataKey="dispatches" stroke={palette.blue[600]} fill="url(#dispatches)" strokeWidth={2} isAnimationActive={false} />
                   </AreaChart>
                 </ResponsiveContainer>
               </Box>
