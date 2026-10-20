@@ -107,6 +107,44 @@ function StrikesChip({ strikes, blockedUntil }: { strikes: number; blockedUntil?
   );
 }
 
+const yesNo = (v?: boolean) => (v == null ? 'Not stated' : v ? 'Yes' : 'No');
+
+/** Where buyers collect and whether a road or a truck reaches it (for-sale ads). */
+function PickupAccess({ ad }: { ad: AdminMarketAd }) {
+  const limited = ad.road_accessible === false || ad.truck_accessible === false;
+  return (
+    <Box>
+      <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+        <Typography fontWeight={700} fontSize={14}>{ad.ad_type === 'SELL' ? 'Pickup & access' : 'Location'}</Typography>
+        {limited && <Chip size="small" color="warning" label="Limited access" sx={{ height: 20, fontSize: 10.5 }} />}
+      </Stack>
+      <Stack spacing={0.5} fontSize={13.5}>
+        {ad.ad_type === 'SELL' && (
+          <>
+            <Typography fontSize={13.5}>Road to the plants: <b>{yesNo(ad.road_accessible)}</b></Typography>
+            <Typography fontSize={13.5}>Truck can reach directly: <b>{yesNo(ad.truck_accessible)}</b></Typography>
+            {ad.pickup_landmark && <Typography fontSize={13.5}>Pickup point: <b>{ad.pickup_landmark}</b></Typography>}
+            {ad.access_instructions && <Typography fontSize={13.5}>Instructions: {ad.access_instructions}</Typography>}
+          </>
+        )}
+        {ad.pickup_address && <Typography fontSize={13.5} color="text.secondary">Address: {ad.pickup_address}</Typography>}
+        {ad.has_location && ad.pickup_latitude != null && ad.pickup_longitude != null ? (
+          <Typography fontSize={13.5} color="text.secondary">
+            Location: {ad.pickup_latitude.toFixed(4)}, {ad.pickup_longitude.toFixed(4)}
+            {ad.pickup_location_source === 'gps_confirmed' ? " (seller's phone GPS)" : ad.pickup_location_source === 'nursery_default' ? " (nursery's address)" : ''}
+            {' · '}
+            <a href={`https://www.google.com/maps?q=${ad.pickup_latitude},${ad.pickup_longitude}`} target="_blank" rel="noreferrer">Open map</a>
+          </Typography>
+        ) : (
+          <Alert severity="warning" sx={{ py: 0 }}>
+            No location: nearby buyers (60-100 km) never see this ad. The seller should turn on location and edit it, or add the nursery's location.
+          </Alert>
+        )}
+      </Stack>
+    </Box>
+  );
+}
+
 function PhotoStrip({ photos }: { photos: string[] }) {
   if (photos.length === 0) return <Typography fontSize={13} color="text.secondary">No photos on this ad.</Typography>;
   return (
@@ -352,6 +390,7 @@ type AdAction = 'HIDE' | 'RESTORE' | 'REMOVE';
 
 function AdsTab() {
   const [status, setStatus] = useState('');
+  const [noLocation, setNoLocation] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
@@ -361,7 +400,13 @@ function AdsTab() {
     const t = setTimeout(() => { setSearch(searchInput.trim()); setPage(0); }, 300);
     return () => clearTimeout(t);
   }, [searchInput]);
-  const { data, isFetching, error, refetch } = useListMarketAdminAdsQuery({ status: status || undefined, search: search || undefined, page: page + 1, per_page: rowsPerPage });
+  const { data, isFetching, error, refetch } = useListMarketAdminAdsQuery({
+    status: status || undefined,
+    search: search || undefined,
+    no_location: noLocation || undefined,
+    page: page + 1,
+    per_page: rowsPerPage,
+  });
   // The drawer reads the row from the list, so it refreshes after every action.
   const open = data?.ads.find((a) => a.id === openId) ?? null;
 
@@ -423,7 +468,18 @@ function AdsTab() {
         </Box>
       ),
     },
-    { id: '_status', header: 'Status', cell: ({ row }) => <AdStatusChip status={row.original.status} /> },
+    {
+      id: '_status',
+      header: 'Status',
+      cell: ({ row }) => (
+        <Stack spacing={0.5} alignItems="flex-start">
+          <AdStatusChip status={row.original.status} />
+          {!row.original.has_location && row.original.status !== 'DELETED' && (
+            <Chip size="small" variant="outlined" color="warning" label="No location" sx={{ height: 20, fontSize: 10.5 }} />
+          )}
+        </Stack>
+      ),
+    },
     { id: '_expires', header: 'Expires', cell: ({ row }) => formatDate(row.original.expires_at) },
     {
       id: 'actions',
@@ -447,6 +503,14 @@ function AdsTab() {
                 variant={status === f.value ? 'filled' : 'outlined'}
               />
             ))}
+            <Divider orientation="vertical" flexItem />
+            <Chip
+              label="No location"
+              onClick={() => { setNoLocation((v) => !v); setPage(0); }}
+              color={noLocation ? 'warning' : 'default'}
+              variant={noLocation ? 'filled' : 'outlined'}
+              title="Ads with no position: nearby lists never show them"
+            />
           </Stack>
         </Stack>
       </Paper>
@@ -508,12 +572,18 @@ function AdReview({ ad }: { ad: AdminMarketAd }) {
         {ad.pending_reports > 0 && <Chip size="small" color="warning" label={`${ad.pending_reports} open report${ad.pending_reports > 1 ? 's' : ''}`} sx={{ height: 22, fontSize: 11 }} />}
       </Stack>
       {ad.moderation_note && <Alert severity={ad.status === 'REMOVED' ? 'error' : 'warning'}>{ad.moderation_note}</Alert>}
+      {ad.status === 'DELETED' && (
+        <Alert severity="info">
+          Deleted by {ad.deleted_by_name ?? 'the owner'} on {formatDate(ad.deleted_at)}. Kept for the record; nobody else can see it.
+        </Alert>
+      )}
       <PhotoStrip photos={ad.photos} />
       <Box>
         <Typography fontWeight={700}>{ad.title}</Typography>
         <Typography fontSize={13} color="text.secondary">
-          {ad.plant_name} · {ad.quantity?.toLocaleString('en-IN') ?? '—'} available · {ad.price_per_unit != null ? formatCurrency(ad.price_per_unit) : 'no price'}
-          {ad.price_unit ? ` ${toLabel(ad.price_unit).toLowerCase()}` : ''}
+          {ad.ad_type === 'WANT'
+            ? `Wanted · ${ad.plant_name} · needs ${ad.quantity?.toLocaleString('en-IN') ?? 'any quantity'}${ad.size_description ? ` · ${ad.size_description}` : ''}${ad.needed_by ? ` · by ${new Date(`${ad.needed_by}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}`
+            : `${ad.plant_name}${ad.quantity != null ? ` · ${ad.quantity.toLocaleString('en-IN')} available` : ''}${ad.size_description ? ` · size ${ad.size_description}` : ''} · ${ad.price_per_unit ? `${formatCurrency(ad.price_per_unit)}${ad.price_unit ? ` ${toLabel(ad.price_unit).toLowerCase()}` : ''}` : 'price on request'}`}
         </Typography>
         {ad.description && <Typography fontSize={13.5} mt={1}>{ad.description}</Typography>}
       </Box>
@@ -529,6 +599,8 @@ function AdReview({ ad }: { ad: AdminMarketAd }) {
       <Typography fontSize={12.5} color="text.secondary">
         {ad.view_count} view{ad.view_count === 1 ? '' : 's'} · {ad.enquiry_count} chat{ad.enquiry_count === 1 ? '' : 's'} · published {formatDate(ad.published_at)} · expires {formatDate(ad.expires_at)}
       </Typography>
+      <Divider />
+      <PickupAccess ad={ad} />
       <Divider />
       {moderateState.error && <Alert severity="error">{normalizeApiError(moderateState.error).message}</Alert>}
       {unblockState.error && <Alert severity="error">{normalizeApiError(unblockState.error).message}</Alert>}

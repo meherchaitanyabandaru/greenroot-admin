@@ -298,6 +298,23 @@ export type AdminMarketAd = {
   published_at?: string;
   expires_at?: string;
   created_at: string;
+  size_description?: string;
+  /** Wanted posts: the date the plants are needed by (YYYY-MM-DD). */
+  needed_by?: string;
+  /** False: the ad has no position, so nearby lists (60-100 km) never show it. */
+  has_location: boolean;
+  pickup_latitude?: number;
+  pickup_longitude?: number;
+  pickup_location_source?: string;
+  pickup_address?: string;
+  /** Where buyers collect ("pickup point"); required when there is no road. */
+  pickup_landmark?: string;
+  road_accessible?: boolean;
+  truck_accessible?: boolean;
+  access_instructions?: string;
+  /** Owner soft delete (status DELETED). */
+  deleted_at?: string;
+  deleted_by_name?: string;
 };
 
 export type AdminMarketAdsResponse = { ads: AdminMarketAd[]; pagination: Pagination };
@@ -468,7 +485,7 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (params) => `/api/v1/market/reports?${toQuery(params)}`,
       providesTags: ['Market'],
     }),
-    listMarketAdminAds: builder.query<AdminMarketAdsResponse, { status?: string; search?: string; page: number; per_page: number }>({
+    listMarketAdminAds: builder.query<AdminMarketAdsResponse, { status?: string; search?: string; no_location?: boolean; page: number; per_page: number }>({
       query: (params) => `/api/v1/market/admin/ads?${toQuery(params)}`,
       providesTags: ['Market'],
     }),
