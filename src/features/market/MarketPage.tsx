@@ -373,7 +373,7 @@ function AdsTab() {
           <Box>
             <Stack direction="row" spacing={0.75} alignItems="center">
               <Typography fontSize={13.5} fontWeight={600}>{row.original.title}</Typography>
-              {row.original.ad_type === 'WANT' && <Chip size="small" color="info" label="Wanted" sx={{ height: 20, fontSize: 10.5 }} />}
+              {row.original.ad_type === 'WANT' && <Chip size="small" color="warning" label="Wanted" sx={{ height: 20, fontSize: 10.5 }} />}
             </Stack>
             <Typography fontSize={12} color="text.secondary">{row.original.code} · {row.original.plant_name}</Typography>
           </Box>

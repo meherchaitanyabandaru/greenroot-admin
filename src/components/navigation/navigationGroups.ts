@@ -23,7 +23,6 @@ import SmsIcon from '@mui/icons-material/Sms';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import SubscriptionsIcon from '@mui/icons-material/Subscriptions';
 import TimelineIcon from '@mui/icons-material/Timeline';
-import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import type { SvgIconComponent } from '@mui/icons-material';
 
 export type NavItem = { label: string; path: string; icon: SvgIconComponent; badge?: string };
@@ -60,7 +59,6 @@ export const navigationGroups: NavGroup[] = [
     section: 'Sourcing Network',
     items: [
       { label: 'Network Members', path: '/sourcing-network', icon: AccountTreeIcon },
-      { label: 'Need & Availability Posts', path: '/sourcing-posts', icon: TravelExploreIcon },
     ],
   },
   {

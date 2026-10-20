@@ -82,7 +82,6 @@ const meta: Record<ResourceKey, { title: string; description: string; searchable
   subscriptions:         { title: 'Subscriptions',          description: 'Monitor user subscription lifecycle.' },
   subscriptionPlans:     { title: 'Subscription Plans',     description: 'Review active subscription catalog plans.' },
   attachments:           { title: 'Attachments',            description: 'Inspect uploaded metadata and linked entities.' },
-  sourcingPosts:         { title: 'Need & Availability Posts', description: 'What sourcing-network nurseries need or have available, shared only inside the network.' },
   sourcingNetwork:       { title: 'Network Members',          description: 'Nurseries that joined the private sourcing network: location, access for vehicles and their top items.' },
   audit:                 { title: 'Audit Logs',             description: 'Read-only platform audit activity.' },
   securityLogs:          { title: 'Security Logs',          description: 'Platform security event log.' },
@@ -239,8 +238,6 @@ function columnsFor(
                         ? ['driver_code', 'driver_name', 'mobile', 'license_number', 'status']
                         : resource === 'attachments'
                           ? ['attachment_code', 'entity_type', 'file_name', 'uploaded_by']
-                          : resource === 'sourcingPosts'
-                            ? ['post_code', 'nursery_name', 'post_type', 'plant_name', 'quantity', 'status']
                           : resource === 'sourcingNetwork'
                             ? ['nursery_name', 'village', 'contact_number', 'road_accessible', 'lorry_accessible', 'top_items']
                           : resource === 'notifications'
@@ -276,7 +273,6 @@ function columnsFor(
     resource === 'plantRequests' ||
     resource === 'quotations' ||
     resource === 'subscriptions' ||
-    resource === 'sourcingPosts' ||
     resource === 'sourcingNetwork' ||
     resource === 'notifications' ||
     resource === 'notificationTemplates';
@@ -290,7 +286,6 @@ function columnsFor(
     resource === 'subscriptions' ||
     resource === 'drivers' ||
     resource === 'dispatches' ||
-    resource === 'sourcingPosts' ||
     resource === 'sourcingNetwork';
 
   const hasDeactivate =
@@ -368,8 +363,6 @@ const VEHICLE_STATUSES = ['ACTIVE', 'INACTIVE', 'MAINTENANCE', 'RETIRED'];
 const ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'PARTIALLY_FULFILLED', 'COMPLETED', 'CANCELLED'];
 const PAYMENT_STATUSES = ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED', 'CANCELLED'];
 const DISPATCH_STATUSES = ['PENDING', 'DISPATCHED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'];
-const SOURCING_POST_STATUSES = ['OPEN', 'CLOSED', 'EXPIRED'];
-const SOURCING_POST_TYPES = ['NEED', 'AVAILABLE'];
 const QUOTATION_STATUSES = ['INTERNAL_DRAFT', 'CUSTOMER_DRAFT', 'CUSTOMER_SENT', 'CUSTOMER_ACCEPTED', 'CUSTOMER_REJECTED', 'CONVERTED'];
 
 // ─── Add button labels ────────────────────────────────────────────────────────
@@ -392,7 +385,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
   const [userRole, setUserRole] = useState('');
   const [paymentFor, setPaymentFor] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [plantType, setPlantType] = useState('');
   const [sortBy, setSortBy] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -427,7 +419,7 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
         status:
           resource === 'quotations'
             ? status || undefined
-            : resource === 'drivers' || resource === 'users' || resource === 'plantRequests' || resource === 'sourcingPosts'
+            : resource === 'drivers' || resource === 'users' || resource === 'plantRequests'
               ? status
               : undefined,
         date_from: resource === 'quotations' && quotationDateFrom ? quotationDateFrom : undefined,
@@ -440,8 +432,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
         payment_for: resource === 'payments' ? paymentFor : undefined,
         payment_method: resource === 'payments' ? paymentMethod : undefined,
         dispatch_status: resource === 'dispatches' ? status : undefined,
-        vehicle_type: resource === 'vehicles' ? plantType : undefined,
-        post_type: resource === 'sourcingPosts' ? plantType : undefined,
         sort_by: sortBy || undefined,
         sort_order: sortBy ? sortOrder : undefined,
       },
@@ -552,9 +542,7 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
                   ? DISPATCH_STATUSES
                   : resource === 'plantRequests'
                     ? REQUEST_STATUSES
-                    : resource === 'sourcingPosts'
-                      ? SOURCING_POST_STATUSES
-                      : resource === 'quotations'
+                    : resource === 'quotations'
                         ? QUOTATION_STATUSES
                         : [];
 
@@ -566,7 +554,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
     resource === 'vehicles' ||
     resource === 'dispatches' ||
     resource === 'plantRequests' ||
-    resource === 'sourcingPosts' ||
     resource === 'quotations';
 
   // Determine drawer width
@@ -580,7 +567,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
     resource === 'drivers' ||
     resource === 'vehicles' ||
     resource === 'dispatches' ||
-    resource === 'sourcingPosts' ||
     resource === 'notifications' ||
     resource === 'notificationTemplates';
 
@@ -630,14 +616,6 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
             </Box>
           )}
 
-
-          {resource === 'sourcingPosts' && (
-            <TextField select label="Type" value={plantType} size="small" sx={{ minWidth: 150 }}
-              onChange={(e) => { setPlantType(e.target.value); setPage(0); }}>
-              <MenuItem value="">All types</MenuItem>
-              {SOURCING_POST_TYPES.map((o) => <MenuItem key={o} value={o}>{toLabel(o)}</MenuItem>)}
-            </TextField>
-          )}
 
           {resource === 'payments' && (
             <>
@@ -813,7 +791,7 @@ export function ResourceListPage({ resource }: { resource: ResourceKey }) {
           ) : (
             <VehicleForm loading={createVehicleState.isLoading} onSubmit={submitForm} />
           )
-        ) : resource === 'sourcingPosts' || resource === 'sourcingNetwork' ? (
+        ) : resource === 'sourcingNetwork' ? (
           <Alert severity="info">This is an admin monitoring view for the private B2B sourcing network.</Alert>
         ) : resource === 'notifications' && editingRow ? (
           <NotificationDetailPanel

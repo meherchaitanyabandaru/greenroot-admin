@@ -405,12 +405,6 @@ export const resourceConfigs = {
     path: '/api/v1/attachments',
     collectionKey: 'attachments',
   },
-  sourcingPosts: {
-    key: 'sourcingPosts',
-    tag: 'Sourcing',
-    path: '/api/v1/sourcing-posts',
-    collectionKey: 'posts',
-  },
   sourcingNetwork: {
     key: 'sourcingNetwork',
     tag: 'Sourcing',
