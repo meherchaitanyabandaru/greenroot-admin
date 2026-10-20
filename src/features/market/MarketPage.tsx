@@ -11,9 +11,19 @@ import {
   Divider,
   Paper,
   Stack,
+  Tab,
+  Tabs,
   TextField,
   Typography,
 } from '@mui/material';
+import BlockIcon from '@mui/icons-material/Block';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DoneIcon from '@mui/icons-material/Done';
+import FlagIcon from '@mui/icons-material/Flag';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+import RestoreIcon from '@mui/icons-material/Restore';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useEffect, useState } from 'react';
 import {
@@ -164,14 +174,19 @@ function PhotoStrip({ photos }: { photos: string[] }) {
  * blocked from posting, which an admin can unblock early.
  */
 export function MarketReviewPage() {
+  const [tab, setTab] = useState(0);
+  const blocked = useListMarketBlockedNurseriesQuery().data?.nurseries.length ?? 0;
   return (
     <Box>
       <PageHeader
         title="Review Queue"
         description="Reports from nurseries. Ads reported for explicit images or banned items are already hidden: check the photos, then restore or remove. Each removed ad is a strike: the 2nd blocks posting for 30 days, the 3rd for 90."
       />
-      <ReportsTab />
-      <BlockedNurseries />
+      <Tabs value={tab} onChange={(_, v: number) => setTab(v)} sx={{ mb: 2, minHeight: 40, '& .MuiTab-root': { minHeight: 40 } }}>
+        <Tab icon={<FlagIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Reports" />
+        <Tab icon={<BlockIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Blocked nurseries${blocked ? ` (${blocked})` : ''}`} />
+      </Tabs>
+      {tab === 0 ? <ReportsTab /> : <BlockedNurseries />}
     </Box>
   );
 }
@@ -194,9 +209,11 @@ function BlockedNurseries() {
   const { data } = useListMarketBlockedNurseriesQuery();
   const [unblock, unblockState] = useUnblockMarketNurseryMutation();
   const rows = data?.nurseries ?? [];
-  if (rows.length === 0) return null;
+  if (rows.length === 0) {
+    return <Alert severity="success" icon={<CheckCircleOutlineIcon />}>No nursery is blocked from posting.</Alert>;
+  }
   return (
-    <Paper variant="outlined" sx={{ mt: 3, p: 2 }}>
+    <Paper variant="outlined" sx={{ p: 2, maxHeight: 'calc(100vh - 290px)', overflowY: 'auto' }}>
       <Typography fontWeight={700} mb={0.5}>Nurseries blocked from posting</Typography>
       <Typography fontSize={13} color="text.secondary" mb={1.5}>
         Blocked automatically after a 2nd or later removed ad. Unblock early if the nursery fixed the problem.
@@ -311,10 +328,10 @@ function ReportsTab() {
       cell: ({ row }) =>
         row.original.status === 'PENDING' ? (
           <Stack direction="row" spacing={1} justifyContent="flex-end">
-            <Button size="small" onClick={() => setConfirm({ report: row.original, remove: false })}>
+            <Button size="small" sx={{ whiteSpace: 'nowrap' }} startIcon={row.original.ad_status === 'SUSPENDED' ? <RestoreIcon /> : <DoneIcon />} onClick={() => setConfirm({ report: row.original, remove: false })}>
               {row.original.ad_status === 'SUSPENDED' ? 'Restore ad' : 'Dismiss'}
             </Button>
-            <Button size="small" color="error" variant="outlined" onClick={() => setConfirm({ report: row.original, remove: true })}>
+            <Button size="small" color="error" variant="outlined" sx={{ whiteSpace: 'nowrap' }} startIcon={<DeleteOutlineIcon />} onClick={() => setConfirm({ report: row.original, remove: true })}>
               Remove ad
             </Button>
           </Stack>
@@ -403,7 +420,7 @@ function AdsTab() {
   const { data, isFetching, error, refetch } = useListMarketAdminAdsQuery({
     status: status || undefined,
     search: search || undefined,
-    no_location: noLocation || undefined,
+    no_location: noLocation ? 'true' : undefined,
     page: page + 1,
     per_page: rowsPerPage,
   });
@@ -605,11 +622,11 @@ function AdReview({ ad }: { ad: AdminMarketAd }) {
       {moderateState.error && <Alert severity="error">{normalizeApiError(moderateState.error).message}</Alert>}
       {unblockState.error && <Alert severity="error">{normalizeApiError(unblockState.error).message}</Alert>}
       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-        {canHide && <Button variant="outlined" color="warning" onClick={() => setAction('HIDE')}>Hide for review</Button>}
-        {canRestore && <Button variant="contained" onClick={() => setAction('RESTORE')}>Restore ad</Button>}
-        {canRemove && <Button variant="outlined" color="error" onClick={() => setAction('REMOVE')}>Remove ad</Button>}
+        {canHide && <Button variant="outlined" color="warning" startIcon={<VisibilityOffIcon />} onClick={() => setAction('HIDE')}>Hide for review</Button>}
+        {canRestore && <Button variant="contained" startIcon={<RestoreIcon />} onClick={() => setAction('RESTORE')}>Restore ad</Button>}
+        {canRemove && <Button variant="outlined" color="error" startIcon={<DeleteOutlineIcon />} onClick={() => setAction('REMOVE')}>Remove ad</Button>}
         {ad.nursery_blocked_until && (
-          <Button onClick={lift} disabled={unblockState.isLoading}>Unblock nursery</Button>
+          <Button startIcon={<LockOpenIcon />} onClick={lift} disabled={unblockState.isLoading}>Unblock nursery</Button>
         )}
       </Stack>
 

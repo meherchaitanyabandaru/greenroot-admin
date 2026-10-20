@@ -26,6 +26,7 @@ import { LoadingState } from '../../components/feedback/LoadingState';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { PageHeader } from '../../components/page/PageHeader';
 import { normalizeApiError } from '../../utils/apiError';
+import { FitTableContainer } from '../../components/data-table/FitTableContainer';
 
 function text(value: unknown) {
   if (value === null || value === undefined || value === '') return '-';
@@ -199,8 +200,8 @@ export function TrackingPage() {
       {isFetching && <LoadingState />}
       {error && <ErrorState message={normalizeApiError(error).message} onRetry={refetch} />}
       {!error && (
-        <Paper variant="outlined">
-          <Table size="small">
+        <FitTableContainer component={Paper} sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
+          <Table size="small" stickyHeader>
             <TableHead>
               <TableRow>
                 {['Dispatch', 'Order', 'Vehicle', 'Driver', 'Destination', 'Latest Location'].map((h) => (
@@ -231,7 +232,7 @@ export function TrackingPage() {
               )}
             </TableBody>
           </Table>
-        </Paper>
+        </FitTableContainer>
       )}
     </Box>
   );

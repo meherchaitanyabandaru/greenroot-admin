@@ -93,18 +93,21 @@ export const tokens = {
   },
 
   // ── Sidebar-specific tokens ─────────────────────────────────────────────────
+  // Light sidebar: easy on the eyes, green only for where you are.
   sidebar: {
-    bg:             '#0c1e10',   // very deep forest
-    bgHover:        'rgba(255,255,255,0.06)',
-    bgActive:       'rgba(132,204,22,0.13)',
-    colorText:      'rgba(255,255,255,0.55)',
-    colorTextHover: 'rgba(255,255,255,0.88)',
-    colorActive:    '#84cc16',
-    groupLabel:     'rgba(255,255,255,0.28)',
-    divider:        'rgba(255,255,255,0.07)',
-    copyright:      'rgba(255,255,255,0.22)',
-    logoBg:         '#84cc16',
-    logoText:       '#052e16',
+    bg:             '#ffffff',
+    bgHover:        '#f1f5f9',   // slate-100
+    bgActive:       '#ecfdf3',   // soft green
+    colorText:      '#475569',   // slate-600
+    colorTextHover: '#0f172a',   // slate-900
+    colorActive:    '#166534',   // primary green
+    groupLabel:     '#64748b',   // slate-500
+    divider:        '#e2e8f0',   // slate-200
+    copyright:      '#94a3b8',   // slate-400
+    logoBg:         '#166534',
+    logoText:       '#ffffff',
+    title:          '#0f172a',
+    iconMuted:      '#94a3b8',
   },
 
   // ── Shadows ────────────────────────────────────────────────────────────────

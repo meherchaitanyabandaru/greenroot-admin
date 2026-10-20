@@ -88,8 +88,8 @@ function NavItem({
       sx={{
         borderRadius: `${radius.sm}px`,
         mb: 0.25,
-        minHeight: 34,
-        pl: indent ? 4 : 1.25,
+        minHeight: 36,
+        pl: indent ? 2 : 1.25,
         pr: 1.25,
         py: 0.625,
         color: sb.colorText,
@@ -122,11 +122,9 @@ function NavItem({
         transition: `all ${transition.fast}`,
       }}
     >
-      {!indent && (
-        <ListItemIcon sx={{ color: 'inherit', minWidth: 30 }}>
-          <Icon sx={{ fontSize: 16, transition: `color ${transition.fast}` }} />
-        </ListItemIcon>
-      )}
+      <ListItemIcon sx={{ color: 'inherit', minWidth: 32 }}>
+        <Icon sx={{ fontSize: 18, transition: `color ${transition.fast}` }} />
+      </ListItemIcon>
       <ListItemText
         primary={item.label}
         primaryTypographyProps={{
@@ -146,7 +144,7 @@ function NavItem({
             display: 'grid',
             placeItems: 'center',
             // Live counts are work waiting for the admin: make them stand out.
-            bgcolor: live ? 'error.main' : 'rgba(255,255,255,0.1)',
+            bgcolor: live ? 'error.main' : sb.bgHover,
             color: live ? 'common.white' : 'inherit',
             fontSize: 10,
             fontWeight: 700,
@@ -183,7 +181,7 @@ function GroupFlyout({
         sx: {
           ml: 1,
           bgcolor: sb.bg,
-          color: '#fff',
+          color: sb.colorText,
           borderRadius: 2,
           minWidth: 188,
           overflow: 'hidden',
@@ -297,7 +295,7 @@ function SidebarFull({
             <Typography
               fontWeight={800}
               fontSize={14}
-              color="#fff"
+              color={sb.title}
               lineHeight={1.2}
               letterSpacing="-0.03em"
             >
@@ -314,8 +312,8 @@ function SidebarFull({
               onClick={onToggleCollapse}
               size="small"
               sx={{
-                color: 'rgba(255,255,255,0.25)',
-                '&:hover': { color: '#fff', bgcolor: sb.bgHover },
+                color: sb.iconMuted,
+                '&:hover': { color: sb.colorTextHover, bgcolor: sb.bgHover },
                 borderRadius: `${radius.sm}px`,
               }}
             >
@@ -341,7 +339,7 @@ function SidebarFull({
                   sx={{
                     px: 1.25,
                     py: 0.5,
-                    minHeight: 30,
+                    minHeight: 34,
                     borderRadius: `${radius.sm}px`,
                     mb: 0.25,
                     color: isOpen ? sb.colorTextHover : sb.groupLabel,
@@ -349,10 +347,15 @@ function SidebarFull({
                     transition: `all ${transition.fast}`,
                   }}
                 >
+                  {group.icon && (
+                    <ListItemIcon sx={{ color: 'inherit', minWidth: 32 }}>
+                      <group.icon sx={{ fontSize: 18 }} />
+                    </ListItemIcon>
+                  )}
                   <ListItemText
                     primary={group.section}
                     primaryTypographyProps={{
-                      fontSize: 10.5,
+                      fontSize: 11,
                       fontWeight: 600,
                       letterSpacing: '0.06em',
                       textTransform: 'uppercase',
@@ -390,7 +393,7 @@ function SidebarFull({
         <Typography fontSize={10} color={sb.copyright} lineHeight={1.6} letterSpacing="-0.01em">
           © {new Date().getFullYear()} GreenRoot Pvt. Ltd.
         </Typography>
-        <Typography fontSize={10} color="rgba(255,255,255,0.15)" lineHeight={1.4}>
+        <Typography fontSize={10} color={sb.copyright} lineHeight={1.4}>
           All rights reserved.
         </Typography>
       </Box>
@@ -443,14 +446,14 @@ function SidebarMini({ onExpand }: { onExpand: () => void }) {
                       '&:hover:not(.active)': { bgcolor: sb.bgHover, color: sb.colorTextHover },
                     }}
                   >
-                    <Icon sx={{ fontSize: 17 }} />
+                    <Icon sx={{ fontSize: 19 }} />
                   </ListItemButton>
                 </Tooltip>
               );
             });
           }
 
-          const RepIcon = group.items[0].icon;
+          const RepIcon = group.icon ?? group.items[0].icon;
           return (
             <Box key={group.section}>
               <Box sx={{ width: '70%', mx: 'auto', my: 0.5, borderTop: `1px solid ${sb.divider}` }} />
@@ -468,7 +471,7 @@ function SidebarMini({ onExpand }: { onExpand: () => void }) {
                     '&:hover': { bgcolor: sb.bgHover, color: sb.colorTextHover },
                   }}
                 >
-                  <RepIcon sx={{ fontSize: 17 }} />
+                  <RepIcon sx={{ fontSize: 19 }} />
                 </ListItemButton>
               </Tooltip>
             </Box>
@@ -482,7 +485,7 @@ function SidebarMini({ onExpand }: { onExpand: () => void }) {
           <IconButton
             onClick={onExpand}
             size="small"
-            sx={{ color: 'rgba(255,255,255,0.3)', '&:hover': { color: '#fff', bgcolor: sb.bgHover } }}
+            sx={{ color: sb.iconMuted, '&:hover': { color: sb.colorTextHover, bgcolor: sb.bgHover } }}
           >
             <ChevronRightIcon sx={{ fontSize: 16 }} />
           </IconButton>
@@ -533,7 +536,7 @@ export function AdminLayout() {
   }
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', bgcolor: 'background.default' }}>
       {/* Mobile drawer */}
       <Drawer
         variant="temporary"
@@ -553,7 +556,7 @@ export function AdminLayout() {
           sx: {
             width: drawerWidth,
             border: 0,
-            borderRight: `1px solid rgba(255,255,255,0.04)`,
+            borderRight: `1px solid ${sb.divider}`,
             transition: `width ${transition.drawer}`,
             overflow: 'visible',
           },
@@ -576,6 +579,7 @@ export function AdminLayout() {
         sx={{
           flex: 1,
           minWidth: 0,
+          height: '100vh',
           display: 'flex',
           flexDirection: 'column',
           transition: `margin ${transition.drawer}`,
@@ -651,33 +655,12 @@ export function AdminLayout() {
         {/* Page content */}
         <Box
           component="main"
-          sx={{ flex: 1, px: { xs: 2, md: 3 }, py: 3 }}
+          // The window stays fixed: tables fit and scroll inside themselves.
+          sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: { xs: 2, md: 3 }, pt: 2.5, pb: 3 }}
         >
           <Outlet />
         </Box>
 
-        {/* Footer */}
-        <Box
-          component="footer"
-          sx={{
-            borderTop: `1px solid ${semantic.border}`,
-            px: { xs: 2, md: 3 },
-            py: 1.5,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 1,
-            bgcolor: semantic.surface,
-          }}
-        >
-          <Typography fontSize={12} color="text.disabled" letterSpacing="-0.01em">
-            © {new Date().getFullYear()} GreenRoot Pvt. Ltd. All rights reserved.
-          </Typography>
-          <Typography fontSize={12} color="text.disabled">
-            Admin Console v1.0
-          </Typography>
-        </Box>
       </Box>
     </Box>
   );

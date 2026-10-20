@@ -15,7 +15,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TablePagination,
   TableRow,
@@ -29,6 +28,7 @@ import { PageHeader } from '../../components/page/PageHeader';
 import { StatusChip } from '../../components/status/StatusChip';
 import { SubscriptionCreateDrawer } from './SubscriptionCreateDrawer';
 import { SubscriptionDetailPanel } from './SubscriptionDetailPanel';
+import { FitTableContainer } from '../../components/data-table/FitTableContainer';
 
 const STATUS_FILTERS = ['ALL', 'ACTIVE', 'PAUSED', 'CANCELLED', 'EXPIRED'] as const;
 
@@ -146,8 +146,8 @@ export function SubscriptionsPage() {
       </Stack>
 
       {/* Table */}
-      <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
-        <Table size="small">
+      <FitTableContainer reserve={78} component={Paper} sx={{ border: 1, borderColor: 'divider', borderRadius: 2 }}>
+        <Table size="small" stickyHeader>
           <TableHead>
             <TableRow sx={{ bgcolor: 'grey.50' }}>
               {['Code', 'Subscriber', 'Plan', 'Status', 'Days Left', 'End Date', 'Auto Renew', 'Created'].map((h) => (
@@ -213,16 +213,17 @@ export function SubscriptionsPage() {
                 ))}
           </TableBody>
         </Table>
-        <TablePagination
-          component="div"
-          count={isLoading ? 0 : total as number}
-          page={page}
-          rowsPerPage={rowsPerPage}
-          onPageChange={(_, p) => setPage(p)}
-          onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
-          rowsPerPageOptions={[10, 20, 50]}
-        />
-      </TableContainer>
+      </FitTableContainer>
+      {/* Outside the scrolling area so it always shows. */}
+      <TablePagination
+        component="div"
+        count={isLoading ? 0 : total as number}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={(_, p) => setPage(p)}
+        onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+        rowsPerPageOptions={[10, 20, 50]}
+      />
 
       {/* Detail drawer */}
       <Drawer

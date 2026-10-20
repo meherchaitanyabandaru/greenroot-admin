@@ -86,23 +86,20 @@ function KpiTile({
         '&:hover': { boxShadow: tokens.shadow.cardHover, transform: 'translateY(-1px)' },
       }}
     >
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-        <Stack spacing={1.5}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Box sx={{ width: 34, height: 34, borderRadius: 1.5, bgcolor: tones.bg, color: tones.fg, display: 'grid', placeItems: 'center' }}>
-              <Icon sx={{ fontSize: 18 }} />
-            </Box>
-            <ArrowForwardIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
-          </Stack>
-          <Box>
-            <Typography fontSize={12} fontWeight={600} color="text.secondary">
+      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+        <Stack direction="row" spacing={1.25} alignItems="center">
+          <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: tones.bg, color: tones.fg, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+            <Icon sx={{ fontSize: 19 }} />
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography fontSize={11.5} fontWeight={600} color="text.secondary" noWrap>
               {label}
             </Typography>
-            <Typography fontSize={24} fontWeight={750} lineHeight={1.15} letterSpacing={0}>
+            <Typography fontSize={20} fontWeight={750} lineHeight={1.15} letterSpacing={0}>
               {textValue}
             </Typography>
             {helper && (
-              <Typography fontSize={12} color="text.secondary" mt={0.5}>
+              <Typography fontSize={11} color="text.secondary" noWrap title={helper}>
                 {helper}
               </Typography>
             )}
@@ -123,15 +120,16 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent sx={{ p: 2.25, '&:last-child': { pb: 2.25 } }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1.75}>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1.25} sx={{ flexShrink: 0 }}>
           <Typography fontSize={15} fontWeight={700}>
             {title}
           </Typography>
           {action}
         </Stack>
-        {children}
+        {/* Long lists scroll inside the card; the page stays one screen. */}
+        <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{children}</Box>
       </CardContent>
     </Card>
   );
@@ -208,7 +206,7 @@ export function DashboardPage() {
   ].filter(Boolean) as Array<{ tone: 'danger' | 'warning' | 'info'; title: string; body: string; href: string }>;
 
   return (
-    <Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 560 }}>
       <PageHeader
         title="Platform Overview"
         description="Live figures from the GreenRoot API. Today means the business day in India (IST)."
@@ -224,8 +222,8 @@ export function DashboardPage() {
         }
       />
 
-      <Stack spacing={2.5}>
-        <Grid container spacing={1.5}>
+      <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
+        <Grid container spacing={1.5} sx={{ flexShrink: 0 }}>
           {[
             { label: "Today's orders", value: n('orders_today'), icon: ReceiptLongIcon, href: '/orders', tone: 'info' as const, helper: `${n('active_orders').toLocaleString('en-IN')} in progress` },
             { label: 'Active trips', value: n('active_trips'), icon: LocalShippingIcon, href: '/tracking', tone: n('active_trips') ? ('warning' as const) : ('neutral' as const), helper: `${n('dispatches_today')} dispatched today` },
@@ -240,19 +238,19 @@ export function DashboardPage() {
             { label: 'Plant requests', value: n('plant_requests'), icon: TravelExploreIcon, href: '/requests', helper: `${n('top_items')} top items` },
             { label: 'App crashes (24 h)', value: crashes, icon: BugReportIcon, href: '/crash-reports', tone: crashes ? ('warning' as const) : ('neutral' as const) },
           ].map((kpi) => (
-            <Grid key={kpi.label} size={{ xs: 12, sm: 6, lg: 3 }}>
+            <Grid key={kpi.label} size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <KpiTile {...kpi} />
             </Grid>
           ))}
         </Grid>
 
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, lg: 8 }}>
+        <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
+          <Grid size={{ xs: 12, lg: 6 }} sx={{ height: { lg: '100%' } }}>
             <Panel
               title="Orders and dispatches"
               action={<Chip size="small" label="Last 7 days" sx={{ height: 22, borderRadius: 1, fontSize: 11, fontWeight: 700 }} />}
             >
-              <Box sx={{ height: 280 }}>
+              <Box sx={{ height: '100%', minHeight: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={trend} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
                     <defs>
@@ -278,7 +276,7 @@ export function DashboardPage() {
             </Panel>
           </Grid>
 
-          <Grid size={{ xs: 12, lg: 4 }}>
+          <Grid size={{ xs: 12, md: 6, lg: 3 }} sx={{ height: { lg: '100%' } }}>
             <Panel title="Needs attention">
               {alerts.length === 0 ? (
                 <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: palette.forest[50], color: palette.forest[700] }}>
@@ -300,28 +298,29 @@ export function DashboardPage() {
               )}
             </Panel>
           </Grid>
+          <Grid size={{ xs: 12, md: 6, lg: 3 }} sx={{ height: { lg: '100%' } }}>
+            <Panel
+              title="Recent activity"
+              action={<Button component={Link} to="/audit" size="small" endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}>All activity</Button>}
+            >
+              {activity.isLoading ? (
+                <LinearProgress />
+              ) : (activity.data?.rows ?? []).length === 0 ? (
+                <Typography color="text.secondary" fontSize={13}>No activity yet.</Typography>
+              ) : (
+                <Stack divider={<Divider flexItem />} spacing={0}>
+                  {(activity.data?.rows ?? []).map((row) => (
+                    <RowItem
+                      key={String(row.id)}
+                      title={String(row.description || `${toLabel(String(row.action_type ?? ''))} ${String(row.entity_type ?? '')} #${String(row.record_id ?? '')}`)}
+                      caption={`${String(row.user_name ?? 'System')} · ${toLabel(String(row.module ?? ''))} · ${formatDateTime(row.changed_at)}`}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </Panel>
+          </Grid>
         </Grid>
-
-        <Panel
-          title="Recent activity"
-          action={<Button component={Link} to="/audit" size="small" endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}>All activity</Button>}
-        >
-          {activity.isLoading ? (
-            <LinearProgress />
-          ) : (activity.data?.rows ?? []).length === 0 ? (
-            <Typography color="text.secondary" fontSize={13}>No activity yet.</Typography>
-          ) : (
-            <Stack divider={<Divider flexItem />} spacing={0}>
-              {(activity.data?.rows ?? []).map((row) => (
-                <RowItem
-                  key={String(row.id)}
-                  title={String(row.description || `${toLabel(String(row.action_type ?? ''))} ${String(row.entity_type ?? '')} #${String(row.record_id ?? '')}`)}
-                  caption={`${String(row.user_name ?? 'System')} · ${toLabel(String(row.module ?? ''))} · ${formatDateTime(row.changed_at)}`}
-                />
-              ))}
-            </Stack>
-          )}
-        </Panel>
       </Stack>
     </Box>
   );

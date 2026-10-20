@@ -485,7 +485,7 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (params) => `/api/v1/market/reports?${toQuery(params)}`,
       providesTags: ['Market'],
     }),
-    listMarketAdminAds: builder.query<AdminMarketAdsResponse, { status?: string; search?: string; no_location?: boolean; page: number; per_page: number }>({
+    listMarketAdminAds: builder.query<AdminMarketAdsResponse, { status?: string; search?: string; no_location?: 'true'; page: number; per_page: number }>({
       query: (params) => `/api/v1/market/admin/ads?${toQuery(params)}`,
       providesTags: ['Market'],
     }),

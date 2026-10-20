@@ -13,7 +13,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TablePagination,
   TableRow,
@@ -39,6 +38,7 @@ import {
   type EmailTemplate,
 } from './emailApi';
 import { EmailTemplateDrawer } from './EmailTemplateDrawer';
+import { FitTableContainer } from '../../components/data-table/FitTableContainer';
 
 const TABS = ['Readiness', 'Sender', 'Templates', 'Message log'] as const;
 
@@ -166,8 +166,8 @@ function TemplatesTab({ live }: { live: boolean }) {
           New template
         </Button>
       </Stack>
-      <TableContainer component={Paper} variant="outlined">
-        <Table size="small">
+      <FitTableContainer maxHeight={360} component={Paper} sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
+        <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>Code</TableCell>
@@ -203,7 +203,7 @@ function TemplatesTab({ live }: { live: boolean }) {
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
+      </FitTableContainer>
       {editing && <EmailTemplateDrawer template={editing === 'new' ? null : editing} live={live} onClose={() => setEditing(null)} />}
     </Box>
   );
@@ -238,8 +238,8 @@ function MessagesTab() {
         <TextField size="small" label="To" value={toEmail} onChange={(e) => { setToEmail(e.target.value); setPage(0); }} />
         {isFetching && <CircularProgress size={20} />}
       </Stack>
-      <TableContainer component={Paper} variant="outlined">
-        <Table size="small">
+      <FitTableContainer maxHeight={360} component={Paper} sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
+        <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>Time</TableCell>
@@ -288,7 +288,7 @@ function MessagesTab() {
             )}
           </TableBody>
         </Table>
-      </TableContainer>
+      </FitTableContainer>
       <TablePagination
         component="div"
         count={data?.pagination.total ?? 0}

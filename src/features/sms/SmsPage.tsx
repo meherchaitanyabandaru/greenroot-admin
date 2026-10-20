@@ -15,7 +15,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TablePagination,
   TableRow,
@@ -50,6 +49,7 @@ import {
   type SmsTemplate,
 } from './smsApi';
 import { SmsTemplateDrawer } from './SmsTemplateDrawer';
+import { FitTableContainer } from '../../components/data-table/FitTableContainer';
 
 const TABS = ['Readiness', 'Principal Entity', 'Headers', 'Templates', 'Message log'] as const;
 
@@ -210,8 +210,8 @@ function HeadersTab() {
           New header
         </Button>
       </Stack>
-      <TableContainer component={Paper} variant="outlined">
-        <Table size="small">
+      <FitTableContainer maxHeight={360} component={Paper} sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
+        <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>Header</TableCell>
@@ -239,7 +239,7 @@ function HeadersTab() {
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
+      </FitTableContainer>
       {editing && <HeaderDialog header={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
     </Box>
   );
@@ -320,8 +320,8 @@ function TemplatesTab({ live }: { live: boolean }) {
           New template
         </Button>
       </Stack>
-      <TableContainer component={Paper} variant="outlined">
-        <Table size="small">
+      <FitTableContainer maxHeight={360} component={Paper} sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
+        <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>Code</TableCell>
@@ -364,7 +364,7 @@ function TemplatesTab({ live }: { live: boolean }) {
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
+      </FitTableContainer>
       {editing && (
         <SmsTemplateDrawer
           template={editing === 'new' ? null : editing}
@@ -408,8 +408,8 @@ function MessagesTab() {
         <TextField size="small" label="Mobile" value={mobile} onChange={(e) => { setMobile(e.target.value.replace(/\D/g, '')); setPage(0); }} />
         {isFetching && <CircularProgress size={20} />}
       </Stack>
-      <TableContainer component={Paper} variant="outlined">
-        <Table size="small">
+      <FitTableContainer maxHeight={360} component={Paper} sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}>
+        <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>Time</TableCell>
@@ -453,7 +453,7 @@ function MessagesTab() {
             )}
           </TableBody>
         </Table>
-      </TableContainer>
+      </FitTableContainer>
       <TablePagination
         component="div"
         count={data?.pagination.total ?? 0}

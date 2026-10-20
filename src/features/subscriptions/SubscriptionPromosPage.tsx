@@ -16,7 +16,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   Tooltip,
@@ -32,6 +31,7 @@ import {
   type SubscriptionPromo,
 } from '../../api/adminResources';
 import { PromoCreateDrawer } from './PromoCreateDrawer';
+import { FitTableContainer } from '../../components/data-table/FitTableContainer';
 
 function discountLabel(promo: SubscriptionPromo) {
   return promo.discount_type === 'PERCENTAGE'
@@ -155,8 +155,8 @@ export function SubscriptionPromosPage() {
           </Button>
         </Box>
       ) : (
-        <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-          <Table size="small">
+        <FitTableContainer component={Paper} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+          <Table size="small" stickyHeader>
             <TableHead>
               <TableRow sx={{ bgcolor: '#f8fafc' }}>
                 <TableCell sx={{ fontWeight: 700 }}>Code</TableCell>
@@ -251,7 +251,7 @@ export function SubscriptionPromosPage() {
               ))}
             </TableBody>
           </Table>
-        </TableContainer>
+        </FitTableContainer>
       )}
 
       <Divider sx={{ my: 3 }} />

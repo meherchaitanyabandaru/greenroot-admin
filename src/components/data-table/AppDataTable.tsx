@@ -4,7 +4,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TablePagination,
   TableRow,
@@ -17,6 +16,7 @@ import {
   type ColumnDef,
 } from '@tanstack/react-table';
 import { EmptyState } from '../feedback/EmptyState';
+import { FitTableContainer } from './FitTableContainer';
 
 export function AppDataTable<T>({
   columns,
@@ -29,6 +29,7 @@ export function AppDataTable<T>({
   sortBy,
   sortOrder,
   onSortChange,
+  maxHeight,
 }: {
   columns: ColumnDef<T>[];
   data: T[];
@@ -40,6 +41,8 @@ export function AppDataTable<T>({
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   onSortChange?: (column: string) => void;
+  /** Cap the height instead of filling the window (pages with more below the table). */
+  maxHeight?: number | string;
 }) {
   // TanStack Table intentionally returns table helper functions; this component does not pass
   // those functions into memoized children, so the React Compiler skip warning is acceptable.
@@ -48,8 +51,9 @@ export function AppDataTable<T>({
 
   return (
     <Paper variant="outlined">
-      <TableContainer>
-        <Table size="small" sx={{ minWidth: 720 }}>
+      {/* Rows scroll inside; header and pagination stay put. 78 = pagination + page padding. */}
+      <FitTableContainer reserve={78} maxHeight={maxHeight}>
+        <Table size="small" stickyHeader sx={{ minWidth: 720 }}>
           <TableHead>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -95,7 +99,7 @@ export function AppDataTable<T>({
             )}
           </TableBody>
         </Table>
-      </TableContainer>
+      </FitTableContainer>
       <Box sx={{ borderTop: 1, borderColor: 'divider' }}>
         <TablePagination
           component="div"

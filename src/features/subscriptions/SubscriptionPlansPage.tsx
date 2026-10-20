@@ -10,7 +10,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   Tooltip,
@@ -23,6 +22,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { useListSubscriptionPlansQuery, type SubscriptionPlan } from '../../api/adminResources';
 import { PlanEditDrawer } from './PlanEditDrawer';
+import { FitTableContainer } from '../../components/data-table/FitTableContainer';
 
 const PLAN_META: Record<string, { accent: string; headerBg: string }> = {
   TRIAL:      { accent: '#16a34a', headerBg: '#f0fdf4' },
@@ -115,12 +115,12 @@ export function SubscriptionPlansPage() {
         </Box>
       </Stack>
 
-      <TableContainer
+      <FitTableContainer
         component={Paper}
-        elevation={0}
-        sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}
+       
+        sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}
       >
-        <Table sx={{ tableLayout: 'fixed' }}>
+        <Table stickyHeader sx={{ tableLayout: 'fixed' }}>
           <TableHead>
             {/* Plan name row */}
             <TableRow>
@@ -296,7 +296,7 @@ export function SubscriptionPlansPage() {
             </TableRow>
           </TableBody>
         </Table>
-      </TableContainer>
+      </FitTableContainer>
 
       {editing && (
         <PlanEditDrawer

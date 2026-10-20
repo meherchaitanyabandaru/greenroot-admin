@@ -44,6 +44,7 @@ import { SearchInput } from '../../components/forms/SearchInput';
 import { useToast } from '../../components/feedback/toastContext';
 import { normalizeApiError } from '../../utils/apiError';
 import { formatDate } from '../../utils/labels';
+import { FitTableContainer } from '../../components/data-table/FitTableContainer';
 
 // ─── Status chip colours ──────────────────────────────────────────────────────
 const STATUS_COLORS: Record<string, { label: string; color: string; bg: string }> = {
@@ -516,8 +517,8 @@ export function NurseryApplicationsPage() {
 
       {error && <ErrorState message={normalizeApiError(error).message} onRetry={refetch} />}
 
-      <Paper variant="outlined" sx={{ borderRadius: 2 }}>
-        <Table size="small">
+      <FitTableContainer component={Paper} sx={{ border: 1, borderColor: 'divider', borderRadius: 2 }}>
+        <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
               {['Code', 'Nursery Name', 'Owner', 'Mobile', 'Status', 'Registered', 'Actions'].map((h) => (
@@ -600,7 +601,7 @@ export function NurseryApplicationsPage() {
             <Button size="small" disabled={page >= pagination.total_pages} onClick={() => setPage((p) => p + 1)}>Next</Button>
           </Stack>
         )}
-      </Paper>
+      </FitTableContainer>
 
       {/* Review drawer */}
       <NurseryReviewDrawer
