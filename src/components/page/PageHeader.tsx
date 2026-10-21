@@ -1,6 +1,7 @@
 import { Box, Stack, Typography } from '@mui/material';
 import { createElement, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { navigationGroups } from '../navigation/navigationGroups';
 
 /** The sidebar icon for the current page, so titles match the menu. */
@@ -10,7 +11,8 @@ function usePageIcon() {
     const item = group.items.find((i) => i.path === pathname);
     if (item) return item.icon;
   }
-  return null;
+  // Settings sits at the bottom of the sidebar, outside the menu groups.
+  return pathname === '/settings' ? SettingsIcon : null;
 }
 
 export function PageHeader({

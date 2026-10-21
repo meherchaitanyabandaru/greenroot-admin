@@ -4,6 +4,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
+import SettingsIcon from '@mui/icons-material/Settings';
 import {
   AppBar,
   Avatar,
@@ -27,6 +28,7 @@ import { useCallback, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { baseApi } from '../api/baseApi';
 import { getStoredAuth } from '../api/authStorage';
+import { NotificationBell } from '../components/navigation/NotificationBell';
 import { navigationGroups, type NavGroup } from '../components/navigation/navigationGroups';
 import { useNavBadge } from '../components/navigation/useNavBadge';
 import { useLogoutMutation } from '../features/auth/authApi';
@@ -387,6 +389,11 @@ function SidebarFull({
         })}
       </Box>
 
+      {/* Settings, always at the bottom */}
+      <Box sx={{ borderTop: `1px solid ${sb.divider}`, flexShrink: 0, px: 1, py: 0.75 }}>
+        <NavItem item={{ label: 'Settings', path: '/settings', icon: SettingsIcon }} onNavigate={onNavigate} />
+      </Box>
+
       {/* Copyright footer */}
       <Box sx={{ borderTop: `1px solid ${sb.divider}`, flexShrink: 0 }} />
       <Box sx={{ px: 2, py: 1.5, flexShrink: 0 }}>
@@ -480,6 +487,25 @@ function SidebarMini({ onExpand }: { onExpand: () => void }) {
       </Box>
 
       <Box sx={{ width: '70%', borderTop: `1px solid ${sb.divider}`, flexShrink: 0 }} />
+      <Box sx={{ width: '100%', pt: 0.75, flexShrink: 0 }}>
+        <Tooltip title="Settings" placement="right">
+          <ListItemButton
+            component={NavLink}
+            to="/settings"
+            sx={{
+              justifyContent: 'center',
+              borderRadius: `${radius.sm}px`,
+              mx: 0.75,
+              minHeight: 34,
+              color: sb.colorText,
+              '&.active': { bgcolor: sb.bgActive, color: sb.colorActive },
+              '&:hover:not(.active)': { bgcolor: sb.bgHover, color: sb.colorTextHover },
+            }}
+          >
+            <SettingsIcon sx={{ fontSize: 19 }} />
+          </ListItemButton>
+        </Tooltip>
+      </Box>
       <Box sx={{ py: 1, flexShrink: 0 }}>
         <Tooltip title="Expand sidebar" placement="right">
           <IconButton
@@ -605,6 +631,8 @@ export function AdminLayout() {
             )}
 
             <Box sx={{ flex: 1 }} />
+
+            <NotificationBell />
 
             {/* User */}
             <Stack direction="row" alignItems="center" spacing={1}>

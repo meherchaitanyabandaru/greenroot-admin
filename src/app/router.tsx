@@ -8,6 +8,9 @@ import { ProtectedRoute } from '../layouts/ProtectedRoute';
 const LoginPage = lazy(() =>
   import('../features/auth/LoginPage').then((m) => ({ default: m.LoginPage })),
 );
+const SettingsPage = lazy(() =>
+  import('../features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+);
 const DashboardPage = lazy(() =>
   import('../features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })),
 );
@@ -90,6 +93,7 @@ export function AppRouter() {
             <Route path="/market" element={<Navigate replace to="/market/review" />} />
             <Route path="/market/review" element={<MarketReviewPage />} />
             <Route path="/market/ads" element={<MarketAdsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/crash-reports" element={<CrashReportsPage />} />
 
             {/* Business Monitoring (read-only for Super Admin) */}
