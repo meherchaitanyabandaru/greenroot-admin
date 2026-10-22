@@ -232,7 +232,7 @@ function columnsFor(
                     : resource === 'vehicles'
                       ? ['vehicle_code', 'vehicle_number', 'vehicle_type', 'driver_name', 'driver_mobile', 'status']
                     : resource === 'drivers'
-                        ? ['driver_code', 'driver_name', 'mobile', 'license_number', 'status']
+                        ? ['driver_code', 'driver_name', 'mobile', 'license_number', 'approval_status', 'status']
                         : resource === 'attachments'
                           ? ['attachment_code', 'entity_type', 'file_name', 'uploaded_by']
                           : resource === 'sourcingNetwork'
@@ -353,6 +353,7 @@ const PAYMENT_METHOD_OPTS = ['UPI', 'CARD', 'CASH', 'BANK_TRANSFER', 'NET_BANKIN
 const USER_ROLES = ['NURSERY_OWNER', 'MANAGER', 'BUYER', 'DRIVER', 'ADMIN', 'SUPER_ADMIN'];
 const USER_STATUSES = ['ACTIVE', 'SUSPENDED', 'DELETED'];
 const DRIVER_STATUSES = ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'DELETED'];
+const DRIVER_APPROVALS = ['PENDING', 'APPROVED', 'REJECTED'];
 const VEHICLE_STATUSES = ['ACTIVE', 'INACTIVE', 'MAINTENANCE', 'RETIRED'];
 const ORDER_STATUSES = ['PENDING', 'CONFIRMED', 'LOADING', 'LOADED', 'PARTIALLY_FULFILLED', 'COMPLETED', 'CANCELLED'];
 const PAYMENT_STATUSES = ['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED', 'CANCELLED'];
@@ -368,7 +369,7 @@ const SORTABLE: Partial<Record<ResourceKey, Record<string, string>>> = {
   payments: { payment_code: 'payment_code', payer_name: 'payer_name', payment_for: 'payment_for', amount: 'amount', payment_method: 'payment_method', payment_status: 'payment_status' },
   dispatches: { dispatch_number: 'dispatch_number', order_number: 'order_number', vehicle_number: 'vehicle_number', driver_name: 'driver_name', dispatch_status: 'dispatch_status' },
   vehicles: { vehicle_code: 'vehicle_code', vehicle_number: 'vehicle_number', vehicle_type: 'vehicle_type', driver_name: 'driver_name', driver_mobile: 'driver_mobile', status: 'status' },
-  drivers: { driver_code: 'driver_code', driver_name: 'driver_name', mobile: 'mobile', license_number: 'license_number', status: 'status' },
+  drivers: { driver_code: 'driver_code', driver_name: 'driver_name', mobile: 'mobile', license_number: 'license_number', approval_status: 'approval_status', status: 'status' },
 };
 
 /** Picks → the API's comma list (undefined when nothing is picked). */
@@ -418,6 +419,8 @@ function ResourceList({ resource }: { resource: ResourceKey }) {
   const [search, setSearch] = useListState(resource, 'search', '');
   // Filters hold several picks each; the API takes them as a comma list.
   const [status, setStatus] = useListState<string[]>(resource, 'status', []);
+  // Drivers: find applications waiting for review.
+  const [approval, setApproval] = useListState<string[]>(resource, 'approval', []);
   const [userRole, setUserRole] = useListState<string[]>(resource, 'role', []);
   const [paymentFor, setPaymentFor] = useListState<string[]>(resource, 'paymentFor', []);
   const [paymentMethod, setPaymentMethod] = useListState<string[]>(resource, 'paymentMethod', []);
@@ -467,6 +470,7 @@ function ResourceList({ resource }: { resource: ResourceKey }) {
         payment_for: resource === 'payments' ? list(paymentFor) : undefined,
         payment_method: resource === 'payments' ? list(paymentMethod) : undefined,
         dispatch_status: resource === 'dispatches' ? list(status) : undefined,
+        approval_status: resource === 'drivers' ? list(approval) : undefined,
         sort_by: sortBy || undefined,
         sort_order: sortBy ? sortOrder : undefined,
       },
@@ -594,6 +598,7 @@ function ResourceList({ resource }: { resource: ResourceKey }) {
     ...(search.trim() ? [{ key: 'search', label: `Search: "${search.trim()}"`, clear: () => { setSearch(''); setPage(0); } }] : []),
     ...named('Role', userRole, setUserRole),
     ...named('Status', status, setStatus),
+    ...named('Approval', approval, setApproval),
     ...named('Type', paymentFor, setPaymentFor),
     ...named('Method', paymentMethod, setPaymentMethod),
     ...(quotationDateFrom ? [{ key: 'from', label: `From ${quotationDateFrom}`, clear: () => setQuotationDateFrom('') }] : []),
@@ -684,6 +689,11 @@ function ResourceList({ resource }: { resource: ResourceKey }) {
           {showStatusFilter && (
             <MultiSelectFilter label="Status" options={statusOptions} value={status}
               onChange={(v) => { setStatus(v); setPage(0); }} />
+          )}
+
+          {resource === 'drivers' && (
+            <MultiSelectFilter label="Approval" options={DRIVER_APPROVALS} value={approval}
+              onChange={(v) => { setApproval(v); setPage(0); }} />
           )}
         </Stack>
 

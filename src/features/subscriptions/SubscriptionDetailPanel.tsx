@@ -3,6 +3,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import CloseIcon from '@mui/icons-material/Close';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import UndoIcon from '@mui/icons-material/Undo';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import {
   Accordion,
@@ -17,7 +18,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   FormControl,
   IconButton,
   InputLabel,
@@ -41,13 +41,17 @@ import {
   useCancelSubscriptionMutation,
   useGetSubscriptionQuery,
   useListSubscriptionPaymentsQuery,
+  useListSubscriptionPlansQuery,
+  useRefundSubscriptionPaymentMutation,
   useRenewSubscriptionMutation,
   useUpdateSubscriptionStatusMutation,
 } from '../../api/adminResources';
+import type { SubscriptionPlan } from '../../api/adminResources';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
 import { normalizeApiError } from '../../utils/apiError';
+import { canRefund } from './refundRules';
 
 function fmtDate(dateStr: unknown): string {
   if (!dateStr) return '—';
@@ -71,27 +75,44 @@ interface Props {
 }
 
 // ── Renew Dialog ──────────────────────────────────────────────────────────────
-function RenewDialog({ open, onClose, onSubmit, loading }: {
+// Records a payment made outside the app (cash, bank transfer…). Owners pay
+// online in the app through Razorpay; the API sets the amount from the plan.
+const OFFLINE_METHODS: [string, string][] = [
+  ['UPI', 'UPI (direct)'],
+  ['BANK_TRANSFER', 'Bank transfer'],
+  ['NET_BANKING', 'Net banking'],
+  ['CASH', 'Cash'],
+  ['CHEQUE', 'Cheque'],
+];
+
+function RenewDialog({ open, onClose, onSubmit, loading, plan }: {
   open: boolean;
   onClose: () => void;
   onSubmit: (billingCycle: string, paymentMethod: string) => void;
   loading: boolean;
+  plan?: SubscriptionPlan;
 }) {
-  const [cycle, setCycle] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
-  const [method, setMethod] = useState('UPI');
+  const [cycle, setCycle] = useState<'SIX_MONTH' | 'YEARLY'>('SIX_MONTH');
+  const [method, setMethod] = useState('BANK_TRANSFER');
+  const price = cycle === 'YEARLY' ? plan?.yearly_price : plan?.six_month_price;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ pb: 1 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography variant="h6">Renew Subscription</Typography>
+          <Typography variant="h6">Record Offline Payment</Typography>
           <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
         </Stack>
       </DialogTitle>
       <DialogContent>
         <Stack spacing={3} sx={{ pt: 1 }}>
+          <Alert severity="info" variant="outlined">
+            Use this only for money received outside the app. It renews the subscription and records the payment as paid.
+          </Alert>
           <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontWeight: 500 }}>Billing Cycle</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontWeight: 500 }}>
+              Billing Cycle{plan ? ` · ${plan.plan_name}` : ''}
+            </Typography>
             <ToggleButtonGroup
               exclusive
               fullWidth
@@ -100,55 +121,36 @@ function RenewDialog({ open, onClose, onSubmit, loading }: {
               size="small"
               sx={{ '& .MuiToggleButton-root': { textTransform: 'none', py: 1 } }}
             >
-              <ToggleButton value="MONTHLY">
+              <ToggleButton value="SIX_MONTH">
                 <Stack spacing={0} alignItems="center">
-                  <Typography variant="body2" fontWeight={600}>Monthly</Typography>
-                  <Typography variant="caption" color="text.secondary">₹499/mo</Typography>
+                  <Typography variant="body2" fontWeight={600}>6 Months</Typography>
+                  <Typography variant="caption" color="text.secondary">{plan ? fmtMoney(plan.six_month_price) : '—'}</Typography>
                 </Stack>
               </ToggleButton>
               <ToggleButton value="YEARLY">
                 <Stack spacing={0} alignItems="center">
                   <Typography variant="body2" fontWeight={600}>Yearly</Typography>
-                  <Stack direction="row" alignItems="center" spacing={0.5}>
-                    <Typography variant="caption" color="text.secondary">₹4,999/yr</Typography>
-                    <Chip size="small" label="Save 17%" sx={{ bgcolor: '#D1FAE5', color: '#16A34A', fontWeight: 700, fontSize: 9, height: 16 }} />
-                  </Stack>
+                  <Typography variant="caption" color="text.secondary">{plan ? fmtMoney(plan.yearly_price) : '—'}</Typography>
                 </Stack>
               </ToggleButton>
             </ToggleButtonGroup>
           </Box>
 
           <FormControl fullWidth size="small">
-            <InputLabel>Payment Method</InputLabel>
-            <Select value={method} label="Payment Method" onChange={(e) => setMethod(e.target.value)}>
-              <MenuItem value="UPI">UPI</MenuItem>
-              <MenuItem value="CARD">Card</MenuItem>
-              <MenuItem value="NETBANKING">Net Banking</MenuItem>
-              <MenuItem value="CASH">Cash</MenuItem>
-              <MenuItem value="RAZORPAY_MOCK">Mock (Test)</MenuItem>
+            <InputLabel>Received via</InputLabel>
+            <Select value={method} label="Received via" onChange={(e) => setMethod(e.target.value)}>
+              {OFFLINE_METHODS.map(([value, label]) => (
+                <MenuItem key={value} value={value}>{label}</MenuItem>
+              ))}
             </Select>
           </FormControl>
 
           <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50', borderRadius: 1.5 }}>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>Billing Summary</Typography>
-            {(() => {
-              const base = cycle === 'YEARLY' ? 4999 : 499;
-              return (
-                <Stack spacing={0.5}>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2" color="text.secondary">Base ({cycle === 'YEARLY' ? 'Annual' : 'Monthly'})</Typography>
-                    <Typography variant="body2">₹{base.toLocaleString('en-IN')}</Typography>
-                  </Stack>
-                  <Divider sx={{ my: 0.5 }} />
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body2" fontWeight={700}>Total</Typography>
-                    <Typography variant="body2" fontWeight={700} color="primary.main">
-                      ₹{base.toLocaleString('en-IN')}
-                    </Typography>
-                  </Stack>
-                </Stack>
-              );
-            })()}
+            <Stack direction="row" justifyContent="space-between">
+              <Typography variant="body2" fontWeight={700}>Amount</Typography>
+              <Typography variant="body2" fontWeight={700} color="primary.main">{price != null ? fmtMoney(price) : '—'}</Typography>
+            </Stack>
+            <Typography variant="caption" color="text.secondary">Plan price for the cycle, before any promo.</Typography>
           </Paper>
         </Stack>
       </DialogContent>
@@ -161,7 +163,59 @@ function RenewDialog({ open, onClose, onSubmit, loading }: {
           startIcon={loading ? <CircularProgress size={14} /> : <AutorenewIcon fontSize="small" />}
           onClick={() => onSubmit(cycle, method)}
         >
-          Confirm Renewal
+          Record &amp; Renew
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// ── Refund Dialog ─────────────────────────────────────────────────────────────
+// Full Razorpay refund of the latest payment, within 7 days (the API enforces it).
+function RefundDialog({ payment, onClose, onSubmit, loading }: {
+  payment: Record<string, unknown> | null;
+  onClose: () => void;
+  onSubmit: (reason: string) => void;
+  loading: boolean;
+}) {
+  const [reason, setReason] = useState('');
+  const valid = reason.trim().length >= 5;
+  return (
+    <Dialog open={payment != null} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle sx={{ pb: 1 }}>Refund {fmtMoney(payment?.amount)}?</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <Typography variant="body2">
+            Payment <b>{String(payment?.payment_code ?? '')}</b> · Razorpay{' '}
+            <Box component="span" sx={{ fontFamily: 'monospace' }}>{String(payment?.provider_payment_id ?? '')}</Box>
+          </Typography>
+          <Alert severity="warning" variant="outlined">
+            The full amount goes back to the customer (5–7 working days) and the period this payment bought is removed.
+            If that period has already started, the subscription expires now. This cannot be undone.
+          </Alert>
+          <TextField
+            label="Reason"
+            size="small"
+            fullWidth
+            multiline
+            minRows={2}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            helperText="Required, at least 5 characters. Stored with the payment and in the audit log."
+          />
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} size="small">Cancel</Button>
+        <Button
+          variant="contained"
+          color="error"
+          size="small"
+          disabled={loading || !valid}
+          startIcon={loading ? <CircularProgress size={14} /> : <UndoIcon fontSize="small" />}
+          onClick={() => onSubmit(reason.trim())}
+        >
+          Refund
         </Button>
       </DialogActions>
     </Dialog>
@@ -226,7 +280,10 @@ function CancelDialog({ open, onClose, onSubmit, loading }: {
 export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: Props) {
   const subQuery = useGetSubscriptionQuery(subscriptionId);
   const paymentsQuery = useListSubscriptionPaymentsQuery(subscriptionId);
+  const plansQuery = useListSubscriptionPlansQuery();
   const [renew, renewState] = useRenewSubscriptionMutation();
+  const [refund, refundState] = useRefundSubscriptionPaymentMutation();
+  const [refundPayment, setRefundPayment] = useState<Record<string, unknown> | null>(null);
   const [cancel, cancelState] = useCancelSubscriptionMutation();
   const [updateStatus, updateStatusState] = useUpdateSubscriptionStatusMutation();
 
@@ -259,17 +316,31 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
         id: subscriptionId,
         body: {
           billing_cycle: billingCycle,
-          payment_method: paymentMethod,
-          provider: 'razorpay_mock',
-          provider_order_id: `MOCK-ORDER-${Date.now()}`,
+          payment_method: paymentMethod, // no provider: an offline payment, recorded as paid
         },
       }).unwrap();
-      setActionSuccess('Subscription renewed successfully.');
+      setActionSuccess('Offline payment recorded and subscription renewed.');
       setRenewOpen(false);
       subQuery.refetch();
       paymentsQuery.refetch();
       onMutated?.();
     } catch (e) {
+      setActionError(normalizeApiError(e).message);
+    }
+  }
+
+  async function handleRefund(reason: string) {
+    if (!refundPayment) return;
+    try {
+      setActionError('');
+      await refund({ id: subscriptionId, paymentId: Number(refundPayment.id), reason }).unwrap();
+      setActionSuccess(`Refunded ${fmtMoney(refundPayment.amount)}. It reaches the customer in 5–7 working days.`);
+      setRefundPayment(null);
+      subQuery.refetch();
+      paymentsQuery.refetch();
+      onMutated?.();
+    } catch (e) {
+      setRefundPayment(null);
       setActionError(normalizeApiError(e).message);
     }
   }
@@ -413,7 +484,7 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
               startIcon={renewState.isLoading ? <CircularProgress size={14} /> : <AutorenewIcon fontSize="small" />}
               onClick={() => setRenewOpen(true)}
             >
-              Renew Subscription
+              Record Offline Payment
             </Button>
 
             {/* Status update */}
@@ -483,10 +554,11 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
                 <Typography variant="body2" color="text.secondary">No payments recorded yet.</Typography>
               </Box>
             ) : (
+              <Box sx={{ overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'grey.50' }}>
-                    {['Code', 'Date', 'Method', 'Amount', 'Status'].map((h) => (
+                    {['Code', 'Date', 'Method', 'Amount', 'Status', ''].map((h) => (
                       <TableCell key={h} sx={{ fontWeight: 700, fontSize: 11, color: 'text.secondary', py: 1 }}>{h}</TableCell>
                     ))}
                   </TableRow>
@@ -494,15 +566,28 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
                 <TableBody>
                   {payments.map((p, i) => (
                     <TableRow key={i}>
-                      <TableCell sx={{ fontSize: 11, fontFamily: 'monospace' }}>{String(p.payment_code ?? '—')}</TableCell>
+                      <TableCell sx={{ fontSize: 11, fontFamily: 'monospace' }}>
+                        {String(p.payment_code ?? '—')}
+                        {Boolean(p.provider_payment_id) && (
+                          <Typography component="div" sx={{ fontSize: 10, fontFamily: 'monospace', color: 'text.secondary' }}>
+                            {String(p.provider_payment_id)}
+                          </Typography>
+                        )}
+                      </TableCell>
                       <TableCell sx={{ fontSize: 12 }}>{fmtDate(p.payment_date ?? p.created_at)}</TableCell>
                       <TableCell sx={{ fontSize: 12 }}>{String(p.payment_method ?? '—')}</TableCell>
                       <TableCell sx={{ fontSize: 12, fontWeight: 600 }}>{fmtMoney(p.amount)}</TableCell>
                       <TableCell><StatusChip value={p.payment_status} /></TableCell>
+                      <TableCell align="right">
+                        {canRefund(p, payments) && (
+                          <Button size="small" color="error" onClick={() => setRefundPayment(p)}>Refund</Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              </Box>
             )}
           </AccordionDetails>
         </Accordion>
@@ -514,6 +599,14 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
         onClose={() => setRenewOpen(false)}
         onSubmit={handleRenew}
         loading={renewState.isLoading}
+        plan={plansQuery.data?.plans.find((pl) => pl.id === Number(sub.plan_id))}
+      />
+      <RefundDialog
+        key={String(refundPayment?.id ?? 'none')}
+        payment={refundPayment}
+        onClose={() => setRefundPayment(null)}
+        onSubmit={handleRefund}
+        loading={refundState.isLoading}
       />
       <CancelDialog
         open={cancelOpen}

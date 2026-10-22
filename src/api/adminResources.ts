@@ -686,6 +686,17 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: ({ id, status }) => ({ url: `/api/v1/subscriptions/${id}/status`, method: 'PUT', body: { subscription_status: status } }),
       invalidatesTags: ['Subscriptions'],
     }),
+    refundSubscriptionPayment: builder.mutation<
+      { subscription: Record<string, unknown> },
+      { id: number; paymentId: number; reason: string }
+    >({
+      query: ({ id, paymentId, reason }) => ({
+        url: `/api/v1/subscriptions/${id}/payments/${paymentId}/refund`,
+        method: 'POST',
+        body: { reason },
+      }),
+      invalidatesTags: ['Payments', 'Subscriptions', 'Dashboard'],
+    }),
     listSubscriptionPayments: builder.query<{ payments: Record<string, unknown>[] }, number>({
       query: (id) => `/api/v1/subscriptions/${id}/payments`,
       providesTags: ['Payments', 'Subscriptions'],
@@ -917,6 +928,7 @@ export const {
   useGetSubscriptionQuery,
   useCreateSubscriptionMutation,
   useRenewSubscriptionMutation,
+  useRefundSubscriptionPaymentMutation,
   useCancelSubscriptionMutation,
   useUpdateSubscriptionStatusMutation,
   useListSubscriptionPaymentsQuery,

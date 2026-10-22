@@ -62,7 +62,7 @@ Source of truth for APIs: `greenroot-api/docs/swagger/openapi.yaml`
 | Top Items | ✅ Live (2026-10-19) | `features/topItems/TopItemsPage.tsx`: every nursery's top items (max 20 each, not stock), server-side search + paging (50/page), async nursery search, plant picker (resolves botanical names), add/edit/remove drawer, `n of 20` chip; Nursery → Top Items tab; Plant → Nurseries tab | — |
 | Orders | ✅ Live | List, detail panel, status update, inline item edit/delete, payments, dispatches, **create drawer** | — |
 | Payments | ✅ Live | List, manual record (ORDER + **SUBSCRIPTION**), status/provider update | — |
-| Subscriptions | ✅ Live | List with subscriber name, nursery and mobile (searchable), plans list, **lifecycle detail panel (renew dialog, cancel dialog, payment history)** | — |
+| Subscriptions | ✅ Live | List with subscriber name, nursery and mobile (searchable), plans list, **lifecycle detail panel (record offline payment with real plan prices, cancel dialog, payment history with Razorpay ids, Razorpay refunds: latest payment, 7 days, reason required)** — see `greenroot-infra/docs/subscriptions.md` §3 | — |
 | Vehicles | ✅ Live | List, CRUD, retire, **detail panel (info, tracking history, last known location)** | — |
 | Drivers | ✅ Live | List, CRUD, deactivate, **detail panel (location, approve, edit)** | — |
 | Dispatches | ✅ Live | List, create, status update, **detail panel (items, tracking, trip UUID)** | — |
