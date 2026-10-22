@@ -18,6 +18,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControl,
   IconButton,
   InputLabel,
@@ -85,16 +86,25 @@ const OFFLINE_METHODS: [string, string][] = [
   ['CHEQUE', 'Cheque'],
 ];
 
-function RenewDialog({ open, onClose, onSubmit, loading, plan }: {
+function RenewDialog({ open, onClose, onSubmit, loading, plans, currentPlanId, endDate }: {
   open: boolean;
   onClose: () => void;
-  onSubmit: (billingCycle: string, paymentMethod: string) => void;
+  onSubmit: (billingCycle: string, paymentMethod: string, planId: number) => void;
   loading: boolean;
-  plan?: SubscriptionPlan;
+  plans: SubscriptionPlan[];
+  currentPlanId: number;
+  endDate: unknown;
 }) {
+  // Only paid plans: "renewing" the free trial recorded nothing and just stacked free time.
+  const paidPlans = plans.filter((p) => p.is_active && Number(p.six_month_price ?? 0) > 0);
   const [cycle, setCycle] = useState<'SIX_MONTH' | 'YEARLY'>('SIX_MONTH');
   const [method, setMethod] = useState('BANK_TRANSFER');
+  const [planId, setPlanId] = useState<number>(
+    paidPlans.some((p) => p.id === currentPlanId) ? currentPlanId : (paidPlans[0]?.id ?? 0),
+  );
+  const plan = paidPlans.find((p) => p.id === planId);
   const price = cycle === 'YEARLY' ? plan?.yearly_price : plan?.six_month_price;
+  const period = renewalPeriod(endDate, cycle);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -109,6 +119,14 @@ function RenewDialog({ open, onClose, onSubmit, loading, plan }: {
           <Alert severity="info" variant="outlined">
             Use this only for money received outside the app. It renews the subscription and records the payment as paid.
           </Alert>
+          <FormControl fullWidth size="small">
+            <InputLabel>Plan</InputLabel>
+            <Select value={planId || ''} label="Plan" onChange={(e) => setPlanId(Number(e.target.value))}>
+              {paidPlans.map((p) => (
+                <MenuItem key={p.id} value={p.id}>{p.plan_name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, fontWeight: 500 }}>
               Billing Cycle{plan ? ` · ${plan.plan_name}` : ''}
@@ -151,7 +169,22 @@ function RenewDialog({ open, onClose, onSubmit, loading, plan }: {
               <Typography variant="body2" fontWeight={700} color="primary.main">{price != null ? fmtMoney(price) : '—'}</Typography>
             </Stack>
             <Typography variant="caption" color="text.secondary">Plan price for the cycle, before any promo.</Typography>
+            <Divider sx={{ my: 1 }} />
+            <Stack direction="row" justifyContent="space-between">
+              <Typography variant="body2" color="text.secondary">New period</Typography>
+              <Typography variant="body2" fontWeight={600}>{fmtDate(period.start)} → {fmtDate(period.end)}</Typography>
+            </Stack>
+            {period.stacks && (
+              <Typography variant="caption" color="warning.main">
+                Starts after the current period ends ({fmtDate(endDate)}), so it adds time on top.
+              </Typography>
+            )}
           </Paper>
+          {period.tooEarly && (
+            <Alert severity="warning">
+              Already paid until {fmtDate(endDate)} — more than a year ahead. Renew closer to that date.
+            </Alert>
+          )}
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -159,15 +192,31 @@ function RenewDialog({ open, onClose, onSubmit, loading, plan }: {
         <Button
           variant="contained"
           size="small"
-          disabled={loading}
+          disabled={loading || !plan || period.tooEarly}
           startIcon={loading ? <CircularProgress size={14} /> : <AutorenewIcon fontSize="small" />}
-          onClick={() => onSubmit(cycle, method)}
+          onClick={() => onSubmit(cycle, method, planId)}
         >
           Record &amp; Renew
         </Button>
       </DialogActions>
     </Dialog>
   );
+}
+
+// Mirrors the API: a renewal starts the day after the current end (or today if
+// it has passed) and is refused while more than a year is already paid.
+function renewalPeriod(endDate: unknown, cycle: 'SIX_MONTH' | 'YEARLY') {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const end = endDate ? new Date(String(endDate)) : null;
+  const stacks = end != null && end >= today;
+  const start = stacks ? new Date(end.getTime() + 86400000) : today;
+  const until = new Date(start);
+  until.setMonth(until.getMonth() + (cycle === 'YEARLY' ? 12 : 6));
+  until.setDate(until.getDate() - 1);
+  const yearAhead = new Date(today);
+  yearAhead.setFullYear(yearAhead.getFullYear() + 1);
+  return { start, end: until, stacks, tooEarly: end != null && end > yearAhead };
 }
 
 // ── Refund Dialog ─────────────────────────────────────────────────────────────
@@ -309,13 +358,14 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
   const canPause = capabilities.can_pause ?? false;
   const canResume = capabilities.can_resume ?? false;
 
-  async function handleRenew(billingCycle: string, paymentMethod: string) {
+  async function handleRenew(billingCycle: string, paymentMethod: string, planId: number) {
     try {
       setActionError('');
       await renew({
         id: subscriptionId,
         body: {
           billing_cycle: billingCycle,
+          plan_id: planId,
           payment_method: paymentMethod, // no provider: an offline payment, recorded as paid
         },
       }).unwrap();
@@ -599,7 +649,10 @@ export function SubscriptionDetailPanel({ subscriptionId, onClose, onMutated }: 
         onClose={() => setRenewOpen(false)}
         onSubmit={handleRenew}
         loading={renewState.isLoading}
-        plan={plansQuery.data?.plans.find((pl) => pl.id === Number(sub.plan_id))}
+        key={renewOpen ? 'open' : 'closed'}
+        plans={plansQuery.data?.plans ?? []}
+        currentPlanId={Number(sub.plan_id)}
+        endDate={sub.end_date}
       />
       <RefundDialog
         key={String(refundPayment?.id ?? 'none')}

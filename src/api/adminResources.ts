@@ -673,7 +673,7 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     }),
     renewSubscription: builder.mutation<
       unknown,
-      { id: number; body: { billing_cycle: string; payment_method?: string; provider?: string; provider_order_id?: string } }
+      { id: number; body: { billing_cycle: string; plan_id?: number; payment_method?: string; provider?: string; provider_order_id?: string } }
     >({
       query: ({ id, body }) => ({ url: `/api/v1/subscriptions/${id}/renew`, method: 'POST', body }),
       invalidatesTags: ['Subscriptions'],
