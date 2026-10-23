@@ -930,7 +930,7 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     }),
     presignUpload: builder.mutation<
       { upload_url: string; file_url: string; key: string; bucket: string },
-      { bucket: string; file_name: string; content_type?: string }
+      { bucket: string; file_name: string; content_type?: string; size: number }
     >({
       query: (body) => ({ url: '/api/v1/storage/presign', method: 'POST', body }),
     }),

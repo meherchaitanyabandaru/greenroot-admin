@@ -51,6 +51,7 @@ export function AttachmentUploadForm({ onSuccess }: { onSuccess?: () => void }) 
         bucket: 'attachments',
         file_name: file.name,
         content_type: file.type || 'application/octet-stream',
+        size: file.size, // signed: the upload must be exactly this size (max 20 MB)
       }).unwrap();
 
       // Step 2: PUT file directly to storage
