@@ -192,6 +192,26 @@ export function DriverDetailPanel({ driverId }: { driverId: number }) {
             ))}
           </Grid>
 
+          {/* Driving licence photo: optional at signup, private (link lasts an hour) */}
+          <Box>
+            <Typography color="text.secondary" variant="caption">Driving Licence Photo</Typography>
+            {typeof driver.licence_photo_link === 'string' ? (
+              <Box mt={0.5}>
+                <Link href={driver.licence_photo_link} target="_blank" rel="noopener">
+                  <Box
+                    component="img"
+                    src={driver.licence_photo_link}
+                    alt="Driving licence"
+                    sx={{ maxWidth: 320, maxHeight: 200, borderRadius: 1, border: 1, borderColor: 'divider', display: 'block' }}
+                  />
+                </Link>
+                <Typography variant="caption" color="text.secondary">Click to open full size</Typography>
+              </Box>
+            ) : (
+              <Typography variant="body2">Not attached</Typography>
+            )}
+          </Box>
+
           {canEdit && (
             <>
               <Divider />
