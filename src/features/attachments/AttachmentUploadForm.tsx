@@ -12,6 +12,7 @@ import {
 import { useRef, useState } from 'react';
 import { usePresignUploadMutation, useCreateAttachmentMutation } from '../../api/adminResources';
 import { normalizeApiError } from '../../utils/apiError';
+import { ALLOWED_EXT, attachmentProblem } from './attachmentRules';
 
 const ENTITY_TYPES = [
   'ORDER',
@@ -122,7 +123,15 @@ export function AttachmentUploadForm({ onSuccess }: { onSuccess?: () => void }) 
         <input
           ref={fileRef}
           type="file"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          accept={ALLOWED_EXT.map((x) => '.' + x).join(',')}
+          onChange={(e) => {
+            const f = e.target.files?.[0] ?? null;
+            const problem = f ? attachmentProblem(f) : '';
+            setError(problem);
+            setDone(false);
+            setFile(problem ? null : f);
+            if (problem && fileRef.current) fileRef.current.value = '';
+          }}
           style={{ display: 'block' }}
         />
         {file && (

@@ -66,7 +66,7 @@ Source of truth for APIs: `greenroot-api/docs/swagger/openapi.yaml`
 | Subscriptions | ✅ Live | List with subscriber name, nursery and mobile (searchable), plans list, **lifecycle detail panel (record offline payment with real plan prices, cancel dialog, payment history with Razorpay ids, Razorpay refunds: latest payment, 7 days, reason required)** — see `greenroot-infra/docs/subscriptions.md` §3 | — |
 | Vehicles | ✅ Live | List, CRUD, retire, **detail panel (info, tracking history, last known location)** | — |
 | Drivers | ✅ Live | List, CRUD, deactivate, **detail panel (location, approve, edit)** | — |
-| Attachment upload limit | ✅ Live (2026-10-23) | `AttachmentUploadForm` sends `size`; the API refuses over 20 MB. | — |
+| Attachment upload limit | ✅ Live (2026-10-23) | `AttachmentUploadForm` sends `size` (API max 20 MB); `attachmentRules.ts` refuses videos/audio, other formats and >20 MB before uploading (photos, PDF, Word, Excel, CSV, text). | — |
 | Driver licence photo | ✅ Live (2026-10-23) | `DriverDetailPanel` shows the optional licence photo uploaded at signup (private bucket, link valid 1 h; refetch on focus renews it) or "Not attached". | — |
 | Dispatches | ✅ Live | List, create, status update, **detail panel (items, tracking, trip UUID)** | — |
 | Tracking | ✅ Live | **Live tracking table (IN_TRANSIT dispatches, auto-refresh 30s, vehicle GPS link)** | — |
