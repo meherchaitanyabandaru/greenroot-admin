@@ -2,6 +2,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import CategoryIcon from '@mui/icons-material/Category';
+import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import EmailIcon from '@mui/icons-material/Email';
@@ -70,6 +71,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { label: 'Plants', path: '/plants', icon: LocalFloristIcon },
       { label: 'Categories', path: '/plants/categories', icon: CategoryIcon },
+      { label: 'Suggestions', path: '/plants/suggestions', icon: LightbulbOutlinedIcon },
     ],
   },
   {

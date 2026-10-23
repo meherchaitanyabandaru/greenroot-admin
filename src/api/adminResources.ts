@@ -333,6 +333,24 @@ export type CrashReport = {
 
 export type CrashReportsResponse = { items: CrashReport[]; total: number };
 
+export type PlantSuggestionStatus = 'PENDING' | 'APPROVED' | 'LINKED' | 'REJECTED';
+export type PlantSuggestion = {
+  id: number;
+  name: string;
+  scientific_name?: string;
+  notes?: string;
+  status: PlantSuggestionStatus;
+  suggested_by_user_id: number;
+  suggested_by_name?: string;
+  suggested_by_mobile?: string;
+  plant_id?: number;
+  plant_name?: string;
+  review_note?: string;
+  reviewed_at?: string;
+  created_at: string;
+};
+export type PlantSuggestionsResponse = { suggestions: PlantSuggestion[]; total: number };
+
 export type PlantCareGuideResponse = {
   care_guide: Record<string, unknown>;
 };
@@ -454,6 +472,21 @@ export const adminResourcesApi = baseApi.injectEndpoints({
         };
       },
       providesTags: (_result, _error, arg) => [resourceConfigs[arg.resource].tag],
+    }),
+    createPlant: builder.mutation<PlantDetailResponse, Record<string, unknown>>({
+      query: (body) => ({ url: '/api/v1/plants', method: 'POST', body }),
+      invalidatesTags: ['Plants', 'Dashboard'],
+    }),
+    listPlantSuggestions: builder.query<PlantSuggestionsResponse, { status?: string; page: number; per_page: number }>({
+      query: (params) => `/api/v1/plants/suggestions?${toQuery(params)}`,
+      providesTags: ['Plants'],
+    }),
+    reviewPlantSuggestion: builder.mutation<
+      { suggestion: PlantSuggestion },
+      { id: number; action: 'APPROVED' | 'LINKED' | 'REJECTED'; plant_id?: number; note?: string }
+    >({
+      query: ({ id, ...body }) => ({ url: `/api/v1/plants/suggestions/${id}/review`, method: 'POST', body }),
+      invalidatesTags: ['Plants', 'Dashboard'],
     }),
     updatePlant: builder.mutation<unknown, { id: number; body: Record<string, unknown> }>({
       query: ({ id, body }) => ({ url: `/api/v1/plants/${id}`, method: 'PUT', body }),
@@ -965,6 +998,9 @@ export const {
   useListMarketBlockedNurseriesQuery,
   useReviewMarketReportMutation,
   useListCrashReportsQuery,
+  useCreatePlantMutation,
+  useListPlantSuggestionsQuery,
+  useReviewPlantSuggestionMutation,
   useCreateOrderMutation,
   useDeleteOrderMutation,
   useCreateOrderItemMutation,
