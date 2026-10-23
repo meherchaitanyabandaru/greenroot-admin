@@ -43,8 +43,18 @@ export function DispatchStatusForm({
         control={control}
         name="dispatch_status"
         render={({ field, fieldState }) => (
-          <TextField {...field} error={!!fieldState.error} fullWidth helperText={fieldState.error?.message} label="Status" select>
-            {['PENDING', 'DISPATCHED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED'].map((status) => (
+          <TextField
+            {...field}
+            error={!!fieldState.error}
+            fullWidth
+            helperText={fieldState.error?.message ?? "Delivered needs the customer's code or the nursery's reason (in the app)."}
+            label="Status"
+            select
+          >
+            {/* The API refuses DELIVERED here; it is shown only as the current value. */}
+            {['PENDING', 'DISPATCHED', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED']
+              .filter((status) => status !== 'DELIVERED' || initial?.dispatch_status === 'DELIVERED')
+              .map((status) => (
               <MenuItem key={status} value={status}>
                 {status}
               </MenuItem>
