@@ -81,11 +81,21 @@ function osmEmbedUrl(lat: number, lng: number) {
   return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
 }
 
+// Mirrors CanTransition in the API (dispatches/policy.go). DELIVERED is never
+// a status change: it needs the customer's code or the nursery's reason.
 const STATUS_FLOW: Record<string, string[]> = {
-  PENDING: ['IN_TRANSIT', 'CANCELLED'],
-  IN_TRANSIT: ['DELIVERED', 'CANCELLED'],
+  PENDING: ['DISPATCHED', 'CANCELLED'],
+  ACCEPTED: ['DISPATCHED', 'CANCELLED'],
+  DISPATCHED: ['IN_TRANSIT'],
+  IN_TRANSIT: [],
   DELIVERED: [],
   CANCELLED: [],
+};
+
+const CONFIRMATION_LABEL: Record<string, string> = {
+  CUSTOMER_CODE: "Confirmed with the customer's code",
+  CUSTOMER_APP: 'Confirmed by the customer in the app',
+  UNCONFIRMED: 'Not confirmed by the customer (nursery override)',
 };
 
 function AddItemForm({ dispatchId }: { dispatchId: number }) {
@@ -255,6 +265,15 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
     ['Destination', dispatch.destination_address],
     ['Trip Started', dispatch.trip_started_at ? tripStartedAt : null],
     ['Notes', dispatch.notes],
+    // Delivery details, only when the trip has them.
+    ...([
+      ['Outside lorry', dispatch.is_outside_transport
+        ? [dispatch.outside_vehicle_number, dispatch.outside_driver_name, dispatch.outside_driver_mobile].filter(Boolean).join(' · ')
+        : null],
+      ['Delivery confirmation', CONFIRMATION_LABEL[String(dispatch.delivery_confirmation)] ?? null],
+      ['Override reason', dispatch.delivery_override_reason],
+      ['Customer reported a problem', dispatch.delivery_issue],
+    ] as Array<[string, unknown]>).filter(([, value]) => value != null && value !== ''),
   ];
 
   async function handleStatus(newStatus: string) {

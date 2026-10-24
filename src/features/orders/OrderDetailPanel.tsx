@@ -66,10 +66,12 @@ function money(value: unknown) {
 
 // ─── Inline editable item row ─────────────────────────────────────────────────
 function ItemRow({
+  orderId,
   row,
   onUpdated,
   onDeleted,
 }: {
+  orderId: number;
   row: Record<string, unknown>;
   onUpdated: () => void;
   onDeleted: () => void;
@@ -85,6 +87,7 @@ function ItemRow({
     const p = Number(price);
     if (!q || !p) return;
     await updateItem({
+      orderId,
       itemId: Number(row.id),
       body: { plant_id: row.plant_id, size_id: row.size_id, quantity: q, unit_price: p, total_price: q * p },
     }).unwrap();
@@ -94,7 +97,7 @@ function ItemRow({
 
   async function handleDelete() {
     if (!window.confirm('Remove this item from the order?')) return;
-    await deleteItem(Number(row.id)).unwrap();
+    await deleteItem({ orderId, itemId: Number(row.id) }).unwrap();
     onDeleted();
   }
 
@@ -580,6 +583,7 @@ export function OrderDetailPanel({
                   items.map((row, i) => (
                     <ItemRow
                       key={i}
+                      orderId={orderId}
                       row={row}
                       onUpdated={() => itemsQuery.refetch()}
                       onDeleted={() => itemsQuery.refetch()}

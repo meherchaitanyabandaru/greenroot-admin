@@ -676,12 +676,12 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: ({ orderId, body }) => ({ url: `/api/v1/orders/${orderId}/items`, method: 'POST', body }),
       invalidatesTags: ['Orders'],
     }),
-    updateOrderItem: builder.mutation<unknown, { itemId: number; body: Record<string, unknown> }>({
-      query: ({ itemId, body }) => ({ url: `/api/v1/orders/items/${itemId}`, method: 'PUT', body }),
+    updateOrderItem: builder.mutation<unknown, { orderId: number; itemId: number; body: Record<string, unknown> }>({
+      query: ({ orderId, itemId, body }) => ({ url: `/api/v1/orders/${orderId}/items/${itemId}`, method: 'PUT', body }),
       invalidatesTags: ['Orders'],
     }),
-    deleteOrderItem: builder.mutation<unknown, number>({
-      query: (itemId) => ({ url: `/api/v1/orders/items/${itemId}`, method: 'DELETE' }),
+    deleteOrderItem: builder.mutation<unknown, { orderId: number; itemId: number }>({
+      query: ({ orderId, itemId }) => ({ url: `/api/v1/orders/${orderId}/items/${itemId}`, method: 'DELETE' }),
       invalidatesTags: ['Orders'],
     }),
     createManualPayment: builder.mutation<unknown, Record<string, unknown>>({
