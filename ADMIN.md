@@ -44,6 +44,10 @@ npm run test:e2e  # Playwright E2E tests
 npm run format    # Format
 ```
 
+**Browser tests (`tests/e2e`) need the local API on `localhost:8080` with mock OTP (dev only).** They're not in CI, which has no API. Run them before a release:
+- `admin-pages.spec.ts`: signs in and opens all 31 pages; fails on any API 4xx/5xx or page crash.
+- `admin-actions.spec.ts`: approves a new nursery application, suspends and reinstates a user, and shows a disputed delivery's confirmation, override reason and reported problem. Each test creates its own accounts through the API and checks the result through the API.
+
 ---
 
 ## Module Status
