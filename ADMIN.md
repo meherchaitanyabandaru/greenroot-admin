@@ -37,7 +37,8 @@ React 18 · TypeScript · Vite · Material UI · Redux Toolkit · RTK Query · R
 
 ```bash
 npm run dev       # Dev server
-npm run build     # Production build
+npm run build     # Build (CI compile check; API URL defaults to localhost)
+npm run build:release  # What gets deployed: needs VITE_API_BASE_URL=https://api.<domain>
 npm run lint      # Lint
 npm run test      # Unit tests
 npm run test:e2e  # Playwright E2E tests
@@ -45,8 +46,18 @@ npm run format    # Format
 ```
 
 **Browser tests (`tests/e2e`) need the local API on `localhost:8080` with mock OTP (dev only).** They're not in CI, which has no API. Run them before a release:
-- `admin-pages.spec.ts`: signs in and opens all 31 pages; fails on any API 4xx/5xx or page crash.
+- `admin-pages.spec.ts`: signs in and opens all 32 pages; fails on any API 4xx/5xx or page crash.
 - `admin-actions.spec.ts`: approves a new nursery application, suspends and reinstates a user, and shows a disputed delivery's confirmation, override reason and reported problem. Each test creates its own accounts through the API and checks the result through the API.
+
+**Production security.** Tokens live in `sessionStorage` (gone with the tab;
+admin sessions also expire after 12 h on the API). The dashboard is served by
+CloudFront with a strict Content-Security-Policy, HSTS and frame denial
+(greenroot-infra `deploy/terraform/cdn.tf`). Admin accounts can be limited to
+office/VPN networks with `ADMIN_ALLOWED_CIDRS` on the API.
+
+**Payment Issues** (`/payment-issues`): Razorpay payments the API could not apply
+and refunds Razorpay failed. Settle each in the Razorpay dashboard, then resolve
+it with a note. An email alarm fires when one appears.
 
 ---
 

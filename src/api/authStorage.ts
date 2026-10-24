@@ -5,8 +5,31 @@ export type StoredAuth = {
 
 const key = 'greenroot.admin.auth';
 
+// Admin tokens live in sessionStorage: they end with the tab, are never
+// shared with other tabs or kept on disk across browser restarts, and the API
+// caps admin sessions at 12 hours anyway. (The CDN's Content-Security-Policy
+// allows only the app's own scripts, which is what keeps them away from
+// injected code.) Older builds kept them in localStorage: removed on sight.
+function store(): Storage {
+  return window.sessionStorage;
+}
+
+function dropLegacy() {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    /* storage blocked: nothing to drop */
+  }
+}
+
 export function getStoredAuth(): StoredAuth | null {
-  const raw = window.localStorage.getItem(key);
+  dropLegacy();
+  let raw: string | null = null;
+  try {
+    raw = store().getItem(key);
+  } catch {
+    return null;
+  }
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as Partial<StoredAuth>;
@@ -19,9 +42,18 @@ export function getStoredAuth(): StoredAuth | null {
 }
 
 export function setStoredAuth(auth: StoredAuth) {
-  window.localStorage.setItem(key, JSON.stringify(auth));
+  try {
+    store().setItem(key, JSON.stringify(auth));
+  } catch {
+    /* storage blocked: the session lasts until reload */
+  }
 }
 
 export function clearStoredAuth() {
-  window.localStorage.removeItem(key);
+  dropLegacy();
+  try {
+    store().removeItem(key);
+  } catch {
+    /* nothing stored */
+  }
 }

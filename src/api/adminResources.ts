@@ -351,6 +351,24 @@ export type PlantSuggestion = {
 };
 export type PlantSuggestionsResponse = { suggestions: PlantSuggestion[]; total: number };
 
+/** Razorpay money that needs a manual action (API payment_issues). */
+export type PaymentIssue = {
+  id: number;
+  issue_type: 'PAID_NOT_APPLIED' | 'REFUND_FAILED';
+  provider: string;
+  provider_order_id?: string;
+  provider_payment_id: string;
+  provider_refund_id?: string;
+  user_id?: number;
+  amount?: number;
+  reason: string;
+  status: 'OPEN' | 'RESOLVED';
+  resolution_note?: string;
+  resolved_by_user_id?: number;
+  resolved_at?: string;
+  created_at: string;
+};
+
 export type PlantCareGuideResponse = {
   care_guide: Record<string, unknown>;
 };
@@ -480,6 +498,14 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     listPlantSuggestions: builder.query<PlantSuggestionsResponse, { status?: string; page: number; per_page: number }>({
       query: (params) => `/api/v1/plants/suggestions?${toQuery(params)}`,
       providesTags: ['Plants'],
+    }),
+    listPaymentIssues: builder.query<{ issues: PaymentIssue[] }, { status?: string }>({
+      query: ({ status }) => `/api/v1/payment-issues${status ? `?status=${encodeURIComponent(status)}` : ''}`,
+      providesTags: ['Payments'],
+    }),
+    resolvePaymentIssue: builder.mutation<{ issue: PaymentIssue }, { id: number; note: string }>({
+      query: ({ id, note }) => ({ url: `/api/v1/payment-issues/${id}/resolve`, method: 'POST', body: { note } }),
+      invalidatesTags: ['Payments', 'Dashboard'],
     }),
     reviewPlantSuggestion: builder.mutation<
       { suggestion: PlantSuggestion },
@@ -1001,6 +1027,8 @@ export const {
   useCreatePlantMutation,
   useListPlantSuggestionsQuery,
   useReviewPlantSuggestionMutation,
+  useListPaymentIssuesQuery,
+  useResolvePaymentIssueMutation,
   useCreateOrderMutation,
   useDeleteOrderMutation,
   useCreateOrderItemMutation,
