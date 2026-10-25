@@ -1,4 +1,5 @@
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import CategoryIcon from '@mui/icons-material/Category';
@@ -108,6 +109,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Active Subscriptions', path: '/subscriptions', icon: AutorenewIcon },
       { label: 'Promo Offers', path: '/subscription-promos', icon: LocalOfferIcon },
       { label: 'Payments', path: '/payments', icon: PaymentsIcon },
+      { label: 'Payment Issues', path: '/payment-issues', icon: ReportProblemOutlinedIcon },
     ],
   },
   {

@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "build:release": "tsc -b && vite build --mode release"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

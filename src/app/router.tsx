@@ -32,6 +32,9 @@ const MarketAdsPage = lazy(() =>
 const CrashReportsPage = lazy(() =>
   import('../features/crashes/CrashReportsPage').then((m) => ({ default: m.CrashReportsPage })),
 );
+const PaymentIssuesPage = lazy(() =>
+  import('../features/payments/PaymentIssuesPage').then((m) => ({ default: m.PaymentIssuesPage })),
+);
 const PlantSuggestionsPage = lazy(() =>
   import('../features/plants/PlantSuggestionsPage').then((m) => ({ default: m.PlantSuggestionsPage })),
 );
@@ -94,6 +97,7 @@ export function AppRouter() {
             <Route path="/plants" element={<BotanicalNamesPage />} />
             <Route path="/plants/categories" element={<PlantFamiliesPage />} />
             <Route path="/plants/suggestions" element={<PlantSuggestionsPage />} />
+            <Route path="/payment-issues" element={<PaymentIssuesPage />} />
             <Route path="/market" element={<Navigate replace to="/market/review" />} />
             <Route path="/market/review" element={<MarketReviewPage />} />
             <Route path="/market/ads" element={<MarketAdsPage />} />

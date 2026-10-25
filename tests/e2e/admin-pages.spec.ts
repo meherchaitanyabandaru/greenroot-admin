@@ -6,7 +6,7 @@ const PAGES = [
   '/', '/users', '/drivers', '/nurseries/applications', '/nurseries', '/top-items',
   '/plants', '/plants/categories', '/plants/suggestions', '/market/review', '/market/ads',
   '/quotations', '/orders', '/dispatches', '/sourcing-network', '/notifications', '/tracking',
-  '/notifications/templates', '/sms', '/email', '/payments', '/subscriptions',
+  '/notifications/templates', '/sms', '/email', '/payments', '/payment-issues', '/subscriptions',
   '/subscription-plans', '/subscription-promos', '/vehicles', '/attachments',
   '/notifications/devices', '/audit', '/security-logs', '/crash-reports', '/settings',
 ];
