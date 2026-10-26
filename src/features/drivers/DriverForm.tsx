@@ -44,20 +44,24 @@ export function DriverForm({
 
   return (
     <Stack component="form" onSubmit={handleSubmit(submit)} spacing={2}>
-      <Controller
-        control={control}
-        name="user_id"
-        render={({ field, fieldState }) => (
-          <TextField
-            {...field}
-            error={!!fieldState.error}
-            fullWidth
-            helperText={fieldState.error?.message}
-            label="User ID"
-            type="number"
-          />
-        )}
-      />
+      {/* Picking the account is for a new driver only: re-pointing an existing
+          driver at another user is not an edit. */}
+      {!initial && (
+        <Controller
+          control={control}
+          name="user_id"
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              error={!!fieldState.error}
+              fullWidth
+              helperText={fieldState.error?.message}
+              label="User ID"
+              type="number"
+            />
+          )}
+        />
+      )}
       <Controller
         control={control}
         name="license_number"

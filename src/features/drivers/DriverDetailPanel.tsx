@@ -27,6 +27,7 @@ import { useToast } from '../../components/feedback/toastContext';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
 import { normalizeApiError } from '../../utils/apiError';
+import { formatDate, toLabel } from '../../utils/labels';
 import { DriverForm } from './DriverForm';
 
 function text(value: unknown) {
@@ -92,9 +93,9 @@ export function DriverDetailPanel({ driverId }: { driverId: number }) {
     ['Mobile', driver.mobile],
     ['License No.', driver.license_number],
     ['License Expiry', expiry, isExpiryWarning(expiry)],
+    ['Vehicle', [driver.vehicle_number, driver.vehicle_type ? toLabel(String(driver.vehicle_type)) : ''].filter(Boolean).join(' · ')],
     ['Emergency Contact', driver.emergency_contact],
-    ['User ID', driver.user_id],
-    ['Created', driver.created_at],
+    ['Applied', formatDate(driver.created_at)],
   ];
 
   async function handleUpdate(values: Record<string, unknown>) {
