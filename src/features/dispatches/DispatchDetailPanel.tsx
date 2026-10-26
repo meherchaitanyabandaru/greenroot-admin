@@ -26,7 +26,6 @@ import {
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import MapIcon from '@mui/icons-material/Map';
 import { useState } from 'react';
 import {
@@ -41,6 +40,7 @@ import { LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
 import { useToast } from '../../components/feedback/toastContext';
 import { normalizeApiError } from '../../utils/apiError';
+import { formatDate } from '../../utils/labels';
 
 function text(value: unknown) {
   if (value === null || value === undefined || value === '') return '-';
@@ -251,19 +251,16 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
   const trackingPoints: any[] = trackingQuery.data?.tracking ?? [];
   const nextStatuses: string[] = STATUS_FLOW[String(dispatch.dispatch_status)] ?? [];
 
-  const tripStartedAt: string | null = dispatch.trip_started_at
-    ? new Date(String(dispatch.trip_started_at)).toLocaleString()
-    : null;
+  const canAddItems = dispatch.capabilities?.can_add_items === true;
 
   const infoItems: Array<[string, unknown]> = [
     ['Order', dispatch.order_number],
     ['Dispatch No.', dispatch.dispatch_number],
     ['Vehicle', dispatch.vehicle_number],
-    ['Driver ID', dispatch.driver_id],
+    ['Driver', [dispatch.driver_name, dispatch.driver_mobile].filter(Boolean).join(' · ') || null],
     ['Dispatch Date', dispatch.dispatch_date],
-    ['Delivery Date', dispatch.delivery_date],
+    ['Delivery Date', dispatch.delivery_date ? formatDate(dispatch.delivery_date) : null],
     ['Destination', dispatch.destination_address],
-    ['Trip Started', dispatch.trip_started_at ? tripStartedAt : null],
     ['Notes', dispatch.notes],
     // Delivery details, only when the trip has them.
     ...([
@@ -300,17 +297,6 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
       {statusError && <Alert severity="error">{statusError}</Alert>}
       {updateState.isError && <Alert severity="error">{normalizeApiError(updateState.error).message}</Alert>}
 
-      {/* Trip already started warning */}
-      {tripStartedAt && (
-        <Alert
-          severity="warning"
-          icon={<WarningAmberIcon />}
-          sx={{ fontWeight: 600 }}
-        >
-          Trip already started on {tripStartedAt} — status changes are restricted.
-        </Alert>
-      )}
-
       <Paper sx={{ p: 2 }} variant="outlined">
         <Stack spacing={2}>
           <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -343,18 +329,18 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
           </Stack>
 
           {/* Tracking UUID row */}
-          {dispatch.tracking_uuid && (
+          {dispatch.trip_uuid && (
             <Box sx={{ bgcolor: 'grey.50', borderRadius: 1, px: 1.5, py: 1 }}>
               <Stack direction="row" alignItems="center" spacing={1}>
                 <QrCode2Icon fontSize="small" color="action" />
                 <Box flex={1}>
                   <Typography variant="caption" color="text.secondary">Trip Tracking UUID</Typography>
                   <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: 12, wordBreak: 'break-all' }}>
-                    {dispatch.tracking_uuid}
+                    {dispatch.trip_uuid}
                   </Typography>
                 </Box>
                 <Tooltip title="Copy tracking UUID">
-                  <IconButton size="small" onClick={() => copyToClipboard(String(dispatch.tracking_uuid), 'Tracking UUID')}>
+                  <IconButton size="small" onClick={() => copyToClipboard(String(dispatch.trip_uuid), 'Tracking UUID')}>
                     <ContentCopyIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
@@ -362,7 +348,7 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
             </Box>
           )}
 
-          {!dispatch.tracking_uuid && (
+          {!dispatch.trip_uuid && (
             <Chip
               label="No tracking UUID linked yet"
               size="small"
@@ -405,19 +391,20 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
       </Paper>
 
       <Box>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-          <Tab label="Add Items" />
-          <Tab label="Tracking" />
+        {/* Items can be added only while the trip is open. */}
+        <Tabs value={canAddItems ? tab : 1} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+          {canAddItems && <Tab label="Add Items" value={0} />}
+          <Tab label="Tracking" value={1} />
         </Tabs>
 
-        {tab === 0 && (
+        {canAddItems && tab === 0 && (
           <Paper variant="outlined" sx={{ p: 2 }}>
             <Typography variant="subtitle2" sx={{ mb: 1.5 }}>Add Item to Dispatch</Typography>
             <AddItemForm dispatchId={dispatchId} />
           </Paper>
         )}
 
-        {tab === 1 && (
+        {(tab === 1 || !canAddItems) && (
           <Stack spacing={1.5}>
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={1.5}>
@@ -454,7 +441,7 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
                       const link = mapsLink(pt.latitude, pt.longitude);
                       return (
                         <TableRow key={i}>
-                          <TableCell>{text(pt.tracked_at)}</TableCell>
+                          <TableCell>{formatAgo(pt.tracked_at)}</TableCell>
                           <TableCell>{text(pt.latitude)}</TableCell>
                           <TableCell>{text(pt.longitude)}</TableCell>
                           <TableCell>{text(pt.notes)}</TableCell>

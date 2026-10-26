@@ -68,11 +68,13 @@ function money(value: unknown) {
 function ItemRow({
   orderId,
   row,
+  editable,
   onUpdated,
   onDeleted,
 }: {
   orderId: number;
   row: Record<string, unknown>;
+  editable: boolean;
   onUpdated: () => void;
   onDeleted: () => void;
 }) {
@@ -162,11 +164,18 @@ function ItemRow({
     <TableRow>
       <TableCell>{text(row.common_name ?? row.scientific_name)}</TableCell>
       <TableCell>{text(row.size_name ?? row.size_code)}</TableCell>
-      <TableCell>{text(row.quantity)}</TableCell>
-      <TableCell>{money(row.unit_price)}</TableCell>
-      <TableCell>{money(row.total_price)}</TableCell>
+      {/* After loading, a row is billed on what was loaded (orders.md). */}
       <TableCell>
-        <Stack direction="row" spacing={0.5}>
+        {row.loaded_quantity != null && Number(row.loaded_quantity) !== Number(row.quantity)
+          ? `${text(row.loaded_quantity)} of ${text(row.quantity)}`
+          : text(row.quantity)}
+      </TableCell>
+      <TableCell>{money(row.unit_price)}</TableCell>
+      <TableCell>
+        {money(row.loaded_quantity != null ? Number(row.loaded_quantity) * Number(row.unit_price) : row.total_price)}
+      </TableCell>
+      <TableCell>
+        {editable && <Stack direction="row" spacing={0.5}>
           <Tooltip title="Edit qty / price">
             <IconButton onClick={() => setEditing(true)} size="small">
               <EditIcon fontSize="small" />
@@ -188,7 +197,7 @@ function ItemRow({
               </IconButton>
             </span>
           </Tooltip>
-        </Stack>
+        </Stack>}
       </TableCell>
     </TableRow>
   );
@@ -585,6 +594,7 @@ export function OrderDetailPanel({
                       key={i}
                       orderId={orderId}
                       row={row}
+                      editable={['PENDING', 'CONFIRMED', 'LOADING'].includes(String(order.order_status))}
                       onUpdated={() => itemsQuery.refetch()}
                       onDeleted={() => itemsQuery.refetch()}
                     />
