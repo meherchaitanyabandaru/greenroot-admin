@@ -27,6 +27,7 @@ import {
 } from '../../api/adminResources';
 
 const PLAN_OPTIONS = ['BASIC', 'GROWTH', 'ENTERPRISE'];
+const PLAN_LABEL: Record<string, string> = { BASIC: 'Silver', GROWTH: 'Gold', ENTERPRISE: 'Platinum' };
 const CYCLE_OPTIONS = ['MONTHLY', 'QUARTERLY', 'SIX_MONTH', 'YEARLY'];
 const CYCLE_LABEL: Record<string, string> = { MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', SIX_MONTH: 'Half-yearly', YEARLY: 'Yearly' };
 
@@ -221,7 +222,7 @@ export function PromoCreateDrawer({ open, promo, onClose }: Props) {
             <FormControlLabel
               key={p}
               control={<Checkbox checked={plans.includes(p)} onChange={() => togglePlan(p)} size="small" />}
-              label={p}
+              label={PLAN_LABEL[p]}
             />
           ))}
         </FormGroup>

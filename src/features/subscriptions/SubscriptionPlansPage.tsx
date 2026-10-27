@@ -26,9 +26,10 @@ import { FitTableContainer } from '../../components/data-table/FitTableContainer
 
 const PLAN_META: Record<string, { accent: string; headerBg: string }> = {
   TRIAL:      { accent: '#16a34a', headerBg: '#f0fdf4' },
-  BASIC:      { accent: '#0d9488', headerBg: '#f0fdfa' },
-  GROWTH:     { accent: '#2563eb', headerBg: '#eff6ff' },
-  ENTERPRISE: { accent: '#7c3aed', headerBg: '#faf5ff' },
+  // Silver / Gold / Platinum
+  BASIC:      { accent: '#64748b', headerBg: '#f1f5f9' },
+  GROWTH:     { accent: '#b45309', headerBg: '#fef3c7' },
+  ENTERPRISE: { accent: '#5b4bc4', headerBg: '#ede9fe' },
 };
 
 function fmt(value?: number | null) {
@@ -49,8 +50,7 @@ const CYCLE_ROWS = [
 const FEATURE_ROWS: { label: string; key: string; type: 'bool' | 'text' | 'managers' | 'daily' }[] = [
   { label: 'Unlimited Orders',       key: 'unlimited_orders',      type: 'bool' },
   { label: 'Unlimited Quotations',   key: 'unlimited_quotations',  type: 'bool' },
-  { label: 'Unlimited Customers',    key: 'unlimited_customers',   type: 'bool' },
-  { label: 'Unlimited Trips',        key: 'unlimited_trips',       type: 'bool' },
+  { label: 'Local Market Ads',       key: 'local_market_ads',      type: 'bool' },
   { label: 'Managers per Nursery',   key: 'max_managers',          type: 'managers' },
   { label: 'Local Market Posts/Day', key: 'market_posts_per_day',  type: 'daily' },
   { label: 'Analytics',              key: 'analytics',             type: 'text' },

@@ -27,6 +27,7 @@ type Props = {
 type FeaturesState = {
   unlimited_orders: boolean;
   unlimited_quotations: boolean;
+  local_market_ads: boolean;
   support: string;
   analytics: string;
   market_posts_per_day: string;
@@ -37,6 +38,7 @@ function parseFeaturesState(features?: Record<string, unknown>): FeaturesState {
   return {
     unlimited_orders: Boolean(features?.unlimited_orders ?? true),
     unlimited_quotations: Boolean(features?.unlimited_quotations ?? true),
+    local_market_ads: Boolean(features?.local_market_ads ?? true),
     support: String(features?.support ?? 'community'),
     analytics: String(features?.analytics ?? 'basic'),
     market_posts_per_day: mpd != null ? String(mpd) : '',
@@ -82,6 +84,7 @@ export function PlanEditDrawer({ plan, open, onClose }: Props) {
           ...kept,
           unlimited_orders: features.unlimited_orders,
           unlimited_quotations: features.unlimited_quotations,
+          local_market_ads: features.local_market_ads,
           support: features.support,
           analytics: features.analytics,
           billing_cycles: billingCycles,
@@ -212,6 +215,16 @@ export function PlanEditDrawer({ plan, open, onClose }: Props) {
               />
             }
             label="Unlimited Quotations"
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={features.local_market_ads}
+                onChange={(e) => setFeatures((f) => ({ ...f, local_market_ads: e.target.checked }))}
+                size="small"
+              />
+            }
+            label="Local Market Ads"
           />
         </Stack>
 
