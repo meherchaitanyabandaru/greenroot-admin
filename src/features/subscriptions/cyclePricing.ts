@@ -11,3 +11,13 @@ export const CYCLES = [
 export function cyclePrice(monthly: number, months: number, discount: number) {
   return Math.round((Math.round(monthly * 100) * months * (100 - discount)) / 100) / 100;
 }
+
+/** What admins call the plans (API codes stay BASIC / GROWTH / ENTERPRISE). */
+export const PLAN_LABEL: Record<string, string> = {
+  TRIAL: 'Trial',
+  BASIC: 'Silver',
+  GROWTH: 'Gold',
+  ENTERPRISE: 'Platinum',
+};
+
+export const CYCLE_LABEL: Record<string, string> = Object.fromEntries(CYCLES.map((c) => [c.code, c.label]));

@@ -17,6 +17,16 @@ import {
   useCreateSubscriptionMutation,
 } from '../../api/adminResources';
 import { normalizeApiError } from '../../utils/apiError';
+import { CYCLE_LABEL } from './cyclePricing';
+
+// Money received outside the app (as in Record Offline Payment).
+const OFFLINE_METHODS: [string, string][] = [
+  ['UPI', 'UPI (direct)'],
+  ['BANK_TRANSFER', 'Bank transfer'],
+  ['NET_BANKING', 'Net banking'],
+  ['CASH', 'Cash'],
+  ['CHEQUE', 'Cheque'],
+];
 
 interface Props {
   open: boolean;
@@ -31,9 +41,14 @@ export function SubscriptionCreateDrawer({ open, onClose, onCreated }: Props) {
   const [userId, setUserId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [autoRenew, setAutoRenew] = useState(false);
+  const [cycle, setCycle] = useState('MONTHLY');
+  const [method, setMethod] = useState('BANK_TRANSFER');
   const [error, setError] = useState('');
 
   const plans = plansQuery.data?.plans ?? [];
+  const plan = plans.find((p) => String(p.id) === planId);
+  const isTrial = plan?.plan_code === 'TRIAL' || plan?.plan_code === 'FREE';
+  const price = plan?.cycle_prices?.find((c) => c.billing_cycle === cycle);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,6 +63,9 @@ export function SubscriptionCreateDrawer({ open, onClose, onCreated }: Props) {
         user_id: Number(userId),
         start_date: startDate,
         auto_renew: autoRenew,
+        // Without a cycle the API would bill six months.
+        billing_cycle: isTrial ? 'TRIAL' : cycle,
+        ...(isTrial ? {} : { payment_method: method }),
       }).unwrap();
       setPlanId('');
       setUserId('');
@@ -80,12 +98,48 @@ export function SubscriptionCreateDrawer({ open, onClose, onCreated }: Props) {
             onChange={(e) => setPlanId(e.target.value)}
             required
           >
-            {plans.map((plan) => (
-              <MenuItem key={String(plan.id)} value={String(plan.id)}>
-                {String(plan.plan_name ?? plan.plan_code)} — ₹{String(plan.monthly_price ?? '?')}/mo
-              </MenuItem>
-            ))}
+            {plans
+              .filter((p) => p.plan_code !== 'FREE')
+              .map((p) => (
+                <MenuItem key={String(p.id)} value={String(p.id)}>
+                  {p.plan_name}
+                  {p.monthly_price ? ` — ₹${p.monthly_price}/mo` : ' — free'}
+                </MenuItem>
+              ))}
           </TextField>
+
+          {plan && !isTrial && (
+            <>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="Billing period"
+                value={cycle}
+                onChange={(e) => setCycle(e.target.value)}
+                helperText={price ? `Amount recorded as paid: ₹${price.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : undefined}
+              >
+                {(plan.cycle_prices ?? []).map((c) => (
+                  <MenuItem key={c.billing_cycle} value={c.billing_cycle}>
+                    {CYCLE_LABEL[c.billing_cycle]} — ₹{c.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    {c.discount_percent > 0 ? ` (${c.discount_percent}% off)` : ''}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="Received via"
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+              >
+                {OFFLINE_METHODS.map(([value, label]) => (
+                  <MenuItem key={value} value={value}>{label}</MenuItem>
+                ))}
+              </TextField>
+            </>
+          )}
 
           <TextField
             fullWidth

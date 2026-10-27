@@ -31,6 +31,7 @@ import {
   type SubscriptionPromo,
 } from '../../api/adminResources';
 import { PromoCreateDrawer } from './PromoCreateDrawer';
+import { CYCLE_LABEL, PLAN_LABEL } from './cyclePricing';
 import { FitTableContainer } from '../../components/data-table/FitTableContainer';
 
 function discountLabel(promo: SubscriptionPromo) {
@@ -202,14 +203,14 @@ export function SubscriptionPromosPage() {
                         <Typography variant="caption" color="text.secondary">All plans</Typography>
                       ) : (
                         promo.applicable_plans.map((p) => (
-                          <Chip key={p} label={p} size="small" variant="outlined" sx={{ fontSize: 10, height: 18 }} />
+                          <Chip key={p} label={PLAN_LABEL[p] ?? p} size="small" variant="outlined" sx={{ fontSize: 10, height: 18 }} />
                         ))
                       )}
                       {promo.applicable_cycles.length === 0 ? (
                         <Typography variant="caption" color="text.secondary">All cycles</Typography>
                       ) : (
                         promo.applicable_cycles.map((c) => (
-                          <Chip key={c} label={c} size="small" variant="outlined" color="secondary" sx={{ fontSize: 10, height: 18 }} />
+                          <Chip key={c} label={CYCLE_LABEL[c] ?? c} size="small" variant="outlined" color="secondary" sx={{ fontSize: 10, height: 18 }} />
                         ))
                       )}
                     </Stack>
