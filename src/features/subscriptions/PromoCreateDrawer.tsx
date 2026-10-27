@@ -26,8 +26,9 @@ import {
   type SubscriptionPromo,
 } from '../../api/adminResources';
 
-const PLAN_OPTIONS = ['TRIAL', 'GROWTH', 'ENTERPRISE'];
-const CYCLE_OPTIONS = ['SIX_MONTH', 'YEARLY'];
+const PLAN_OPTIONS = ['BASIC', 'GROWTH', 'ENTERPRISE'];
+const CYCLE_OPTIONS = ['MONTHLY', 'QUARTERLY', 'SIX_MONTH', 'YEARLY'];
+const CYCLE_LABEL: Record<string, string> = { MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', SIX_MONTH: 'Half-yearly', YEARLY: 'Yearly' };
 
 type Props = {
   open: boolean;
@@ -231,7 +232,7 @@ export function PromoCreateDrawer({ open, promo, onClose }: Props) {
             <FormControlLabel
               key={c}
               control={<Checkbox checked={cycles.includes(c)} onChange={() => toggleCycle(c)} size="small" />}
-              label={c === 'SIX_MONTH' ? '6 Months' : 'Yearly'}
+              label={CYCLE_LABEL[c]}
             />
           ))}
         </FormGroup>

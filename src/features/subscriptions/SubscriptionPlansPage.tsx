@@ -26,24 +26,29 @@ import { FitTableContainer } from '../../components/data-table/FitTableContainer
 
 const PLAN_META: Record<string, { accent: string; headerBg: string }> = {
   TRIAL:      { accent: '#16a34a', headerBg: '#f0fdf4' },
+  BASIC:      { accent: '#0d9488', headerBg: '#f0fdfa' },
   GROWTH:     { accent: '#2563eb', headerBg: '#eff6ff' },
   ENTERPRISE: { accent: '#7c3aed', headerBg: '#faf5ff' },
 };
 
 function fmt(value?: number | null) {
   if (!value) return '₹0';
-  return `₹${value.toLocaleString('en-IN')}`;
+  return `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 }
 
-function mrpDiscount(actual: number | undefined, mrp: number | undefined): number | null {
-  if (!actual || !mrp || mrp <= actual) return null;
-  return Math.round(((mrp - actual) / mrp) * 100);
-}
+const CYCLE_ROWS = [
+  { code: 'MONTHLY', label: 'Monthly' },
+  { code: 'QUARTERLY', label: 'Quarterly' },
+  { code: 'SIX_MONTH', label: 'Half-yearly' },
+  { code: 'YEARLY', label: 'Yearly' },
+] as const;
 
 // All feature rows to compare across plans
 const FEATURE_ROWS: { label: string; key: string; type: 'bool' | 'text' | 'managers' | 'daily' }[] = [
   { label: 'Unlimited Orders',       key: 'unlimited_orders',      type: 'bool' },
   { label: 'Unlimited Quotations',   key: 'unlimited_quotations',  type: 'bool' },
+  { label: 'Unlimited Customers',    key: 'unlimited_customers',   type: 'bool' },
+  { label: 'Unlimited Trips',        key: 'unlimited_trips',       type: 'bool' },
   { label: 'Managers per Nursery',   key: 'max_managers',          type: 'managers' },
   { label: 'Local Market Posts/Day', key: 'market_posts_per_day',  type: 'daily' },
   { label: 'Analytics',              key: 'analytics',             type: 'text' },
@@ -174,73 +179,37 @@ export function SubscriptionPlansPage() {
               ))}
             </TableRow>
 
-            {/* 6-Month Price */}
-            <TableRow sx={{ bgcolor: '#fafafa' }}>
-              <TableCell sx={{ borderRight: '1px solid', borderColor: 'divider', py: 2 }}>
-                <Typography variant="body2" fontWeight={700} color="text.secondary">6-Month Price</Typography>
-              </TableCell>
-              {plans.map((plan) => {
-                const meta = PLAN_META[plan.plan_code] ?? { accent: '#64748b', headerBg: '#f8fafc' };
-                const mrp = plan.features?.mrp_six_month as number | undefined;
-                const disc = mrpDiscount(plan.six_month_price, mrp);
-                return (
-                  <TableCell key={plan.id} align="center" sx={{ borderRight: '1px solid', borderColor: 'divider', py: 2 }}>
-                    <Stack alignItems="center" gap={0.25}>
-                      {mrp && disc && (
-                        <Typography variant="caption" sx={{ textDecoration: 'line-through', color: '#94a3b8' }}>
-                          {fmt(mrp)}
-                        </Typography>
-                      )}
-                      <Typography variant="h6" fontWeight={800} color={meta.accent}>
-                        {plan.six_month_price ? fmt(plan.six_month_price) : '₹0'}
-                      </Typography>
-                      {disc ? (
-                        <Chip label={`${disc}% off`} size="small"
-                          sx={{ bgcolor: '#fef9c3', color: '#854d0e', fontWeight: 800, fontSize: 10, height: 18 }} />
-                      ) : !plan.six_month_price ? (
-                        <Typography variant="caption" color="success.main" fontWeight={600}>Free</Typography>
+            {/* Price per cycle, as the API charges it */}
+            {CYCLE_ROWS.map((row, i) => (
+              <TableRow key={row.code} sx={{ bgcolor: i % 2 === 0 ? '#fafafa' : '#fff' }}>
+                <TableCell sx={{ borderRight: '1px solid', borderColor: 'divider', py: 1.5 }}>
+                  <Typography variant="body2" fontWeight={700} color="text.secondary">{row.label}</Typography>
+                </TableCell>
+                {plans.map((plan) => {
+                  const meta = PLAN_META[plan.plan_code] ?? { accent: '#64748b', headerBg: '#f8fafc' };
+                  const price = plan.cycle_prices?.find((c) => c.billing_cycle === row.code);
+                  return (
+                    <TableCell key={plan.id} align="center" sx={{ borderRight: '1px solid', borderColor: 'divider', py: 1.5 }}>
+                      {price ? (
+                        <Stack alignItems="center" gap={0.25}>
+                          <Typography variant="subtitle1" fontWeight={800} color={meta.accent}>{fmt(price.amount)}</Typography>
+                          {price.discount_percent > 0 ? (
+                            <Chip label={`${price.discount_percent}% off · ${fmt(Math.round(price.per_month))}/mo`} size="small"
+                              sx={{ bgcolor: '#dcfce7', color: '#15803d', fontWeight: 700, fontSize: 10, height: 18 }} />
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">per month</Typography>
+                          )}
+                        </Stack>
+                      ) : row.code === 'MONTHLY' ? (
+                        <Typography variant="body2" color="success.main" fontWeight={600}>Free</Typography>
                       ) : (
-                        <Typography variant="caption" color="text.secondary">per 6 months</Typography>
+                        <Typography variant="body2" color="text.disabled">—</Typography>
                       )}
-                    </Stack>
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-
-            {/* Yearly Price */}
-            <TableRow>
-              <TableCell sx={{ borderRight: '1px solid', borderColor: 'divider', py: 2 }}>
-                <Typography variant="body2" fontWeight={700} color="text.secondary">Yearly Price</Typography>
-              </TableCell>
-              {plans.map((plan) => {
-                const meta = PLAN_META[plan.plan_code] ?? { accent: '#64748b', headerBg: '#f8fafc' };
-                const mrp = plan.features?.mrp_yearly as number | undefined;
-                const disc = mrpDiscount(plan.yearly_price, mrp);
-                return (
-                  <TableCell key={plan.id} align="center" sx={{ borderRight: '1px solid', borderColor: 'divider', py: 2 }}>
-                    <Stack alignItems="center" gap={0.25}>
-                      {mrp && disc && (
-                        <Typography variant="caption" sx={{ textDecoration: 'line-through', color: '#94a3b8' }}>
-                          {fmt(mrp)}
-                        </Typography>
-                      )}
-                      <Typography variant="h6" fontWeight={800} color={meta.accent}>
-                        {plan.yearly_price ? fmt(plan.yearly_price) : '₹0'}
-                      </Typography>
-                      {disc ? (
-                        <Chip label={`${disc}% off`} size="small"
-                          sx={{ bgcolor: '#dcfce7', color: '#15803d', fontWeight: 800, fontSize: 10, height: 18 }} />
-                      ) : !plan.yearly_price ? (
-                        <Typography variant="caption" color="success.main" fontWeight={600}>Free</Typography>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">per year</Typography>
-                      )}
-                    </Stack>
-                  </TableCell>
-                );
-              })}
-            </TableRow>
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            ))}
 
             {/* Divider label */}
             <TableRow>

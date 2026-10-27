@@ -47,7 +47,7 @@ import {
   useRenewSubscriptionMutation,
   useUpdateSubscriptionStatusMutation,
 } from '../../api/adminResources';
-import type { SubscriptionPlan } from '../../api/adminResources';
+import type { CyclePrice, SubscriptionPlan } from '../../api/adminResources';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
@@ -96,15 +96,16 @@ function RenewDialog({ open, onClose, onSubmit, loading, plans, currentPlanId, e
   endDate: unknown;
 }) {
   // Only paid plans: "renewing" the free trial recorded nothing and just stacked free time.
-  const paidPlans = plans.filter((p) => p.is_active && Number(p.six_month_price ?? 0) > 0);
-  const [cycle, setCycle] = useState<'SIX_MONTH' | 'YEARLY'>('SIX_MONTH');
+  const paidPlans = plans.filter((p) => p.is_active && (p.cycle_prices?.length ?? 0) > 0);
+  const [cycle, setCycle] = useState<CyclePrice['billing_cycle']>('MONTHLY');
   const [method, setMethod] = useState('BANK_TRANSFER');
   const [planId, setPlanId] = useState<number>(
     paidPlans.some((p) => p.id === currentPlanId) ? currentPlanId : (paidPlans[0]?.id ?? 0),
   );
   const plan = paidPlans.find((p) => p.id === planId);
-  const price = cycle === 'YEARLY' ? plan?.yearly_price : plan?.six_month_price;
-  const period = renewalPeriod(endDate, cycle);
+  const cyclePrice = plan?.cycle_prices?.find((c) => c.billing_cycle === cycle);
+  const price = cyclePrice?.amount;
+  const period = renewalPeriod(endDate, cyclePrice?.months ?? 1);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -137,20 +138,18 @@ function RenewDialog({ open, onClose, onSubmit, loading, plans, currentPlanId, e
               value={cycle}
               onChange={(_, v) => v && setCycle(v)}
               size="small"
-              sx={{ '& .MuiToggleButton-root': { textTransform: 'none', py: 1 } }}
+              sx={{ flexWrap: 'wrap', '& .MuiToggleButton-root': { textTransform: 'none', py: 1, flex: '1 0 45%' } }}
             >
-              <ToggleButton value="SIX_MONTH">
-                <Stack spacing={0} alignItems="center">
-                  <Typography variant="body2" fontWeight={600}>6 Months</Typography>
-                  <Typography variant="caption" color="text.secondary">{plan ? fmtMoney(plan.six_month_price) : '—'}</Typography>
-                </Stack>
-              </ToggleButton>
-              <ToggleButton value="YEARLY">
-                <Stack spacing={0} alignItems="center">
-                  <Typography variant="body2" fontWeight={600}>Yearly</Typography>
-                  <Typography variant="caption" color="text.secondary">{plan ? fmtMoney(plan.yearly_price) : '—'}</Typography>
-                </Stack>
-              </ToggleButton>
+              {(plan?.cycle_prices ?? []).map((c) => (
+                <ToggleButton key={c.billing_cycle} value={c.billing_cycle}>
+                  <Stack spacing={0} alignItems="center">
+                    <Typography variant="body2" fontWeight={600}>{CYCLE_LABEL[c.billing_cycle]}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {fmtMoney(c.amount)}{c.discount_percent > 0 ? ` · ${c.discount_percent}% off` : ''}
+                    </Typography>
+                  </Stack>
+                </ToggleButton>
+              ))}
             </ToggleButtonGroup>
           </Box>
 
@@ -205,14 +204,21 @@ function RenewDialog({ open, onClose, onSubmit, loading, plans, currentPlanId, e
 
 // Mirrors the API: a renewal starts the day after the current end (or today if
 // it has passed) and is refused while more than a year is already paid.
-function renewalPeriod(endDate: unknown, cycle: 'SIX_MONTH' | 'YEARLY') {
+const CYCLE_LABEL: Record<CyclePrice['billing_cycle'], string> = {
+  MONTHLY: 'Monthly',
+  QUARTERLY: 'Quarterly',
+  SIX_MONTH: 'Half-yearly',
+  YEARLY: 'Yearly',
+};
+
+function renewalPeriod(endDate: unknown, months: number) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const end = endDate ? new Date(String(endDate)) : null;
   const stacks = end != null && end >= today;
   const start = stacks ? new Date(end.getTime() + 86400000) : today;
   const until = new Date(start);
-  until.setMonth(until.getMonth() + (cycle === 'YEARLY' ? 12 : 6));
+  until.setMonth(until.getMonth() + months);
   until.setDate(until.getDate() - 1);
   const yearAhead = new Date(today);
   yearAhead.setFullYear(yearAhead.getFullYear() + 1);

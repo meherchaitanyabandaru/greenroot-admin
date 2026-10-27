@@ -403,8 +403,8 @@ export const adminResourcesApi = baseApi.injectEndpoints({
         body: {
           plan_name: string;
           description?: string | null;
-          six_month_price: number;
-          yearly_price: number;
+          /** The base price; the API prices quarterly / half-yearly / yearly from it. */
+          monthly_price: number;
           max_managers?: number | null;
           is_active: boolean;
           features: Record<string, unknown>;

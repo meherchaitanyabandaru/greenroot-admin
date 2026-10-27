@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import { useUpdateSubscriptionPlanMutation, type SubscriptionPlan } from '../../api/adminResources';
+import { CYCLES, cyclePrice } from './cyclePricing';
 
 type Props = {
   plan: SubscriptionPlan;
@@ -29,8 +30,6 @@ type FeaturesState = {
   support: string;
   analytics: string;
   market_posts_per_day: string;
-  mrp_six_month: string;
-  mrp_yearly: string;
 };
 
 function parseFeaturesState(features?: Record<string, unknown>): FeaturesState {
@@ -41,8 +40,6 @@ function parseFeaturesState(features?: Record<string, unknown>): FeaturesState {
     support: String(features?.support ?? 'community'),
     analytics: String(features?.analytics ?? 'basic'),
     market_posts_per_day: mpd != null ? String(mpd) : '',
-    mrp_six_month: features?.mrp_six_month != null ? String(features.mrp_six_month) : '',
-    mrp_yearly: features?.mrp_yearly != null ? String(features.mrp_yearly) : '',
   };
 }
 
@@ -51,8 +48,7 @@ export function PlanEditDrawer({ plan, open, onClose }: Props) {
 
   const [name, setName] = useState(plan.plan_name);
   const [description, setDescription] = useState(plan.description ?? '');
-  const [sixMonthPrice, setSixMonthPrice] = useState(String(plan.six_month_price ?? 0));
-  const [yearlyPrice, setYearlyPrice] = useState(String(plan.yearly_price ?? 0));
+  const [monthlyPrice, setMonthlyPrice] = useState(String(plan.monthly_price ?? 0));
   const [maxManagers, setMaxManagers] = useState(String(plan.max_managers ?? ''));
   const [isActive, setIsActive] = useState(plan.is_active);
   const [features, setFeatures] = useState<FeaturesState>(() => parseFeaturesState(plan.features));
@@ -61,30 +57,29 @@ export function PlanEditDrawer({ plan, open, onClose }: Props) {
     if (isSuccess) onClose();
   }, [isSuccess, onClose]);
 
-  const sixMonthNum = parseFloat(sixMonthPrice) || 0;
-  const yearlyNum = parseFloat(yearlyPrice) || 0;
-  const annualIfSixMonth = sixMonthNum * 2;
-  const discount = annualIfSixMonth > 0 && yearlyNum < annualIfSixMonth
-    ? Math.round(((annualIfSixMonth - yearlyNum) / annualIfSixMonth) * 100)
-    : 0;
+  const monthlyNum = parseFloat(monthlyPrice) || 0;
+  const isFree = plan.plan_code === 'TRIAL' || plan.plan_code === 'FREE';
 
   function handleSave() {
-    const billingCycles = plan.plan_code === 'TRIAL' ? ['TRIAL'] : ['SIX_MONTH', 'YEARLY'];
+    const billingCycles = isFree ? (plan.features?.billing_cycles ?? [plan.plan_code]) : CYCLES.map((c) => c.code);
     const maxMgr = maxManagers.trim() !== '' ? parseInt(maxManagers) : null;
     const mpdRaw = features.market_posts_per_day.trim();
     const marketPostsPerDay = mpdRaw !== '' ? parseInt(mpdRaw) : null;
-    const mrpSixMonth = features.mrp_six_month.trim() !== '' ? parseFloat(features.mrp_six_month) : null;
-    const mrpYearly = features.mrp_yearly.trim() !== '' ? parseFloat(features.mrp_yearly) : null;
+    // Keep feature keys this form does not edit (e.g. unlimited_customers);
+    // drop the retired list ("MRP") prices.
+    const { mrp_six_month: _oldSix, mrp_yearly: _oldYear, ...kept } = plan.features ?? {};
+    void _oldSix;
+    void _oldYear;
     updatePlan({
       id: plan.id,
       body: {
         plan_name: name.trim(),
         description: description.trim() || undefined,
-        six_month_price: sixMonthNum,
-        yearly_price: yearlyNum,
+        monthly_price: isFree ? 0 : monthlyNum,
         max_managers: maxMgr,
         is_active: isActive,
         features: {
+          ...kept,
           unlimited_orders: features.unlimited_orders,
           unlimited_quotations: features.unlimited_quotations,
           support: features.support,
@@ -92,8 +87,6 @@ export function PlanEditDrawer({ plan, open, onClose }: Props) {
           billing_cycles: billingCycles,
           ...(maxMgr != null ? { max_managers: maxMgr } : {}),
           market_posts_per_day: marketPostsPerDay,
-          ...(mrpSixMonth != null ? { mrp_six_month: mrpSixMonth } : {}),
-          ...(mrpYearly != null ? { mrp_yearly: mrpYearly } : {}),
         },
       },
     });
@@ -139,70 +132,38 @@ export function PlanEditDrawer({ plan, open, onClose }: Props) {
         <Divider />
         <Typography variant="subtitle2" fontWeight={600} color="text.secondary">Pricing</Typography>
 
-        <Stack direction="row" gap={2}>
-          <TextField
-            label="6-Month Price"
-            value={sixMonthPrice}
-            onChange={(e) => setSixMonthPrice(e.target.value)}
-            type="number"
-            size="small"
-            fullWidth
-            InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
-            helperText="Price per 6-month cycle"
-          />
-          <TextField
-            label="Yearly Price"
-            value={yearlyPrice}
-            onChange={(e) => setYearlyPrice(e.target.value)}
-            type="number"
-            size="small"
-            fullWidth
-            InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
-            helperText={discount > 0 ? `Saves ${discount}% vs 2× 6-month` : 'Annual price'}
-          />
-        </Stack>
-
-        {discount > 0 && (
-          <Alert severity="success" sx={{ py: 0.5 }}>
-            Yearly saves <strong>{discount}%</strong> — customers pay ₹{yearlyNum.toLocaleString('en-IN')} instead of ₹{annualIfSixMonth.toLocaleString('en-IN')}
-          </Alert>
+        {isFree ? (
+          <Typography variant="body2" color="text.secondary">This plan is free.</Typography>
+        ) : (
+          <>
+            <TextField
+              label="Monthly Price"
+              value={monthlyPrice}
+              onChange={(e) => setMonthlyPrice(e.target.value)}
+              type="number"
+              size="small"
+              fullWidth
+              InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
+              helperText="Longer cycles are priced from this, with a pay-ahead discount"
+            />
+            <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', '& td': { py: 0.5, fontSize: 14 } }}>
+              <tbody>
+                {CYCLES.map((c) => {
+                  const amount = cyclePrice(monthlyNum, c.months, c.discount);
+                  return (
+                    <tr key={c.code}>
+                      <td>{c.label}</td>
+                      <td style={{ color: '#64748b' }}>{c.discount > 0 ? `${c.discount}% off` : ''}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                        ₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </Box>
+          </>
         )}
-
-        <Divider />
-        <Typography variant="subtitle2" fontWeight={600} color="text.secondary">Anchor Pricing (MRP)</Typography>
-        <Typography variant="caption" color="text.secondary">
-          Shown as strikethrough "was" price. Creates perceived discount for users.
-        </Typography>
-        <Stack direction="row" gap={2}>
-          <TextField
-            label="Original 6-Month Price"
-            value={features.mrp_six_month}
-            onChange={(e) => setFeatures((f) => ({ ...f, mrp_six_month: e.target.value }))}
-            type="number"
-            size="small"
-            fullWidth
-            InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
-            helperText={
-              features.mrp_six_month && sixMonthNum
-                ? `${Math.round(((parseFloat(features.mrp_six_month) - sixMonthNum) / parseFloat(features.mrp_six_month)) * 100)}% off shown`
-                : 'Leave blank to hide'
-            }
-          />
-          <TextField
-            label="Original Yearly Price"
-            value={features.mrp_yearly}
-            onChange={(e) => setFeatures((f) => ({ ...f, mrp_yearly: e.target.value }))}
-            type="number"
-            size="small"
-            fullWidth
-            InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
-            helperText={
-              features.mrp_yearly && yearlyNum
-                ? `${Math.round(((parseFloat(features.mrp_yearly) - yearlyNum) / parseFloat(features.mrp_yearly)) * 100)}% off shown`
-                : 'Leave blank to hide'
-            }
-          />
-        </Stack>
 
         <Divider />
         <Typography variant="subtitle2" fontWeight={600} color="text.secondary">Limits</Typography>

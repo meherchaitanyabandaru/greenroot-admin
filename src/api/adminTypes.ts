@@ -114,6 +114,16 @@ export type SubscriptionPromo = {
   updated_at?: string;
 };
 
+/** One billing option of a paid plan, priced by the API. */
+export type CyclePrice = {
+  billing_cycle: 'MONTHLY' | 'QUARTERLY' | 'SIX_MONTH' | 'YEARLY';
+  months: number;
+  discount_percent: number;
+  list_amount: number;
+  amount: number;
+  per_month: number;
+};
+
 export type SubscriptionPlan = {
   id: number;
   plan_code: string;
@@ -122,6 +132,8 @@ export type SubscriptionPlan = {
   monthly_price?: number;
   six_month_price?: number;
   yearly_price?: number;
+  /** Paid plans only: every cycle and what it costs. */
+  cycle_prices?: CyclePrice[];
   max_managers?: number;
   max_nurseries?: number;
   is_active: boolean;
