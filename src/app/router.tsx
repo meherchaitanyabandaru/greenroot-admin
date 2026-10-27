@@ -8,6 +8,9 @@ import { ProtectedRoute } from '../layouts/ProtectedRoute';
 const LoginPage = lazy(() =>
   import('../features/auth/LoginPage').then((m) => ({ default: m.LoginPage })),
 );
+const TermsPage = lazy(() =>
+  import('../features/legal/TermsPage').then((m) => ({ default: m.TermsPage })),
+);
 const SettingsPage = lazy(() =>
   import('../features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
@@ -78,6 +81,7 @@ export function AppRouter() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
         </Route>
+        <Route path="/terms" element={<TermsPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AdminLayout />}>
             <Route index element={<DashboardPage />} />

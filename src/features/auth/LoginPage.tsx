@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import LocalFloristIcon from '@mui/icons-material/LocalFlorist';
-import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Link, Stack, TextField, Typography } from '@mui/material';
 import { Controller, useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { normalizeApiError } from '../../utils/apiError';
 import { useSendOtpMutation, useVerifyOtpMutation } from './authApi';
@@ -114,6 +114,10 @@ export function LoginPage() {
           </Button>
         </Stack>
       </Stack>
+      <Typography color="text.secondary" fontSize={12.5} textAlign="center">
+        By signing in you agree to the{' '}
+        <Link component={RouterLink} to="/terms">Terms &amp; Conditions</Link>.
+      </Typography>
     </Stack>
   );
 }

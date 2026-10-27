@@ -1,5 +1,6 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import EmailIcon from '@mui/icons-material/Email';
+import GavelIcon from '@mui/icons-material/Gavel';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import CategoryIcon from '@mui/icons-material/Category';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -159,6 +160,7 @@ export function SettingsPage() {
             <LinkRow to="/subscription-plans" icon={WorkspacePremiumIcon} label="Subscription plans" hint="Prices, limits and trial length" />
             <LinkRow to="/subscription-promos" icon={LocalOfferIcon} label="Promo offers" hint="Discount codes for nurseries" />
             <LinkRow to="/plants/categories" icon={CategoryIcon} label="Plant categories" hint="How the catalogue is grouped" />
+            <LinkRow to="/terms" icon={GavelIcon} label="Terms & Conditions" hint="What every user agrees to at sign-up" />
           </Section>
         </Grid>
       </Grid>
