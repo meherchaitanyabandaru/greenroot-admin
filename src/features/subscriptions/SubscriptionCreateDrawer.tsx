@@ -117,11 +117,11 @@ export function SubscriptionCreateDrawer({ open, onClose, onCreated }: Props) {
                 label="Billing period"
                 value={cycle}
                 onChange={(e) => setCycle(e.target.value)}
-                helperText={price ? `Amount recorded as paid: ₹${price.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : undefined}
+                helperText={price ? `Recorded as paid: ₹${price.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (₹${price.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} + ₹${price.gst_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} GST)` : undefined}
               >
                 {(plan.cycle_prices ?? []).map((c) => (
                   <MenuItem key={c.billing_cycle} value={c.billing_cycle}>
-                    {CYCLE_LABEL[c.billing_cycle]} — ₹{c.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    {CYCLE_LABEL[c.billing_cycle]} — ₹{c.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} + GST
                     {c.discount_percent > 0 ? ` (${c.discount_percent}% off)` : ''}
                   </MenuItem>
                 ))}

@@ -120,8 +120,13 @@ export type CyclePrice = {
   months: number;
   discount_percent: number;
   list_amount: number;
+  /** After the discount, before GST. */
   amount: number;
   per_month: number;
+  /** 18% GST on top. */
+  gst_amount: number;
+  /** What is charged: amount + GST. */
+  total_amount: number;
 };
 
 export type SubscriptionPlan = {

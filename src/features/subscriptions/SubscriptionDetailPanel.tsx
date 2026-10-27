@@ -104,7 +104,7 @@ function RenewDialog({ open, onClose, onSubmit, loading, plans, currentPlanId, e
   );
   const plan = paidPlans.find((p) => p.id === planId);
   const cyclePrice = plan?.cycle_prices?.find((c) => c.billing_cycle === cycle);
-  const price = cyclePrice?.amount;
+  const price = cyclePrice?.total_amount;
   const period = renewalPeriod(endDate, cyclePrice?.months ?? 1);
 
   return (
@@ -145,7 +145,7 @@ function RenewDialog({ open, onClose, onSubmit, loading, plans, currentPlanId, e
                   <Stack spacing={0} alignItems="center">
                     <Typography variant="body2" fontWeight={600}>{CYCLE_LABEL[c.billing_cycle]}</Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {fmtMoney(c.amount)}{c.discount_percent > 0 ? ` · ${c.discount_percent}% off` : ''}
+                      {fmtMoney(c.amount)} + GST{c.discount_percent > 0 ? ` · ${c.discount_percent}% off` : ''}
                     </Typography>
                   </Stack>
                 </ToggleButton>
@@ -164,10 +164,12 @@ function RenewDialog({ open, onClose, onSubmit, loading, plans, currentPlanId, e
 
           <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50', borderRadius: 1.5 }}>
             <Stack direction="row" justifyContent="space-between">
-              <Typography variant="body2" fontWeight={700}>Amount</Typography>
+              <Typography variant="body2" fontWeight={700}>Amount (incl. GST)</Typography>
               <Typography variant="body2" fontWeight={700} color="primary.main">{price != null ? fmtMoney(price) : '—'}</Typography>
             </Stack>
-            <Typography variant="caption" color="text.secondary">Plan price for the cycle, before any promo.</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {cyclePrice ? `${fmtMoney(cyclePrice.amount)} + ${fmtMoney(cyclePrice.gst_amount)} GST (18%). Plan price for the cycle, no promo.` : 'Plan price for the cycle, no promo.'}
+            </Typography>
             <Divider sx={{ my: 1 }} />
             <Stack direction="row" justifyContent="space-between">
               <Typography variant="body2" color="text.secondary">New period</Typography>

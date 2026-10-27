@@ -199,7 +199,7 @@ export function SubscriptionPlansPage() {
                             <Chip label={`${price.discount_percent}% off · ${fmt(Math.round(price.per_month))}/mo`} size="small"
                               sx={{ bgcolor: '#dcfce7', color: '#15803d', fontWeight: 700, fontSize: 10, height: 18 }} />
                           ) : (
-                            <Typography variant="caption" color="text.secondary">per month</Typography>
+                            <Typography variant="caption" color="text.secondary">per month + GST</Typography>
                           )}
                         </Stack>
                       ) : row.code === 'MONTHLY' ? (
