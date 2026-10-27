@@ -33,7 +33,9 @@ const PLAN_META: Record<string, { accent: string; headerBg: string }> = {
 
 function fmt(value?: number | null) {
   if (!value) return '₹0';
-  return `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  // Whole rupees as such; anything with paise shows both digits (₹1,614.60).
+  const paise = Number.isInteger(value) ? 0 : 2;
+  return `₹${value.toLocaleString('en-IN', { minimumFractionDigits: paise, maximumFractionDigits: paise })}`;
 }
 
 const CYCLE_ROWS = [
