@@ -30,3 +30,16 @@ export function formatDate(iso: unknown): string {
     year: 'numeric',
   }).format(d);
 }
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** When something happened, as the app shows it: "Wed, 28 Oct · 10:42 AM" (local time). */
+export function formatDateTime(iso: unknown): string {
+  if (!iso) return '—';
+  const d = new Date(String(iso));
+  if (isNaN(d.getTime())) return '—';
+  const h = d.getHours();
+  const time = `${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+  return `${WEEKDAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]} · ${time}`;
+}

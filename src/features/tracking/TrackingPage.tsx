@@ -120,7 +120,7 @@ function LiveMapDialog({
               </Stack>
             </>
           ) : (
-            <Alert severity="warning">No Redis GEO or persisted tracking location is available yet.</Alert>
+            <Alert severity="warning">No location yet for this trip.</Alert>
           )}
         </Stack>
       </DialogContent>
@@ -146,7 +146,7 @@ function LatestLocation({ dispatch }: { dispatch: Record<string, unknown> }) {
   const lat = numberValue(live?.latitude) ?? numberValue(latestPersisted?.latitude);
   const lng = numberValue(live?.longitude) ?? numberValue(latestPersisted?.longitude);
   const lastSeen = live?.last_seen ?? latestPersisted?.tracked_at;
-  const source = live ? 'Redis GEO' : latestPersisted ? 'Persisted tracking' : 'No location';
+  const source = live ? 'Live' : latestPersisted ? 'Last known' : 'No location';
 
   if (!driverUserId) {
     return <Typography color="text.secondary" variant="body2">No driver user</Typography>;

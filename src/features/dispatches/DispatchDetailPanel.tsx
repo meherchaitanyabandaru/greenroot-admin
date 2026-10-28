@@ -40,7 +40,7 @@ import { LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
 import { useToast } from '../../components/feedback/toastContext';
 import { normalizeApiError } from '../../utils/apiError';
-import { formatDate } from '../../utils/labels';
+import { formatDateTime } from '../../utils/labels';
 
 function text(value: unknown) {
   if (value === null || value === undefined || value === '') return '-';
@@ -67,7 +67,7 @@ function formatAgo(value: unknown) {
   if (diff < 10_000) return 'just now';
   if (diff < 60_000) return `${Math.max(1, Math.floor(diff / 1000))} sec ago`;
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} min ago`;
-  return date.toLocaleString();
+  return formatDateTime(date.toISOString());
 }
 
 function osmEmbedUrl(lat: number, lng: number) {
@@ -166,7 +166,7 @@ function DispatchLiveMapDialog({
   const lng =
     numberValue(live?.longitude) ?? numberValue(latestPersisted?.longitude);
   const lastSeen = live?.last_seen ?? latestPersisted?.tracked_at;
-  const source = live ? 'Redis GEO live location' : latestPersisted ? 'Latest persisted tracking point' : 'No location available';
+  const source = live ? 'Live location' : latestPersisted ? 'Last known location' : 'No location yet';
   const mapUrl = lat && lng ? osmEmbedUrl(lat, lng) : null;
   const googleLink = lat && lng ? mapsLink(lat, lng) : null;
 
@@ -186,11 +186,11 @@ function DispatchLiveMapDialog({
           </Stack>
 
           {!isInTransit && (
-            <Alert severity="info">Live Redis GEO tracking is shown only while a dispatch is IN_TRANSIT.</Alert>
+            <Alert severity="info">Live location shows only while the trip is on the way.</Alert>
           )}
 
           {liveQuery.error && (
-            <Alert severity="warning">Could not fetch Redis GEO live location. Showing persisted tracking if available.</Alert>
+            <Alert severity="warning">Could not load the live location. Showing the last known location.</Alert>
           )}
 
           {mapUrl ? (
@@ -258,8 +258,12 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
     ['Dispatch No.', dispatch.dispatch_number],
     ['Vehicle', dispatch.vehicle_number],
     ['Driver', [dispatch.driver_name, dispatch.driver_mobile].filter(Boolean).join(' · ') || null],
-    ['Dispatch Date', dispatch.dispatch_date],
-    ['Delivery Date', dispatch.delivery_date ? formatDate(dispatch.delivery_date) : null],
+    // When each step happened (recorded since 2026-10-28; older trips have no accept/start time).
+    ['Trip created', formatDateTime(dispatch.created_at)],
+    ['Driver accepted', dispatch.driver_accepted_at ? formatDateTime(dispatch.driver_accepted_at) : null],
+    ['Left the nursery', dispatch.dispatch_date ? formatDateTime(dispatch.dispatch_date) : null],
+    ['Trip started', dispatch.trip_started_at ? formatDateTime(dispatch.trip_started_at) : null],
+    ['Delivered', dispatch.delivery_date ? formatDateTime(dispatch.delivery_date) : null],
     ['Destination', dispatch.destination_address],
     ['Notes', dispatch.notes],
     // Delivery details, only when the trip has them.
@@ -411,7 +415,7 @@ export function DispatchDetailPanel({ dispatchId }: { dispatchId: number }) {
                 <Box>
                   <Typography variant="subtitle2">Dispatch Tracking</Typography>
                   <Typography color="text.secondary" variant="body2">
-                    Redis GEO live location is available from View Live Map while the dispatch is IN_TRANSIT.
+                    See where the lorry is while the trip is on the way.
                   </Typography>
                 </Box>
                 <Button startIcon={<MapIcon />} variant="contained" size="small" onClick={() => setMapOpen(true)}>

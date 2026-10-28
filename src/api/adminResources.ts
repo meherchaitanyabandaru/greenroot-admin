@@ -55,6 +55,14 @@ function toQuery(params: ListParams) {
   return search.toString();
 }
 
+export type LoadingProof = {
+  photos: Array<{ id: number; url: string; uploaded_at: string }>;
+  declared_no_prohibited_items: boolean;
+  completed_at?: string;
+  completed_by_name?: string;
+  truck?: Record<string, unknown> | null;
+};
+
 export const adminResourcesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     listResource: builder.query<
@@ -264,6 +272,11 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     listOrderPayments: builder.query<RelatedPaymentsResponse, number>({
       query: (id) => `/api/v1/orders/${id}/payments?page=1&per_page=20`,
       providesTags: ['Payments'],
+    }),
+    // Photos (signed links), the no-prohibited-items declaration, who loaded and the truck.
+    getOrderLoadingProof: builder.query<{ loading_proof: LoadingProof }, number>({
+      query: (id) => `/api/v1/orders/${id}/loading-proof`,
+      providesTags: ['Orders'],
     }),
     listOrderDispatches: builder.query<RelatedDispatchesResponse, number>({
       query: (id) => `/api/v1/orders/${id}/dispatches?page=1&per_page=20`,
@@ -626,6 +639,7 @@ export const {
   useDeactivateDriverMutation,
   useDeleteTopItemMutation,
   useListOrderDispatchesQuery,
+  useGetOrderLoadingProofQuery,
   useListOrderItemsQuery,
   useListOrderPaymentsQuery,
   useListResourceQuery,

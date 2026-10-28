@@ -76,14 +76,14 @@ Source of truth for APIs: `greenroot-api/docs/swagger/openapi.yaml`
 | Plant Suggestions | ✅ Live (2026-10-23) | `features/plants/PlantSuggestionsPage.tsx` (`/plants/suggestions`, nav Plants → Suggestions): community suggestions for plants users could not find. Status filter (Pending default). Drawer: **Link** to an existing plant / botanical name (`PlantPicker`), **add as new** with the normal `PlantForm` (pre-filled; then APPROVED), or **Reject** with a reason. The user is notified. Duplicates/known names never reach the queue. | — |
 | Nurseries | ✅ Live | List, CRUD, detail panel (addresses add/edit/delete, team, status actions, edit) | — |
 | Top Items | ✅ Live (2026-10-19) | `features/topItems/TopItemsPage.tsx`: every nursery's top items (max 20 each, not stock), server-side search + paging (50/page), async nursery search, plant picker (resolves botanical names), add/edit/remove drawer, `n of 20` chip; Nursery → Top Items tab; Plant → Nurseries tab | — |
-| Orders | ✅ Live | List, detail panel, status update, inline item edit/delete, payments, dispatches, **create drawer** | — |
+| Orders | ✅ Live | List, detail panel with each step's time (Pending → Confirmed → Loading → Loaded/Partly loaded → Completed), the one status move the API allows (Mark Confirmed / Mark Completed), loading proof (declaration, photos, truck), inline item edit/delete, payments, dispatches. No create (the API refuses admins); no address edit once completed or cancelled | — |
 | Payments | ✅ Live | List, manual record (ORDER + **SUBSCRIPTION**), status/provider update | — |
 | Subscriptions | ✅ Live | List with subscriber name, nursery and mobile (searchable), plans list, **lifecycle detail panel (record offline payment with real plan prices, cancel dialog, payment history with Razorpay ids, Razorpay refunds: latest payment, 7 days, reason required)** — see `greenroot-infra/docs/subscriptions.md` §3 | — |
 | Vehicles | ✅ Live | List, CRUD, retire, **detail panel (info, tracking history, last known location)** | — |
 | Drivers | ✅ Live | List, CRUD, deactivate, **detail panel (location, approve, edit)** | — |
 | Attachment upload limit | ✅ Live (2026-10-23) | `AttachmentUploadForm` sends `size` (API max 20 MB); `attachmentRules.ts` refuses videos/audio, other formats and >20 MB before uploading (photos, PDF, Word, Excel, CSV, text). | — |
 | Driver licence photo | ✅ Live (2026-10-23) | `DriverDetailPanel` shows the optional licence photo uploaded at signup (private bucket, link valid 1 h; refetch on focus renews it) or "Not attached". | — |
-| Dispatches | ✅ Live | List, create, status update, **detail panel (items, tracking, trip UUID)** | — |
+| Dispatches | ✅ Live | List, status update, **detail panel (trip times: created, driver accepted, left, started, delivered; items, tracking, trip UUID)**. Admins do not create trips (the nursery does, with the trip QR) | — |
 | Tracking | ✅ Live | **Live tracking table (IN_TRANSIT dispatches, auto-refresh 30s, vehicle GPS link)** | — |
 | Notifications | ✅ Live | List, devices, templates, **detail panel (mark-read, delete), template editor, mark-all-read** | — |
 | Attachments | ✅ Live | List, **upload form (presign → PUT → save metadata)** | — |

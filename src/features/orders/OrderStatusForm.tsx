@@ -1,13 +1,12 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, MenuItem, Stack, TextField } from '@mui/material';
-import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { Button, Divider, Stack, Typography } from '@mui/material';
 
-const schema = z.object({
-  order_status: z.enum(['PENDING', 'CONFIRMED', 'PARTIALLY_FULFILLED', 'COMPLETED', 'CANCELLED']),
-});
-
-type OrderStatusFormValues = z.infer<typeof schema>;
+// The only moves PUT /orders/:id/status accepts (orders policy.go CanTransition);
+// loading and cancelling have their own actions. Finished orders have none.
+const NEXT: Record<string, { status: string; label: string; hint: string }> = {
+  PENDING: { status: 'CONFIRMED', label: 'Mark Confirmed', hint: 'Needs a delivery address on the order.' },
+  LOADED: { status: 'COMPLETED', label: 'Mark Completed', hint: 'Only after its trip is delivered.' },
+  PARTIALLY_FULFILLED: { status: 'COMPLETED', label: 'Mark Completed', hint: 'Only after its trip is delivered.' },
+};
 
 export function OrderStatusForm({
   initialStatus,
@@ -18,39 +17,17 @@ export function OrderStatusForm({
   loading?: boolean;
   onSubmit: (values: Record<string, unknown>) => void;
 }) {
-  const { control, handleSubmit } = useForm<OrderStatusFormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      order_status: (String(initialStatus ?? 'PENDING') as OrderStatusFormValues['order_status']) || 'PENDING',
-    },
-  });
-
+  const next = NEXT[String(initialStatus ?? '')];
+  if (!next) return null;
   return (
-    <Stack component="form" direction={{ xs: 'column', sm: 'row' }} spacing={1.5} onSubmit={handleSubmit(onSubmit)}>
-      <Controller
-        control={control}
-        name="order_status"
-        render={({ field, fieldState }) => (
-          <TextField
-            {...field}
-            error={!!fieldState.error}
-            helperText={fieldState.error?.message}
-            label="Order Status"
-            select
-            size="small"
-            sx={{ minWidth: 220 }}
-          >
-            {['PENDING', 'CONFIRMED', 'PARTIALLY_FULFILLED', 'COMPLETED', 'CANCELLED'].map((status) => (
-              <MenuItem key={status} value={status}>
-                {status}
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
-      />
-      <Button disabled={loading} type="submit" variant="contained">
-        Update Status
-      </Button>
-    </Stack>
+    <>
+      <Divider />
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+        <Button disabled={loading} variant="contained" onClick={() => onSubmit({ order_status: next.status })}>
+          {next.label}
+        </Button>
+        <Typography fontSize={12.5} color="text.secondary">{next.hint}</Typography>
+      </Stack>
+    </>
   );
 }

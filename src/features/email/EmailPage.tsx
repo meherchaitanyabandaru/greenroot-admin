@@ -26,7 +26,7 @@ import dayjs from 'dayjs';
 import { PageHeader } from '../../components/page/PageHeader';
 import { useToast } from '../../components/feedback/toastContext';
 import { normalizeApiError } from '../../utils/apiError';
-import { ReadinessCard, StatusChip, StepsCard } from '../messaging/shared';
+import { ReadinessCard, StatusChip } from '../messaging/shared';
 import {
   EMAIL_MESSAGE_STATUSES,
   useGetEmailSenderQuery,
@@ -60,7 +60,7 @@ export function EmailPage() {
             </>
           ) : (
             <>
-              Mock mode (<code>EMAIL_PROVIDER=mock</code>): nothing is delivered and the email verification code is the fixed dev code.
+              Test mode: no email is delivered yet, and email verification uses the test code.
             </>
           )}
         </Alert>
@@ -82,20 +82,7 @@ function ReadinessTab() {
   const { data, isLoading, error } = useGetEmailStatusQuery();
   if (isLoading) return <CircularProgress />;
   if (error || !data) return <Alert severity="error">{normalizeApiError(error).message}</Alert>;
-  return (
-    <Stack spacing={3}>
-      <ReadinessCard checks={data.checks} ready={data.ready} readyText="ready to switch the provider to live" />
-      <StepsCard
-        title="How to go live"
-        steps={[
-          'In Amazon SES (region ap-south-1), verify the sending domain and request production access (new accounts can only mail verified addresses).',
-          'Publish the SPF, DKIM and DMARC DNS records the provider gives you, then tick "Domain verified" under Sender.',
-          'Set the From address (e.g. no-reply@yourdomain) and an optional Reply-To under Sender.',
-          'Give the API permission to send (IAM role with ses:SendEmail) and set EMAIL_PROVIDER=ses and AWS_REGION=ap-south-1. Verification codes become random immediately.',
-        ]}
-      />
-    </Stack>
-  );
+  return <ReadinessCard checks={data.checks} ready={data.ready} readyText="ready to go live" />;
 }
 
 function SenderTab() {

@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { Chip, Paper, Stack, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
@@ -55,23 +54,6 @@ export function ReadinessCard({ checks, ready, readyText }: { checks: ReadinessC
               )}
             </Stack>
           ))}
-      </Stack>
-    </Paper>
-  );
-}
-
-export function StepsCard({ title, steps }: { title: string; steps: ReactNode[] }) {
-  return (
-    <Paper variant="outlined" sx={{ p: 2 }}>
-      <Typography variant="subtitle1" fontWeight={700} mb={1}>
-        {title}
-      </Typography>
-      <Stack component="ol" sx={{ m: 0, pl: 2.5 }} spacing={0.75}>
-        {steps.map((step, i) => (
-          <Typography key={i} component="li" variant="body2" color="text.secondary">
-            {step}
-          </Typography>
-        ))}
       </Stack>
     </Paper>
   );

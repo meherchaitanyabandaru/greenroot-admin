@@ -21,7 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import { StatusTimeline } from '../../components/timeline/StatusTimeline';
-import { formatCurrency, formatDate } from '../../utils/labels';
+import { formatCurrency, formatDate, formatDateTime } from '../../utils/labels';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
@@ -37,6 +37,7 @@ import {
   useDeleteOrderItemMutation,
   useDeleteOrderMutation,
   useUpdateOrderDeliveryMutation,
+  useGetOrderLoadingProofQuery,
 } from '../../api/adminResources';
 import { ErrorState } from '../../components/feedback/ErrorState';
 import { LoadingState } from '../../components/feedback/LoadingState';
@@ -272,10 +273,13 @@ function SectionTable({
 function DeliverySnapshotSection({
   orderId,
   delivery,
+  locked,
   onUpdated,
 }: {
   orderId: number;
   delivery: Record<string, unknown> | null | undefined;
+  // Delivered or cancelled: the address is the record of where it went (the API refuses edits).
+  locked?: boolean;
   onUpdated: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -330,9 +334,11 @@ function DeliverySnapshotSection({
               {delivery ? 'Order-specific delivery address' : 'No delivery snapshot saved'}
             </Typography>
           </Box>
-          <Button size="small" variant="outlined" onClick={() => setEditing((v) => !v)}>
-            {editing ? 'Cancel' : 'Edit'}
-          </Button>
+          {!locked && (
+            <Button size="small" variant="outlined" onClick={() => setEditing((v) => !v)}>
+              {editing ? 'Cancel' : 'Edit'}
+            </Button>
+          )}
         </Stack>
 
         {updateState.isError && (
@@ -426,6 +432,47 @@ function DeliverySnapshotSection({
   );
 }
 
+// ─── Loading proof ─────────────────────────────────────────────────────────────
+// What the nursery recorded when loading finished: evidence in a dispute.
+function LoadingProofSection({ orderId }: { orderId: number }) {
+  const { data, isLoading, error } = useGetOrderLoadingProofQuery(orderId);
+  if (isLoading) return <LoadingState />;
+  if (error) return <Alert severity="warning">Loading proof could not be loaded: {normalizeApiError(error).message}</Alert>;
+  const proof = data?.loading_proof;
+  if (!proof) return null;
+  const truck = proof.truck;
+  return (
+    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+      <Stack spacing={1.5}>
+        <Typography fontSize={11} fontWeight={700} textTransform="uppercase" letterSpacing="0.06em" color="text.secondary">
+          Loading proof
+        </Typography>
+        <Typography fontSize={13.5}>
+          {proof.declared_no_prohibited_items ? 'Declared: no prohibited items' : 'No declaration recorded'}
+          {proof.completed_at && ` · ${formatDateTime(proof.completed_at)}`}
+          {proof.completed_by_name && ` · by ${proof.completed_by_name}`}
+        </Typography>
+        {proof.photos.length > 0 ? (
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {proof.photos.map((p) => (
+              <a key={p.id} href={p.url} target="_blank" rel="noreferrer">
+                <Box component="img" src={p.url} alt="Loaded vehicle" sx={{ width: 120, height: 90, objectFit: 'cover', borderRadius: 1 }} />
+              </a>
+            ))}
+          </Stack>
+        ) : (
+          <Typography fontSize={13} color="text.secondary">No photos of the loaded vehicle</Typography>
+        )}
+        {truck && (
+          <Typography fontSize={13} color="text.secondary">
+            Truck: {[truck.vehicle_number, truck.driver_name, truck.driver_mobile].filter(Boolean).join(' · ') || (truck.outside_transport ? 'Outside lorry' : '—')}
+          </Typography>
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
 // ─── Main panel ───────────────────────────────────────────────────────────────
 export function OrderDetailPanel({
   orderId,
@@ -461,15 +508,27 @@ export function OrderDetailPanel({
     ['Notes', text(order.notes)],
   ];
 
+  const status = String(order.order_status ?? 'PENDING');
+  const partial = status === 'PARTIALLY_FULFILLED';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const deliveredTrip: any = (dispatchesQuery.data?.dispatches ?? []).find(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (d: any) => d.dispatch_status === 'DELIVERED',
+  );
+  const at = (iso: unknown) => (iso ? formatDateTime(iso) : undefined);
+  // Every order goes through loading; "Partly loaded" replaces "Loaded" when quantities were cut.
   const orderSteps = [
-    { label: 'Pending', value: 'PENDING' },
-    { label: 'Confirmed', value: 'CONFIRMED' },
-    { label: 'Partial', value: 'PARTIALLY_FULFILLED' },
-    { label: 'Completed', value: 'COMPLETED' },
+    { label: 'Pending', value: 'PENDING', time: at(order.created_at ?? order.order_date) },
+    { label: 'Confirmed', value: 'CONFIRMED', time: at(order.confirmed_at) },
+    { label: 'Loading', value: 'LOADING', time: at(order.loading_started_at) },
+    { label: partial ? 'Partly loaded' : 'Loaded', value: 'LOADED', time: at(order.loading_completed_at) },
+    { label: 'Completed', value: 'COMPLETED', time: at(deliveredTrip?.delivery_date) },
   ];
+  const closed = status === 'COMPLETED' || status === 'CANCELLED';
 
   async function submitStatus(values: Record<string, unknown>) {
-    await updateStatus({ id: orderId, body: values }).unwrap();
+    // A refusal (e.g. trip not delivered yet) is shown by the alert above.
+    await updateStatus({ id: orderId, body: values }).unwrap().catch(() => undefined);
   }
 
   async function handleDelete() {
@@ -526,7 +585,7 @@ export function OrderDetailPanel({
           <Box sx={{ px: 0.5 }}>
             <StatusTimeline
               steps={orderSteps}
-              currentStatus={String(order.order_status ?? 'PENDING')}
+              currentStatus={partial ? 'LOADED' : status}
               cancelledStatus="CANCELLED"
             />
           </Box>
@@ -545,7 +604,6 @@ export function OrderDetailPanel({
             ))}
           </Grid>
 
-          <Divider />
           <OrderStatusForm
             initialStatus={order.order_status}
             loading={updateStatusState.isLoading}
@@ -556,9 +614,12 @@ export function OrderDetailPanel({
 
       <DeliverySnapshotSection
         delivery={order.delivery_snapshot as Record<string, unknown> | null | undefined}
+        locked={closed}
         onUpdated={orderQuery.refetch}
         orderId={orderId}
       />
+
+      {['LOADED', 'PARTIALLY_FULFILLED', 'COMPLETED'].includes(status) && <LoadingProofSection orderId={orderId} />}
 
       {/* ── Items (inline editable) ── */}
       <Box>

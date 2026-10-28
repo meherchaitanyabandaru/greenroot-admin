@@ -28,7 +28,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import dayjs from 'dayjs';
 import { PageHeader } from '../../components/page/PageHeader';
-import { ReadinessCard, StatusChip, StepsCard } from '../messaging/shared';
+import { ReadinessCard, StatusChip } from '../messaging/shared';
 import { useToast } from '../../components/feedback/toastContext';
 import { normalizeApiError } from '../../utils/apiError';
 import {
@@ -71,8 +71,7 @@ export function SmsPage() {
             </>
           ) : (
             <>
-              Mock mode (<code>SMS_PROVIDER=mock</code>): nothing is delivered, the OTP is the fixed dev code, and draft templates are
-              allowed so the flows can be tested before registration.
+              Test mode: no SMS reaches phones yet, and every login uses the test OTP.
             </>
           )}
         </Alert>
@@ -97,22 +96,7 @@ function ReadinessTab() {
   const { data, isLoading, error } = useGetSmsStatusQuery();
   if (isLoading) return <CircularProgress />;
   if (error || !data) return <Alert severity="error">{normalizeApiError(error).message}</Alert>;
-  return (
-    <Stack spacing={3}>
-      <ReadinessCard checks={data.checks} ready={data.ready} readyText="ready to switch the provider to live" />
-      <StepsCard
-        title="How to register (TRAI TCCCPR 2018 / DLT)"
-        steps={[
-          'Register GreenRoot as a Principal Entity on one operator DLT portal (Jio, Airtel, Vi, BSNL, Tata or SmartPing). Enter the PE ID under Principal Entity.',
-          'Register the sender header. Service/transactional headers are exactly 6 letters (proposed: GRROOT). Phones will show it with a suffix such as JM-GRROOT-S.',
-          'Register each template under Templates exactly as written — use "Copy for DLT". All GreenRoot system SMS are SERVICE_IMPLICIT (TRANSACTIONAL is for banks only).',
-          'Bind AWS End User Messaging SMS as your telemarketer on the DLT portal (PE–TM chain), and register the sender ID GRROOT for India in AWS with the PE ID and template IDs.',
-          'When DLT approves, enter each DLT template ID and set the status to APPROVED.',
-          'Once this checklist is all green, give the API permission to send (IAM role with sms-voice:SendTextMessage) and set SMS_PROVIDER=aws and AWS_REGION=ap-south-1. Real OTPs start immediately.',
-        ]}
-      />
-    </Stack>
-  );
+  return <ReadinessCard checks={data.checks} ready={data.ready} readyText="ready to go live" />;
 }
 
 // ── Principal Entity ─────────────────────────────────────────────────────────

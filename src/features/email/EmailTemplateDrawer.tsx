@@ -120,7 +120,7 @@ export function EmailTemplateDrawer({ template, live, onClose }: Props) {
               disabled={!!template?.is_system}
               helperText={
                 template?.is_system
-                  ? 'System template — the API sends it by this code'
+                  ? 'Sent automatically by GreenRoot, so the code cannot change'
                   : 'UPPER_SNAKE_CASE. Use the same code as an SMS template to send both for one event.'
               }
               fullWidth

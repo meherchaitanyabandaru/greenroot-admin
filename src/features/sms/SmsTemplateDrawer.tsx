@@ -242,7 +242,7 @@ export function SmsTemplateDrawer({ template, headers, live, onClose }: Props) {
               value={form.template_code}
               onChange={(e) => set('template_code', e.target.value.toUpperCase())}
               disabled={!!template?.is_system}
-              helperText={template?.is_system ? 'System template — the API sends it by this code' : 'UPPER_SNAKE_CASE'}
+              helperText={template?.is_system ? 'Sent automatically by GreenRoot, so the code cannot change' : 'UPPER_SNAKE_CASE'}
               fullWidth
             />
             <TextField label="Name" value={form.template_name} onChange={(e) => set('template_name', e.target.value)} fullWidth />

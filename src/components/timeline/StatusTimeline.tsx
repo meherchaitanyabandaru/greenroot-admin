@@ -2,7 +2,8 @@ import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { Box, Stack, Typography } from '@mui/material';
 
-type Step = { label: string; value: string };
+// time: when the step happened (shown under the label), if recorded.
+type Step = { label: string; value: string; time?: string };
 
 function stepIndex(steps: Step[], status: string): number {
   return steps.findIndex((s) => s.value === status);
@@ -80,6 +81,11 @@ export function StatusTimeline({
               >
                 {step.label}
               </Typography>
+              {step.time && (
+                <Typography fontSize={10} color="text.secondary" textAlign="center" sx={{ lineHeight: 1.3 }}>
+                  {step.time}
+                </Typography>
+              )}
             </Stack>
 
             {/* Connector line */}

@@ -302,7 +302,7 @@ export function SecurityLogsPage() {
     <Box>
       <PageHeader
         title="Security Logs"
-        description="Auth events: logins, failures, token revocations, permission denials."
+        description="Sign-ins, failed sign-ins, sign-outs and blocked actions."
       />
 
       {/* Filters */}
