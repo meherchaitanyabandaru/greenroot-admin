@@ -47,24 +47,18 @@ const COLLAPSED_KEY = 'gr_nav_collapsed';
 function GrLogo({ size = 30 }: { size?: number }) {
   return (
     <Box
+      component="img"
+      src="/favicon.png"
+      alt="GreenRoot"
       sx={{
         width: size,
         height: size,
         borderRadius: 1.5,
-        bgcolor: sb.logoBg,
-        display: 'grid',
-        placeItems: 'center',
+        objectFit: 'contain',
         flexShrink: 0,
-        fontWeight: 900,
-        fontSize: size * 0.38,
-        color: sb.logoText,
-        letterSpacing: '-0.04em',
-        fontFamily: tokens.font.family,
         userSelect: 'none',
       }}
-    >
-      GR
-    </Box>
+    />
   );
 }
 
