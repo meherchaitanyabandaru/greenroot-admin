@@ -1,6 +1,7 @@
 import {
   Alert,
   Box,
+  Button,
   Divider,
   Grid,
   Link,
@@ -28,6 +29,8 @@ import { LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
 import { normalizeApiError } from '../../utils/apiError';
 import { VehicleForm } from './VehicleForm';
+import { DecisionDialog, VehicleLinksTable } from './VehicleLinks';
+import { useSetVehicleApprovalMutation } from './vehiclesApi';
 
 function text(value: unknown) {
   if (value === null || value === undefined || value === '') return '-';
@@ -54,6 +57,9 @@ export function VehicleDetailPanel({ vehicleId }: { vehicleId: number }) {
   const trackingQuery = useListVehicleTrackingQuery(vehicleId);
   const latestQuery = useGetVehicleLatestTrackingQuery(vehicleId);
   const [updateVehicle, updateState] = useUpdateVehicleMutation();
+  const [setApproval, approvalState] = useSetVehicleApprovalMutation();
+  const [deciding, setDeciding] = useState<{ status: string; label: string; needsNote: boolean } | null>(null);
+  const [approvalErr, setApprovalErr] = useState('');
   const [tab, setTab] = useState(0);
 
   if (vehicleQuery.isLoading) return <LoadingState />;
@@ -71,13 +77,32 @@ export function VehicleDetailPanel({ vehicleId }: { vehicleId: number }) {
     ['Number', vehicle.vehicle_number],
     ['Type', vehicle.vehicle_type],
     ['Capacity (kg)', vehicle.capacity_kg],
-    ['Owner', vehicle.owner_name],
-    ['Mobile', vehicle.mobile],
-    ['Assigned Driver', vehicle.driver_name],
-    ['Driver Mobile', vehicle.driver_mobile],
-    ['Driver Approval', vehicle.driver_approval_status],
+    ['Owner', vehicle.owner_name ? `${vehicle.owner_name}${vehicle.owner_has_account ? '' : ' (no app account)'}` : null],
+    ["Owner's mobile", vehicle.mobile],
+    ['Approved drivers', vehicle.driver_count],
+    ['On a trip now', vehicle.is_on_active_trip ? 'Yes' : 'No'],
+    ['Approval note', vehicle.approval_note],
     ['Created', vehicle.created_at],
   ];
+
+  const approval = String(vehicle.approval_status ?? 'PENDING');
+  const approvalActions = [
+    { status: 'APPROVED', label: approval === 'SUSPENDED' ? 'Reinstate' : 'Approve', needsNote: false },
+    { status: 'REJECTED', label: 'Reject', needsNote: true },
+    { status: 'SUSPENDED', label: 'Suspend', needsNote: true },
+  ].filter((a) => a.status !== approval && !(approval === 'REJECTED' && a.status === 'SUSPENDED'));
+
+  async function decide(note: string) {
+    if (!deciding) return;
+    setApprovalErr('');
+    try {
+      await setApproval({ id: vehicleId, status: deciding.status, note: note || undefined }).unwrap();
+      showToast(`Lorry marked ${deciding.status.toLowerCase()} — its drivers were notified`, 'success');
+      setDeciding(null);
+    } catch (e) {
+      setApprovalErr(normalizeApiError(e).message);
+    }
+  }
 
   async function handleUpdate(values: Record<string, unknown>) {
     try {
@@ -102,8 +127,23 @@ export function VehicleDetailPanel({ vehicleId }: { vehicleId: number }) {
               <Typography variant="h6">{text(vehicle.vehicle_number)}</Typography>
               <Typography color="text.secondary" variant="body2">{text(vehicle.vehicle_code)}</Typography>
             </Box>
-            <StatusChip value={vehicle.status} />
+            <Stack direction="row" spacing={1}>
+              <StatusChip value={approval} />
+              <StatusChip value={vehicle.status} />
+            </Stack>
           </Stack>
+          {canEdit && (
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+              <Typography variant="body2" color="text.secondary">GreenRoot check:</Typography>
+              {approvalActions.map((a) => (
+                <Button key={a.status} size="small" variant={a.status === 'APPROVED' ? 'contained' : 'outlined'}
+                  onClick={() => { setApprovalErr(''); setDeciding(a); }}>
+                  {a.label}
+                </Button>
+              ))}
+              <Typography variant="caption" color="text.secondary">Only approved lorries can take trips.</Typography>
+            </Stack>
+          )}
           <Grid container spacing={1.5}>
             {detailItems.map(([label, value]) => (
               <Grid key={String(label)} size={{ xs: 12, sm: 6 }}>
@@ -124,6 +164,23 @@ export function VehicleDetailPanel({ vehicleId }: { vehicleId: number }) {
           )}
         </Stack>
       </Paper>
+
+      <Paper sx={{ p: 2 }} variant="outlined">
+        <Typography variant="subtitle1" fontWeight={700} mb={1}>Drivers of this lorry</Typography>
+        <VehicleLinksTable vehicleId={vehicleId} />
+      </Paper>
+
+      {deciding && (
+        <DecisionDialog
+          open
+          title={`${deciding.label} lorry ${text(vehicle.vehicle_number)}`}
+          needsNote={deciding.needsNote}
+          busy={approvalState.isLoading}
+          error={approvalErr}
+          onCancel={() => setDeciding(null)}
+          onConfirm={(note) => void decide(note)}
+        />
+      )}
 
       {canTrack && (
       <Box>

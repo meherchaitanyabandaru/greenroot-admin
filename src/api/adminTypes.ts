@@ -350,7 +350,7 @@ export type CrashReport = {
 
 export type CrashReportsResponse = { items: CrashReport[]; total: number };
 
-export type PlantSuggestionStatus = 'PENDING' | 'APPROVED' | 'LINKED' | 'REJECTED';
+export type PlantSuggestionStatus = 'PENDING' | 'APPROVED' | 'LINKED' | 'REJECTED' | 'MERGED';
 export type PlantSuggestion = {
   id: number;
   name: string;
@@ -365,6 +365,13 @@ export type PlantSuggestion = {
   review_note?: string;
   reviewed_at?: string;
   created_at: string;
+  /** SUGGESTION (a user sent it) or QUOTATION_ITEM (typed into a quotation request). */
+  source: 'SUGGESTION' | 'QUOTATION_ITEM';
+  merged_into_suggestion_id?: number;
+  /** Quotation lines that used this name (and names merged into it). */
+  usage_count: number;
+  /** Open names spelt alike: possible duplicates to merge. */
+  similar: { id: number; name: string }[];
 };
 export type PlantSuggestionsResponse = { suggestions: PlantSuggestion[]; total: number };
 

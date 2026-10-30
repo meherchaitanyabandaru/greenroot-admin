@@ -44,6 +44,7 @@ import { LoadingState } from '../../components/feedback/LoadingState';
 import { StatusChip } from '../../components/status/StatusChip';
 import { normalizeApiError } from '../../utils/apiError';
 import { OrderStatusForm } from './OrderStatusForm';
+import { OrderConsents } from './OrderConsents';
 
 function text(value: unknown) {
   if (value === null || value === undefined || value === '') return '-';
@@ -620,6 +621,7 @@ export function OrderDetailPanel({
       />
 
       {['LOADED', 'PARTIALLY_FULFILLED', 'COMPLETED'].includes(status) && <LoadingProofSection orderId={orderId} />}
+      <OrderConsents orderId={orderId} />
 
       {/* ── Items (inline editable) ── */}
       <Box>

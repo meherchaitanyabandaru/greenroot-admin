@@ -9,6 +9,8 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import EmailIcon from '@mui/icons-material/Email';
 import DescriptionIcon from '@mui/icons-material/Description';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import LinkIcon from '@mui/icons-material/Link';
+import PhotoSizeSelectLargeIcon from '@mui/icons-material/PhotoSizeSelectLarge';
 import GppMaybeIcon from '@mui/icons-material/GppMaybe';
 import HistoryIcon from '@mui/icons-material/History';
 import StarOutlineIcon from '@mui/icons-material/StarOutline';
@@ -98,6 +100,8 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { label: 'Dispatches', path: '/dispatches', icon: LocalShippingIcon },
       { label: 'Vehicles', path: '/vehicles', icon: DirectionsCarIcon },
+      { label: 'Lorry Owners', path: '/vehicle-owners', icon: BadgeIcon },
+      { label: 'Driver ↔ Lorry Links', path: '/vehicle-links', icon: LinkIcon },
       { label: 'Live Tracking', path: '/tracking', icon: TimelineIcon },
     ],
   },
@@ -128,12 +132,14 @@ export const navigationGroups: NavGroup[] = [
     icon: PermMediaIcon,
     items: [
       { label: 'Attachments', path: '/attachments', icon: AttachFileIcon },
+      { label: 'Image Policies', path: '/image-policies', icon: PhotoSizeSelectLargeIcon },
     ],
   },
   {
     section: 'Logs',
     icon: ManageSearchIcon,
     items: [
+      { label: 'Risk Review',   path: '/risk',          icon: GppMaybeIcon },
       { label: 'Audit Logs',    path: '/audit',         icon: HistoryIcon },
       { label: 'Security Logs', path: '/security-logs', icon: SecurityIcon },
       { label: 'App Crash Reports', path: '/crash-reports', icon: BugReportIcon },

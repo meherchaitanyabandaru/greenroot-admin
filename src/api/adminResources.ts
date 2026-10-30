@@ -90,7 +90,7 @@ export const adminResourcesApi = baseApi.injectEndpoints({
       query: (body) => ({ url: '/api/v1/plants', method: 'POST', body }),
       invalidatesTags: ['Plants', 'Dashboard'],
     }),
-    listPlantSuggestions: builder.query<PlantSuggestionsResponse, { status?: string; page: number; per_page: number }>({
+    listPlantSuggestions: builder.query<PlantSuggestionsResponse, { status?: string; search?: string; page: number; per_page: number }>({
       query: (params) => `/api/v1/plants/suggestions?${toQuery(params)}`,
       providesTags: ['Plants'],
     }),
@@ -104,7 +104,7 @@ export const adminResourcesApi = baseApi.injectEndpoints({
     }),
     reviewPlantSuggestion: builder.mutation<
       { suggestion: PlantSuggestion },
-      { id: number; action: 'APPROVED' | 'LINKED' | 'REJECTED'; plant_id?: number; note?: string }
+      { id: number; action: 'APPROVED' | 'LINKED' | 'REJECTED' | 'MERGED'; plant_id?: number; note?: string; into_suggestion_id?: number }
     >({
       query: ({ id, ...body }) => ({ url: `/api/v1/plants/suggestions/${id}/review`, method: 'POST', body }),
       invalidatesTags: ['Plants', 'Dashboard'],
