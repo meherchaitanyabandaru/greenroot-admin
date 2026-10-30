@@ -31,6 +31,8 @@ export const baseApi = createApi({
     'SMS',
     'Email',
     'Market',
+    'ImagePolicies',
+    'Risk',
   ],
   endpoints: () => ({}),
 });

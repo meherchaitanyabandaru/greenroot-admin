@@ -70,6 +70,8 @@ function statusColor(status: string): 'default' | 'warning' | 'info' | 'success'
     case 'CUSTOMER_ACCEPTED': return 'success';
     case 'CUSTOMER_REJECTED': return 'error';
     case 'CONVERTED': return 'success';
+    case 'CUSTOMER_REQUESTED': return 'warning';
+    case 'REQUEST_DECLINED': return 'error';
     default:         return 'default';
   }
 }
@@ -204,6 +206,13 @@ export function QuotationDetailPanel({ quotationId }: { quotationId: number }) {
       )}
 
       {/* Notes */}
+      {Boolean(q.is_request) && (
+        <Alert severity={q.status === 'REQUEST_DECLINED' ? 'error' : 'info'} sx={{ mb: 2 }}>
+          Requested by the customer{q.request_note ? `: “${text(q.request_note)}”` : '.'}
+          {q.request_expires_at && q.status === 'CUSTOMER_REQUESTED' ? ` Nursery answers by ${text(q.request_expires_at)}.` : ''}
+          {q.decline_reason ? ` Declined: ${text(q.decline_reason)}` : ''}
+        </Alert>
+      )}
       {q.notes && (
         <>
           <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.06em' }}>
@@ -244,15 +253,25 @@ export function QuotationDetailPanel({ quotationId }: { quotationId: number }) {
             {items.map((item, i) => (
               <TableRow key={i} hover>
                 <TableCell sx={{ fontSize: 13 }}>
-                  <Typography variant="body2" fontWeight={600}>{text(item.scientific_name)}</Typography>
-                  {item.common_name && (
+                  {/* A plant not in the catalog: the customer's own name, never replaced. */}
+                  <Typography variant="body2" fontWeight={600}>{text(item.custom_plant_name ?? item.scientific_name)}</Typography>
+                  {item.is_custom ? (
+                    <Typography variant="caption" color="warning.main" display="block">
+                      Not in the plant list{item.linked_plant_name ? ` · mapped to ${text(item.linked_plant_name)}` : ''}
+                    </Typography>
+                  ) : item.common_name && (
                     <Typography variant="caption" color="text.secondary">{text(item.common_name)}</Typography>
+                  )}
+                  {[item.variety, item.size_description, item.grade && `Grade ${item.grade}`].filter(Boolean).length > 0 && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      {[item.variety, item.size_description, item.grade && `Grade ${item.grade}`].filter(Boolean).join(' · ')}
+                    </Typography>
                   )}
                 </TableCell>
                 <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{text(item.description)}</TableCell>
                 <TableCell align="right" sx={{ fontSize: 13 }}>{text(item.quantity)}</TableCell>
-                <TableCell align="right" sx={{ fontSize: 13 }}>{money(item.unit_price)}</TableCell>
-                <TableCell align="right" sx={{ fontSize: 13, fontWeight: 700 }}>{money(item.total_price)}</TableCell>
+                <TableCell align="right" sx={{ fontSize: 13 }}>{item.is_priced === false ? '—' : money(item.unit_price)}</TableCell>
+                <TableCell align="right" sx={{ fontSize: 13, fontWeight: 700 }}>{item.is_priced === false ? '—' : money(item.total_price)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

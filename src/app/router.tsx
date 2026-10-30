@@ -38,6 +38,16 @@ const CrashReportsPage = lazy(() =>
 const PaymentIssuesPage = lazy(() =>
   import('../features/payments/PaymentIssuesPage').then((m) => ({ default: m.PaymentIssuesPage })),
 );
+const RiskPage = lazy(() => import('../features/risk/RiskPage').then((m) => ({ default: m.RiskPage })));
+const ImagePoliciesPage = lazy(() =>
+  import('../features/media/ImagePoliciesPage').then((m) => ({ default: m.ImagePoliciesPage })),
+);
+const VehicleOwnersPage = lazy(() =>
+  import('../features/vehicles/VehicleOwners').then((m) => ({ default: m.VehicleOwnersPage })),
+);
+const VehicleLinksPage = lazy(() =>
+  import('../features/vehicles/VehicleLinks').then((m) => ({ default: m.VehicleLinksPage })),
+);
 const PlantSuggestionsPage = lazy(() =>
   import('../features/plants/PlantSuggestionsPage').then((m) => ({ default: m.PlantSuggestionsPage })),
 );
@@ -128,7 +138,11 @@ export function AppRouter() {
 
             {/* Governance */}
             <Route path="/vehicles" element={<ResourceListPage resource="vehicles" />} />
+            <Route path="/vehicle-owners" element={<VehicleOwnersPage />} />
+            <Route path="/vehicle-links" element={<VehicleLinksPage />} />
             <Route path="/attachments" element={<ResourceListPage resource="attachments" />} />
+            <Route path="/image-policies" element={<ImagePoliciesPage />} />
+            <Route path="/risk" element={<RiskPage />} />
             <Route path="/notifications/devices" element={<ResourceListPage resource="notificationDevices" />} />
             <Route path="/audit" element={<AuditLogsPage />} />
             <Route path="/security-logs" element={<SecurityLogsPage />} />

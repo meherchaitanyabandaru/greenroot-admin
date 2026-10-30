@@ -32,6 +32,7 @@ import { DetailSkeleton, LoadingState } from '../../components/feedback/LoadingS
 import { StatusChip } from '../../components/status/StatusChip';
 import { normalizeApiError } from '../../utils/apiError';
 import { formatCurrency, toLabel } from '../../utils/labels';
+import { PlantAliases } from './PlantAliases';
 import { PlantForm } from './PlantForm';
 import { PlantImageForm } from './PlantImageForm';
 
@@ -345,7 +346,7 @@ function EditTab({
 
 // ─── Main panel ───────────────────────────────────────────────────────────────
 
-const TABS = ['Overview', 'Care Guide', 'Images', 'Nurseries', 'Edit'];
+const TABS = ['Overview', 'Care Guide', 'Images', 'Nurseries', 'Edit', 'Other names'];
 
 export function PlantDetailPanel({ plantId }: { plantId: number }) {
   const plantQuery = useGetPlantQuery(plantId);
@@ -496,6 +497,7 @@ export function PlantDetailPanel({ plantId }: { plantId: number }) {
           />
         )}
         {tab === 3 && <NurseriesTab plantId={Number(plant.id)} />}
+        {tab === 5 && <PlantAliases plantId={Number(plant.id)} />}
         {tab === 4 && (
           <EditTab
             plant={plant}

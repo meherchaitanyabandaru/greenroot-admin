@@ -12,7 +12,8 @@ import {
 import { useRef, useState } from 'react';
 import { usePresignUploadMutation, useCreateAttachmentMutation } from '../../api/adminResources';
 import { normalizeApiError } from '../../utils/apiError';
-import { ALLOWED_EXT, attachmentProblem } from './attachmentRules';
+import { useUploadImageMutation } from '../media/imagePoliciesApi';
+import { ALLOWED_EXT, attachmentProblem, isPhoto } from './attachmentRules';
 
 const ENTITY_TYPES = [
   'ORDER',
@@ -37,6 +38,7 @@ export function AttachmentUploadForm({ onSuccess }: { onSuccess?: () => void }) 
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [presign] = usePresignUploadMutation();
+  const [uploadImage] = useUploadImageMutation();
   const [createAttachment, createState] = useCreateAttachmentMutation();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -47,22 +49,30 @@ export function AttachmentUploadForm({ onSuccess }: { onSuccess?: () => void }) 
     setProgress(0);
 
     try {
-      // Step 1: Get presigned PUT URL
-      const presignResult = await presign({
-        bucket: 'attachments',
-        file_name: file.name,
-        content_type: file.type || 'application/octet-stream',
-        size: file.size, // signed: the upload must be exactly this size (max 20 MB)
-      }).unwrap();
+      let fileUrl: string;
+      if (isPhoto(file)) {
+        // Photos: the API checks them (ATTACHMENT image policy) and stores them.
+        setProgress(30);
+        fileUrl = (await uploadImage({ category: 'ATTACHMENT', file }).unwrap()).file_url;
+      } else {
+        // Step 1: Get presigned PUT URL
+        const presignResult = await presign({
+          bucket: 'attachments',
+          file_name: file.name,
+          content_type: file.type || 'application/octet-stream',
+          size: file.size, // signed: the upload must be exactly this size (max 20 MB)
+        }).unwrap();
 
-      // Step 2: PUT file directly to storage
-      setProgress(30);
-      const putResp = await fetch(presignResult.upload_url, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type || 'application/octet-stream' },
-        body: file,
-      });
-      if (!putResp.ok) throw new Error(`Upload failed: ${putResp.statusText}`);
+        // Step 2: PUT file directly to storage
+        setProgress(30);
+        const putResp = await fetch(presignResult.upload_url, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type || 'application/octet-stream' },
+          body: file,
+        });
+        if (!putResp.ok) throw new Error(`Upload failed: ${putResp.statusText}`);
+        fileUrl = presignResult.file_url;
+      }
       setProgress(80);
 
       // Step 3: Save attachment metadata
@@ -70,7 +80,7 @@ export function AttachmentUploadForm({ onSuccess }: { onSuccess?: () => void }) 
         entity_type: entityType,
         entity_id: Number(entityId),
         file_name: file.name,
-        file_url: presignResult.file_url,
+        file_url: fileUrl,
         file_type: file.type || undefined,
         file_size: file.size,
       }).unwrap();
@@ -101,7 +111,9 @@ export function AttachmentUploadForm({ onSuccess }: { onSuccess?: () => void }) 
         required
       >
         {ENTITY_TYPES.map((t) => (
-          <MenuItem key={t} value={t}>{t}</MenuItem>
+          <MenuItem key={t} value={t}>
+            {t}
+          </MenuItem>
         ))}
       </TextField>
 
@@ -141,16 +153,16 @@ export function AttachmentUploadForm({ onSuccess }: { onSuccess?: () => void }) 
         )}
       </Box>
 
-      {progress !== null && (
-        <LinearProgress variant="determinate" value={progress} />
-      )}
+      {progress !== null && <LinearProgress variant="determinate" value={progress} />}
 
       <Button
         type="submit"
         variant="contained"
         size="small"
         startIcon={<CloudUploadIcon fontSize="small" />}
-        disabled={!file || !entityId || createState.isLoading || progress !== null && progress < 100}
+        disabled={
+          !file || !entityId || createState.isLoading || (progress !== null && progress < 100)
+        }
         sx={{ alignSelf: 'flex-start' }}
       >
         Upload Attachment

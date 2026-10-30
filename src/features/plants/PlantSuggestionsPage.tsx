@@ -23,12 +23,14 @@ const statusColor: Record<PlantSuggestionStatus, 'warning' | 'success' | 'info' 
   APPROVED: 'success',
   LINKED: 'info',
   REJECTED: 'default',
+  MERGED: 'default',
 };
 const statusLabel: Record<PlantSuggestionStatus, string> = {
   PENDING: 'Pending',
   APPROVED: 'Added',
   LINKED: 'Linked',
   REJECTED: 'Rejected',
+  MERGED: 'Merged',
 };
 
 function formatDate(value?: string) {
@@ -43,10 +45,11 @@ function formatDate(value?: string) {
  */
 export function PlantSuggestionsPage() {
   const [status, setStatus] = useState<string>('PENDING');
+  const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [open, setOpen] = useState<PlantSuggestion | null>(null);
-  const { data, isFetching, error, refetch } = useListPlantSuggestionsQuery({ status, page: page + 1, per_page: rowsPerPage });
+  const { data, isFetching, error, refetch } = useListPlantSuggestionsQuery({ status, search: search || undefined, page: page + 1, per_page: rowsPerPage });
 
   const columns: ColumnDef<PlantSuggestion>[] = [
     {
@@ -57,6 +60,17 @@ export function PlantSuggestionsPage() {
           <Typography fontSize={13} fontWeight={600}>{row.original.name}</Typography>
           {row.original.scientific_name && <Typography fontSize={12} color="text.secondary" fontStyle="italic">{row.original.scientific_name}</Typography>}
         </Link>
+      ),
+    },
+    {
+      id: '_source',
+      header: 'From',
+      cell: ({ row }) => (
+        <Stack spacing={0.5} alignItems="flex-start">
+          <Chip size="small" variant="outlined" label={row.original.source === 'QUOTATION_ITEM' ? 'Quotation request' : 'Suggestion'} sx={{ height: 22, fontSize: 11 }} />
+          {row.original.usage_count > 0 && <Typography fontSize={12} color="text.secondary">Used in {row.original.usage_count} line(s)</Typography>}
+          {row.original.similar.length > 0 && <Typography fontSize={12} color="warning.main">{row.original.similar.length} similar name(s)</Typography>}
+        </Stack>
       ),
     },
     { id: '_notes', header: 'Notes', cell: ({ row }) => row.original.notes ?? '—' },
@@ -87,7 +101,14 @@ export function PlantSuggestionsPage() {
     <Box>
       <PageHeader
         title="Plant Suggestions"
-        description="Plants users could not find. Add them to the catalog, link them to an existing plant, or reject them. The user gets a notification."
+        description="Names people used for plants they could not find: suggestions, and plants typed into quotation requests. Link a name to the plant it is (it becomes a searchable local name), add a new plant, merge duplicates or reject. Quotations already made keep the name as written; requests are never blocked by this queue."
+      />
+      <TextField
+        size="small"
+        label="Search names (typos match)"
+        value={search}
+        onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+        sx={{ minWidth: 260, mb: 2, mr: 2 }}
       />
       <TextField
         select
@@ -101,6 +122,7 @@ export function PlantSuggestionsPage() {
         <MenuItem value="APPROVED">Added</MenuItem>
         <MenuItem value="LINKED">Linked</MenuItem>
         <MenuItem value="REJECTED">Rejected</MenuItem>
+        <MenuItem value="MERGED">Merged</MenuItem>
         <MenuItem value="">All</MenuItem>
       </TextField>
       {isFetching && <TableSkeleton rows={6} cols={columns.length} />}
@@ -133,11 +155,14 @@ function ReviewPanel({ suggestion: s, onDone }: { suggestion: PlantSuggestion; o
   const [err, setErr] = useState('');
   const busy = reviewState.isLoading || createState.isLoading;
 
-  async function decide(action: 'APPROVED' | 'LINKED' | 'REJECTED', plantId?: number) {
+  async function decide(action: 'APPROVED' | 'LINKED' | 'REJECTED' | 'MERGED', plantId?: number, into?: number) {
     setErr('');
     try {
-      await review({ id: s.id, action, plant_id: plantId, note: action === 'REJECTED' ? reason.trim() : undefined }).unwrap();
-      showToast(action === 'REJECTED' ? 'Suggestion rejected' : 'Plant saved — the user was notified', 'success');
+      await review({ id: s.id, action, plant_id: plantId, into_suggestion_id: into, note: action === 'REJECTED' ? reason.trim() : undefined }).unwrap();
+      showToast(
+        action === 'REJECTED' ? 'Suggestion rejected' : action === 'MERGED' ? 'Merged into the other name' : 'Saved — the name now finds the plant',
+        'success',
+      );
       onDone();
     } catch (e) {
       setErr(normalizeApiError(e).message);
@@ -166,6 +191,20 @@ function ReviewPanel({ suggestion: s, onDone }: { suggestion: PlantSuggestion; o
       </Box>
       {err && <Alert severity="error">{err}</Alert>}
 
+      {s.usage_count > 0 && (
+        <Alert severity="info">
+          Used in {s.usage_count} quotation line(s). Those lines keep this name as written; linking only helps future searches.
+        </Alert>
+      )}
+      {s.status === 'LINKED' && (
+        <Box>
+          <Typography fontWeight={700} mb={0.5}>Wrong plant? Link it again</Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'flex-start' }}>
+            <Box flex={1}><PlantPicker value={linkTo} onChange={setLinkTo} label="Correct plant" /></Box>
+            <Button variant="outlined" disabled={!linkTo || busy} onClick={() => linkTo && void decide('LINKED', linkTo.id)}>Re-link</Button>
+          </Stack>
+        </Box>
+      )}
       {s.status !== 'PENDING' ? (
         <Alert severity="info">
           {statusLabel[s.status]}{s.plant_name ? ` → ${s.plant_name}` : ''}{s.review_note ? ` — ${s.review_note}` : ''} ({formatDate(s.reviewed_at)})
@@ -198,6 +237,23 @@ function ReviewPanel({ suggestion: s, onDone }: { suggestion: PlantSuggestion; o
               onSubmit={(v) => void addNew(v)}
             />
           </Box>
+
+          {s.similar.length > 0 && (
+            <>
+              <Divider />
+              <Box>
+                <Typography fontWeight={700} mb={0.5}>The same name spelt differently?</Typography>
+                <Typography fontSize={13} color="text.secondary" mb={1}>Merge this one into the name to keep; its uses count there.</Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {s.similar.map((o) => (
+                    <Button key={o.id} size="small" variant="outlined" disabled={busy} onClick={() => void decide('MERGED', undefined, o.id)}>
+                      Merge into “{o.name}”
+                    </Button>
+                  ))}
+                </Stack>
+              </Box>
+            </>
+          )}
 
           <Divider />
           <Box>

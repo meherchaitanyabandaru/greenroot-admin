@@ -73,6 +73,9 @@ const STATUS_MAP: Record<string, StatusConfig> = {
   INTERNAL_DRAFT:      { label: 'Internal draft',      color: '#667085', bg: '#F2F4F7' },
   INTERNAL_FINAL:      { label: 'Internal final',      color: '#7C3AED', bg: '#EDE9FE' },
   CONVERTED:           { label: 'Converted to order',  color: '#17803D', bg: '#D1FAE5' },
+  CUSTOMER_REQUESTED:  { label: 'Customer request',    color: '#B45309', bg: '#FEF3C7' },
+  REQUEST_DECLINED:    { label: 'Request declined',    color: '#C2410C', bg: '#FEE2E2' },
+  REQUEST_CANCELLED:   { label: 'Request cancelled',   color: '#667085', bg: '#F2F4F7' },
 
   // Local market ads and reports
   PUBLISHED:           { label: 'Published',           color: '#17803D', bg: '#D1FAE5' },
