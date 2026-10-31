@@ -31,10 +31,20 @@ import { normalizeApiError } from '../../utils/apiError';
 import { formatDateTime } from '../../utils/labels';
 import {
   ACTION_LABEL,
+  CLASSIFICATION_LABEL,
+  type Classification,
+  periodText,
+  ruleSection,
   formatBytes,
+  type LegalHold,
   type RetentionRule,
   type RetentionRun,
   useDryRunAllMutation,
+  useGetHoldsQuery,
+  useGetPreviewQuery,
+  useGetRuleHistoryQuery,
+  usePlaceHoldMutation,
+  useReleaseHoldMutation,
   useDryRunRuleMutation,
   useGetRetentionQuery,
   useGetRetentionRunsQuery,
@@ -51,6 +61,8 @@ function StatusChips({ rule }: { rule: RetentionRule }) {
         </Tooltip>
       )}
       {rule.dry_run_only && <Chip size="small" color="info" label="Report only" />}
+      <Chip size="small" variant="outlined" label={CLASSIFICATION_LABEL[rule.classification] ?? rule.classification}
+        color={rule.classification === 'LEGAL_REQUIREMENT' ? 'primary' : rule.classification === 'LEGAL_REVIEW' ? 'warning' : 'default'} />
     </Stack>
   );
 }
@@ -68,6 +80,7 @@ export function RetentionPage() {
   const [dryRun, dryRunState] = useDryRunRuleMutation();
   const [dryRunAll, dryRunAllState] = useDryRunAllMutation();
   const [editing, setEditing] = useState<RetentionRule | null>(null);
+  const [details, setDetails] = useState<RetentionRule | null>(null);
   const roles = useAppSelector((s) => s.auth.user?.roles ?? []);
   const isSuperAdmin = roles.some((r) => r.code === 'SUPER_ADMIN');
   const toast = useToast();
@@ -79,7 +92,7 @@ export function RetentionPage() {
   const runOne = async (code: string) => {
     try {
       const { run } = await dryRun(code).unwrap();
-      toast.showToast(`${code}: ${run.eligible} eligible, ${run.held} on hold (nothing changed)`, 'success');
+      toast.showToast(`${code}: ${run.eligible} eligible, ${run.held} on hold, ${run.excluded} excluded (nothing changed)`, 'success');
     } catch (e) {
       toast.showToast(normalizeApiError(e).message, 'error');
     }
@@ -124,51 +137,16 @@ export function RetentionPage() {
         ))}
       </Stack>
 
-      <Card variant="outlined" sx={{ mb: 2, overflowX: 'auto' }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Data</TableCell>
-              <TableCell>Action</TableCell>
-              <TableCell align="right">Period</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell align="right">Eligible</TableCell>
-              <TableCell align="right">On hold</TableCell>
-              <TableCell>Last dry run</TableCell>
-              <TableCell>Last execution</TableCell>
-              <TableCell>Next run</TableCell>
-              <TableCell />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {data.rules.map((r) => (
-              <TableRow key={r.rule_code} hover>
-                <TableCell>
-                  <Typography fontWeight={600} fontSize={14}>{r.category}</Typography>
-                  <Typography fontSize={12} color="text.secondary">{r.description}</Typography>
-                </TableCell>
-                <TableCell>{ACTION_LABEL[r.action]}</TableCell>
-                <TableCell align="right">{r.period_days} days</TableCell>
-                <TableCell><StatusChips rule={r} /></TableCell>
-                <TableCell align="right">
-                  {r.last_dry_run ? r.last_dry_run.eligible : '-'}
-                  {r.action === 'REPORT' && r.last_dry_run ? <Typography fontSize={12} color="text.secondary">{formatBytes(r.last_dry_run.bytes)}</Typography> : null}
-                </TableCell>
-                <TableCell align="right">{r.last_dry_run ? r.last_dry_run.held : '-'}</TableCell>
-                <TableCell>{runText(r.last_dry_run)}</TableCell>
-                <TableCell>{r.last_execution ? `${runText(r.last_execution)} · ${r.last_execution.affected} changed` : 'Never'}</TableCell>
-                <TableCell>{r.next_run_at ? formatDateTime(r.next_run_at) : 'At next start'}</TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <Button size="small" onClick={() => void runOne(r.rule_code)} disabled={dryRunState.isLoading}>Dry run</Button>
-                    {isSuperAdmin && <Button size="small" variant="outlined" onClick={() => setEditing(r)}>Change</Button>}
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
+      {(['Orders', 'Quotations', 'Market ads', 'Other data'] as const).map((title) => [title, data.rules.filter((r) => ruleSection(r.rule_code) === title)] as const)
+        .filter(([, rules]) => rules.length > 0).map(([title, rules]) => (
+        <Box key={title as string} mb={2}>
+          <Typography fontWeight={700} mb={1}>{title as string}</Typography>
+          <RulesTable rules={rules as RetentionRule[]} isSuperAdmin={isSuperAdmin} onDryRun={(c) => void runOne(c)} dryRunning={dryRunState.isLoading}
+            onChange={setEditing} onDetails={setDetails} />
+        </Box>
+      ))}
+
+      <LegalHoldsCard isSuperAdmin={isSuperAdmin} />
 
       <Card variant="outlined" sx={{ overflowX: 'auto' }}>
         <CardContent>
@@ -205,6 +183,7 @@ export function RetentionPage() {
       </Card>
 
       {editing && <ChangeRuleDialog rule={editing} onClose={() => setEditing(null)} />}
+      {details && <RuleDetailsDialog rule={details} onClose={() => setDetails(null)} />}
     </Box>
   );
 }
@@ -212,6 +191,7 @@ export function RetentionPage() {
 /** Super admin only. Every change needs a reason (kept in the audit log). */
 export function ChangeRuleDialog({ rule, onClose }: { rule: RetentionRule; onClose: () => void }) {
   const [period, setPeriod] = useState(String(rule.period_days));
+  const [classification, setClassification] = useState<Classification>(rule.classification);
   const [enabled, setEnabled] = useState(rule.is_enabled);
   const [clearHold, setClearHold] = useState(false);
   const [legalNote, setLegalNote] = useState('');
@@ -219,7 +199,9 @@ export function ChangeRuleDialog({ rule, onClose }: { rule: RetentionRule; onClo
   const [save, { isLoading }] = useUpdateRuleMutation();
   const toast = useToast();
   const p = Number(period);
-  const periodOk = Number.isInteger(p) && p >= rule.min_period_days && p <= 3650;
+  const maxPeriod = rule.period_unit === 'FINANCIAL_YEARS' ? 50 : 3650;
+  const unit = rule.period_unit === 'FINANCIAL_YEARS' ? 'financial years' : 'days';
+  const periodOk = Number.isInteger(p) && p >= rule.min_period_days && p <= maxPeriod;
   const stillHeld = rule.legal_review_required && !clearHold;
   const canEnable = !rule.dry_run_only && !stillHeld;
   const turningOn = enabled && !rule.is_enabled;
@@ -231,6 +213,7 @@ export function ChangeRuleDialog({ rule, onClose }: { rule: RetentionRule; onClo
         code: rule.rule_code,
         period_days: p,
         is_enabled: enabled,
+        classification,
         ...(clearHold ? { legal_review_required: false, legal_review_note: legalNote.trim() } : {}),
         reason: reason.trim(),
       }).unwrap();
@@ -247,8 +230,13 @@ export function ChangeRuleDialog({ rule, onClose }: { rule: RetentionRule; onClo
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Typography fontSize={13} color="text.secondary">{rule.description}</Typography>
-          <TextField label={`Period (days, ${rule.min_period_days}–3650)`} value={period} onChange={(e) => setPeriod(e.target.value)}
-            error={!periodOk} type="number" size="small" />
+          <TextField label={`Period (${unit}, ${rule.min_period_days}–${maxPeriod})`} value={period} onChange={(e) => setPeriod(e.target.value)}
+            error={!periodOk} type="number" size="small"
+            helperText={rule.period_unit === 'FINANCIAL_YEARS' ? 'Kept through the end of this many financial years after the record’s own (April–March, India time)' : undefined} />
+          <TextField select SelectProps={{ native: true }} size="small" label="Classification" value={classification}
+            onChange={(e) => setClassification(e.target.value as Classification)}>
+            {(Object.keys(CLASSIFICATION_LABEL) as Classification[]).map((c) => <option key={c} value={c}>{CLASSIFICATION_LABEL[c]}</option>)}
+          </TextField>
           {rule.legal_review_required && (
             <Alert severity="warning">
               On legal review hold: {rule.legal_review_note}
@@ -279,5 +267,179 @@ export function ChangeRuleDialog({ rule, onClose }: { rule: RetentionRule; onClo
         </Button>
       </DialogActions>
     </Dialog>
+  );
+}
+
+function RulesTable({ rules, isSuperAdmin, onDryRun, dryRunning, onChange, onDetails }: {
+  rules: RetentionRule[]; isSuperAdmin: boolean; onDryRun: (code: string) => void; dryRunning: boolean;
+  onChange: (r: RetentionRule) => void; onDetails: (r: RetentionRule) => void;
+}) {
+  return (
+    <Card variant="outlined" sx={{ overflowX: 'auto' }}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Data</TableCell>
+            <TableCell>Action</TableCell>
+            <TableCell align="right">Period</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell align="right">Eligible</TableCell>
+            <TableCell align="right">On hold</TableCell>
+            <TableCell align="right">Excluded</TableCell>
+            <TableCell>Last dry run</TableCell>
+            <TableCell>Last execution</TableCell>
+            <TableCell>Next run</TableCell>
+            <TableCell />
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rules.map((r) => (
+            <TableRow key={r.rule_code} hover>
+              <TableCell>
+                <Typography fontWeight={600} fontSize={14}>{r.category}</Typography>
+                <Typography fontSize={12} color="text.secondary">{r.description}</Typography>
+              </TableCell>
+              <TableCell>{ACTION_LABEL[r.action]}</TableCell>
+              <TableCell align="right">{periodText(r)}</TableCell>
+              <TableCell><StatusChips rule={r} /></TableCell>
+              <TableCell align="right">
+                {r.last_dry_run ? r.last_dry_run.eligible : '-'}
+                {r.action === 'REPORT' && r.last_dry_run ? <Typography fontSize={12} color="text.secondary">{formatBytes(r.last_dry_run.bytes)}</Typography> : null}
+              </TableCell>
+              <TableCell align="right">{r.last_dry_run ? r.last_dry_run.held : '-'}</TableCell>
+              <TableCell align="right">{r.last_dry_run ? r.last_dry_run.excluded : '-'}</TableCell>
+              <TableCell>{runText(r.last_dry_run)}</TableCell>
+              <TableCell>{r.last_execution ? `${runText(r.last_execution)} · ${r.last_execution.affected} changed` : 'Never'}</TableCell>
+              <TableCell>{r.next_run_at ? formatDateTime(r.next_run_at) : 'At next start'}</TableCell>
+              <TableCell>
+                <Stack direction="row" spacing={1}>
+                  <Button size="small" onClick={() => onDryRun(r.rule_code)} disabled={dryRunning}>Dry run</Button>
+                  <Button size="small" onClick={() => onDetails(r)}>Details</Button>
+                  {isSuperAdmin && <Button size="small" variant="outlined" onClick={() => onChange(r)}>Change</Button>}
+                </Stack>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
+  );
+}
+
+/** What a rule would touch now (codes only) and who changed it, when and why. */
+export function RuleDetailsDialog({ rule, onClose }: { rule: RetentionRule; onClose: () => void }) {
+  const preview = useGetPreviewQuery(rule.rule_code);
+  const history = useGetRuleHistoryQuery(rule.id);
+  const list = (title: string, items?: string[]) => (
+    <Box>
+      <Typography fontWeight={600} fontSize={14}>{title} ({items?.length ?? 0}{items && items.length >= 50 ? '+' : ''})</Typography>
+      <Typography fontSize={13} color="text.secondary" sx={{ wordBreak: 'break-word' }}>{items && items.length ? items.join(', ') : 'None'}</Typography>
+    </Box>
+  );
+  return (
+    <Dialog open onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>{rule.category}</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2}>
+          <Typography fontSize={13} color="text.secondary">Records as of now (codes only; nothing is changed by looking).</Typography>
+          {preview.isLoading ? <LoadingState /> : preview.error ? <Alert severity="error">{normalizeApiError(preview.error).message}</Alert> : (
+            <>
+              {list('Eligible', preview.data?.preview.eligible)}
+              {list('On hold (legal hold or pending report)', preview.data?.preview.held)}
+              {list('Excluded (open enquiry or shared)', preview.data?.preview.excluded)}
+            </>
+          )}
+          <Typography fontWeight={700}>Change history</Typography>
+          {(history.data?.audit_logs ?? []).length === 0 ? <Typography fontSize={13} color="text.secondary">No changes yet.</Typography> : (
+            <Table size="small">
+              <TableHead><TableRow><TableCell>When</TableCell><TableCell>Who</TableCell><TableCell>Change and reason</TableCell></TableRow></TableHead>
+              <TableBody>
+                {(history.data?.audit_logs ?? []).map((a) => (
+                  <TableRow key={a.id}><TableCell>{formatDateTime(a.changed_at)}</TableCell><TableCell>{a.user_name ?? '-'}</TableCell><TableCell>{a.description}</TableCell></TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </Stack>
+      </DialogContent>
+      <DialogActions><Button onClick={onClose}>Close</Button></DialogActions>
+    </Dialog>
+  );
+}
+
+const HOLD_TYPES: Record<LegalHold['entity_type'], string> = {
+  ORDER: 'Order', QUOTATION: 'Quotation', PAYMENT: 'Payment', MARKET_AD: 'Market ad', MARKET_ENQUIRY: 'Market enquiry',
+};
+
+/** Legal holds override every rule. Super admins place and release them, always with a reason. */
+export function LegalHoldsCard({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+  const { data } = useGetHoldsQuery();
+  const [place, placing] = usePlaceHoldMutation();
+  const [release] = useReleaseHoldMutation();
+  const [type, setType] = useState<LegalHold['entity_type']>('ORDER');
+  const [code, setCode] = useState('');
+  const [reason, setReason] = useState('');
+  const [releasing, setReleasing] = useState<LegalHold | null>(null);
+  const [releaseReason, setReleaseReason] = useState('');
+  const toast = useToast();
+  const holds = data?.holds ?? [];
+  const run = (p: Promise<unknown>, ok: string, after?: () => void) =>
+    p.then(() => { toast.showToast(ok, 'success'); after?.(); }).catch((e) => toast.showToast(normalizeApiError(e).message, 'error'));
+
+  return (
+    <Card variant="outlined" sx={{ mb: 2 }}>
+      <CardContent>
+        <Typography fontWeight={700}>Legal holds</Typography>
+        <Typography fontSize={13} color="text.secondary" mb={1}>
+          A hold on an ad keeps its location and photos; on an enquiry, its chat; on an order, the order, its payments, documents, delivery proof and quotation; on a quotation or payment, that record. Holds override every rule.
+        </Typography>
+        {isSuperAdmin && (
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} mb={2}>
+            <TextField select SelectProps={{ native: true }} size="small" label="Type" value={type} onChange={(e) => setType(e.target.value as LegalHold['entity_type'])}>
+              {Object.entries(HOLD_TYPES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </TextField>
+            <TextField size="small" label="Code (ad, enquiry, order, quotation or payment)" value={code} onChange={(e) => setCode(e.target.value)} />
+            <TextField size="small" label="Reason (kept with the hold)" value={reason} onChange={(e) => setReason(e.target.value)} sx={{ flex: 1 }} />
+            <Button variant="contained" disabled={!code.trim() || reason.trim().length < 10 || placing.isLoading}
+              onClick={() => void run(place({ entity_type: type, code: code.trim(), reason: reason.trim() }).unwrap(), 'Legal hold placed', () => { setCode(''); setReason(''); })}>
+              Place hold
+            </Button>
+          </Stack>
+        )}
+        <Table size="small">
+          <TableHead>
+            <TableRow><TableCell>On</TableCell><TableCell>Reason</TableCell><TableCell>Placed</TableCell><TableCell>Released</TableCell><TableCell /></TableRow>
+          </TableHead>
+          <TableBody>
+            {holds.length === 0 && <TableRow><TableCell colSpan={5}>No legal holds.</TableCell></TableRow>}
+            {holds.map((h) => (
+              <TableRow key={h.id}>
+                <TableCell>{HOLD_TYPES[h.entity_type]} {h.entity_code ?? `#${h.entity_id}`}</TableCell>
+                <TableCell>{h.reason}</TableCell>
+                <TableCell>{formatDateTime(h.placed_at)} · {h.placed_by ?? '-'}</TableCell>
+                <TableCell>{h.released_at ? `${formatDateTime(h.released_at)} · ${h.released_by ?? '-'}: ${h.release_reason ?? ''}` : <Chip size="small" color="warning" label="Active" />}</TableCell>
+                <TableCell>{isSuperAdmin && !h.released_at && <Button size="small" onClick={() => setReleasing(h)}>Release</Button>}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+      {releasing && (
+        <Dialog open onClose={() => setReleasing(null)} maxWidth="sm" fullWidth>
+          <DialogTitle>Release hold on {releasing.entity_code ?? `#${releasing.entity_id}`}</DialogTitle>
+          <DialogContent>
+            <TextField fullWidth multiline minRows={2} sx={{ mt: 1 }} label="Why it can be released (kept with the hold)" value={releaseReason}
+              onChange={(e) => setReleaseReason(e.target.value)} helperText="At least 10 characters" />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setReleasing(null)}>Cancel</Button>
+            <Button variant="contained" disabled={releaseReason.trim().length < 10}
+              onClick={() => void run(release({ id: releasing.id, reason: releaseReason.trim() }).unwrap(), 'Legal hold released', () => { setReleasing(null); setReleaseReason(''); })}>
+              Release
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
+    </Card>
   );
 }
