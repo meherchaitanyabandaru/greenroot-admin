@@ -38,6 +38,7 @@ const CrashReportsPage = lazy(() =>
 const PaymentIssuesPage = lazy(() =>
   import('../features/payments/PaymentIssuesPage').then((m) => ({ default: m.PaymentIssuesPage })),
 );
+const PushStatusPage = lazy(() => import('../features/push/PushStatusPage').then((m) => ({ default: m.PushStatusPage })));
 const AssistantUsagePage = lazy(() => import('../features/assistant/AssistantUsagePage').then((m) => ({ default: m.AssistantUsagePage })));
 const RiskPage = lazy(() => import('../features/risk/RiskPage').then((m) => ({ default: m.RiskPage })));
 const ImagePoliciesPage = lazy(() =>
@@ -130,6 +131,7 @@ export function AppRouter() {
             <Route path="/notifications/templates" element={<ResourceListPage resource="notificationTemplates" />} />
             <Route path="/sms" element={<SmsPage />} />
             <Route path="/email" element={<EmailPage />} />
+            <Route path="/push" element={<PushStatusPage />} />
 
             {/* Commercial */}
             <Route path="/payments" element={<ResourceListPage resource="payments" />} />

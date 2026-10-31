@@ -165,3 +165,9 @@ Endpoints used by admin:
 ## Mango AI usage (2026-10-30)
 
 Messaging → **Mango AI** (`/mango-ai`, `features/assistant/`): AI calls and estimated USD by kind (speech to text, answers, read aloud), today and this month, against the global limits, and whether AI is on. It refreshes every minute. **Mango settings** on the same page: on/off switch and questions per person per day (0–50, default 5), via `GET/PUT /api/v1/admin/assistant/settings` (audit-logged). The cost limits stay in API environment variables. API: `GET /api/v1/admin/assistant/usage`. Test: `tests/unit/assistant`.
+
+## Push notification status (2026-10-31)
+
+Messaging → **Push notifications** (`/push`, `features/push/`): configuration and delivery shown apart. Configuration: whether the API loaded a Firebase service account (`FCM_SERVICE_ACCOUNT_JSON`) and its project id; the app's `google-services.json` alone does not let the server send. Delivery: health over the last 24 h (Not configured, No pushes in 24 h, Delivering, Some failing >10%, Failing ≥50%), registered and retired devices, delivered / failed / no-phone counts for 24 h and 7 days, last delivered and last failure. Counts come from `notifications.push_status` (written only by the push sender), not the inbox status. API: `GET /api/v1/notifications/push-status` (admin). Test: `tests/unit/push`.
+
+Quotation detail: a **Type** row (Internal / Customer) and, for an internal draft made into a customer quotation, **Made a Customer Quotation** with when and by whom, read from the quotation's audit log (`quotationConversion.ts`). Test: `tests/unit/quotations`.
