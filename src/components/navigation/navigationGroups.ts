@@ -1,5 +1,6 @@
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import AutoDeleteIcon from '@mui/icons-material/AutoDelete';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
 import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import CampaignIcon from '@mui/icons-material/Campaign';
@@ -146,6 +147,7 @@ export const navigationGroups: NavGroup[] = [
     items: [
       { label: 'Risk Review',   path: '/risk',          icon: GppMaybeIcon },
       { label: 'Data Retention', path: '/data-retention', icon: AutoDeleteIcon },
+      { label: 'Archive (by FY)', path: '/archive', icon: Inventory2Icon },
       { label: 'Audit Logs',    path: '/audit',         icon: HistoryIcon },
       { label: 'Security Logs', path: '/security-logs', icon: SecurityIcon },
       { label: 'App Crash Reports', path: '/crash-reports', icon: BugReportIcon },
