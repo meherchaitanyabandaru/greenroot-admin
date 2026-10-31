@@ -40,6 +40,7 @@ import StoreIcon from '@mui/icons-material/Store';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import YardIcon from '@mui/icons-material/Yard';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 import type { SvgIconComponent } from '@mui/icons-material';
 
 export type NavItem = { label: string; path: string; icon: SvgIconComponent; badge?: string };
@@ -125,6 +126,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Notification Devices', path: '/notifications/devices', icon: PhonelinkRingIcon },
       { label: 'SMS / DLT', path: '/sms', icon: SmsIcon },
       { label: 'Email', path: '/email', icon: EmailIcon },
+      { label: 'Mango AI', path: '/mango-ai', icon: SmartToyIcon },
     ],
   },
   {
