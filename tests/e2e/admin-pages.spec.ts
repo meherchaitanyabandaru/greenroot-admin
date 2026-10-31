@@ -9,6 +9,7 @@ const PAGES = [
   '/notifications/templates', '/sms', '/email', '/payments', '/payment-issues', '/subscriptions',
   '/subscription-plans', '/subscription-promos', '/vehicles', '/attachments',
   '/notifications/devices', '/audit', '/security-logs', '/crash-reports', '/settings',
+  '/push', '/mango-ai', '/risk', '/image-policies', '/vehicle-links', '/vehicle-owners', '/market', '/sourcing-posts',
 ];
 
 test('admin pages load without API errors', async ({ page }) => {

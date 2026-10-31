@@ -7,6 +7,7 @@ import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import EmailIcon from '@mui/icons-material/Email';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import DescriptionIcon from '@mui/icons-material/Description';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import LinkIcon from '@mui/icons-material/Link';
@@ -126,6 +127,7 @@ export const navigationGroups: NavGroup[] = [
       { label: 'Notification Devices', path: '/notifications/devices', icon: PhonelinkRingIcon },
       { label: 'SMS / DLT', path: '/sms', icon: SmsIcon },
       { label: 'Email', path: '/email', icon: EmailIcon },
+      { label: 'Push notifications', path: '/push', icon: NotificationsActiveIcon },
       { label: 'Mango AI', path: '/mango-ai', icon: SmartToyIcon },
     ],
   },
