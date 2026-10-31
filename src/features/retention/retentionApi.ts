@@ -4,8 +4,8 @@ export type RetentionRun = {
   id: number;
   rule_code: string;
   mode: 'DRY_RUN' | 'EXECUTE';
-  trigger_source: 'SCHEDULE' | 'ADMIN';
-  status: 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'SKIPPED';
+  trigger_source: 'SCHEDULE' | 'ADMIN' | 'JOB';
+  status: 'QUEUED' | 'RUNNING' | 'DONE' | 'SUCCEEDED' | 'FAILED' | 'SKIPPED' | 'CANCELLED';
   period_days: number;
   eligible: number;
   held: number;
@@ -17,6 +17,34 @@ export type RetentionRun = {
   error_code?: string | null;
   started_at: string;
   finished_at?: string | null;
+  // Clean-up jobs only
+  range_from?: string;
+  range_to_excl?: string;
+  filter_status?: string | null;
+  filter_nursery_id?: number | null;
+  has_export?: boolean;
+  scheduled_at?: string;
+  reason?: string;
+  confirmed_count?: number;
+  cancel_requested_at?: string | null;
+  batches_done?: number;
+  export_bytes?: number | null;
+  export_expires_at?: string | null;
+  export_ready?: boolean;
+  failure_detail?: string | null;
+  retry_of_run_id?: number | null;
+};
+
+/** Which filters a rule offers for clean-up jobs; blocked says why it cannot have one. */
+export type JobOptions = { date_label: string; statuses?: string[]; nursery: boolean; blocked?: string };
+
+export type JobFilter = { rule: string; from: string; to: string; status?: string; nursery_id?: number };
+
+export type JobPreview = { eligible: number; held: number; excluded: number; codes: RetentionPreview };
+
+export type QueueJob = {
+  rule_code: string; from: string; to: string; status?: string; nursery_id?: number;
+  with_export: boolean; run_at?: string; confirm_count: number; reason: string; retry_of_run_id?: number;
 };
 
 export type RetentionRule = {
@@ -38,6 +66,8 @@ export type RetentionRule = {
   last_dry_run?: RetentionRun | null;
   last_execution?: RetentionRun | null;
   next_run_at?: string | null;
+  allows_manual_jobs: boolean;
+  jobs?: JobOptions | null;
 };
 
 export type Classification = 'LEGAL_REQUIREMENT' | 'RECOMMENDATION' | 'LEGAL_REVIEW';
@@ -91,6 +121,7 @@ export type RuleChange = {
   legal_review_required?: boolean;
   legal_review_note?: string;
   classification?: Classification;
+  allows_manual_jobs?: boolean;
   reason: string;
 };
 
@@ -132,6 +163,38 @@ export const retentionApi = baseApi.injectEndpoints({
       query: ({ id, reason }) => ({ url: `/api/v1/admin/retention/holds/${id}/release`, method: 'POST', body: { reason } }),
       invalidatesTags: ['Retention'],
     }),
+    previewJob: builder.query<{ preview: JobPreview }, JobFilter>({
+      query: ({ rule, from, to, status, nursery_id }) => {
+        const p = new URLSearchParams({ rule, from, to });
+        if (status) p.set('status', status);
+        if (nursery_id) p.set('nursery_id', String(nursery_id));
+        return `/api/v1/admin/retention/jobs/preview?${p}`;
+      },
+      keepUnusedDataFor: 0,
+    }),
+    getJobs: builder.query<{ runs: RetentionRun[] }, void>({
+      query: () => '/api/v1/admin/retention/runs?trigger=JOB&limit=100',
+      providesTags: ['Retention'],
+    }),
+    queueJob: builder.mutation<{ id: number; scheduled_at: string }, QueueJob>({
+      query: (body) => ({ url: '/api/v1/admin/retention/jobs', method: 'POST', body }),
+      invalidatesTags: ['Retention'],
+    }),
+    cancelJob: builder.mutation<{ status: string }, number>({
+      query: (id) => ({ url: `/api/v1/admin/retention/jobs/${id}/cancel`, method: 'POST', body: {} }),
+      invalidatesTags: ['Retention'],
+    }),
+    downloadJobExport: builder.query<{ blob: Blob; filename?: string }, number>({
+      query: (id) => ({
+        url: `/api/v1/admin/retention/jobs/${id}/export`,
+        responseHandler: async (response) => {
+          if (!response.ok) return response.json();
+          const disposition = response.headers.get('content-disposition') ?? '';
+          return { blob: await response.blob(), filename: disposition.match(/filename="([^"]+)"/)?.[1] };
+        },
+      }),
+      keepUnusedDataFor: 0,
+    }),
     updateRule: builder.mutation<{ rule: RetentionRule }, RuleChange>({
       query: ({ code, ...body }) => ({ url: `/api/v1/admin/retention/rules/${code}`, method: 'PUT', body }),
       invalidatesTags: ['Retention'],
@@ -142,7 +205,21 @@ export const retentionApi = baseApi.injectEndpoints({
 export const {
   useGetRetentionQuery, useGetRetentionRunsQuery, useDryRunRuleMutation, useDryRunAllMutation, useUpdateRuleMutation,
   useGetPreviewQuery, useGetRuleHistoryQuery, useGetHoldsQuery, usePlaceHoldMutation, useReleaseHoldMutation,
+  useLazyPreviewJobQuery, useGetJobsQuery, useQueueJobMutation, useCancelJobMutation, useLazyDownloadJobExportQuery,
 } = retentionApi;
+
+const istDate = (d: Date) => new Date(d.getTime() + 5.5 * 3_600_000).toISOString().slice(0, 10);
+
+/** The last full calendar month and quarter (India time), as inclusive YYYY-MM-DD ranges. */
+export function lastPeriods(now = new Date()): { month: [string, string]; quarter: [string, string] } {
+  const [y, m] = istDate(now).split('-').map(Number); // m is 1-12
+  const day = (yy: number, mm: number, dd: number) => istDate(new Date(Date.UTC(yy, mm - 1, dd, 12)));
+  const qStart = Math.floor((m - 1) / 3) * 3 + 1; // this quarter's first month
+  return {
+    month: [day(y, m - 1, 1), day(y, m, 0)],
+    quarter: [day(y, qStart - 3, 1), day(y, qStart, 0)],
+  };
+}
 
 export const ACTION_LABEL: Record<RetentionRule['action'], string> = { DELETE: 'Delete', MASK: 'Mask', REPORT: 'Report only' };
 

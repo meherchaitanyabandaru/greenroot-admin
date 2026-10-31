@@ -10,7 +10,7 @@ import { type RetentionRule, retentionApi } from '../../../src/features/retentio
 
 const rule = (over: Partial<RetentionRule>): RetentionRule => ({
   id: 1, rule_code: 'CRASH_REPORTS', category: 'App crash reports', description: 'Crash reports older than N days.', action: 'DELETE',
-  period_days: 90, period_unit: 'DAYS', classification: 'RECOMMENDATION', min_period_days: 7, is_enabled: false, dry_run_only: false, legal_review_required: false, batch_size: 1000,
+  period_days: 90, period_unit: 'DAYS', classification: 'RECOMMENDATION', min_period_days: 7, is_enabled: false, dry_run_only: false, legal_review_required: false, batch_size: 1000, allows_manual_jobs: false,
   updated_at: '2026-10-31T00:00:00Z', ...over,
 });
 
