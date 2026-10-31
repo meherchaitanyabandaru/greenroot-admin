@@ -29,6 +29,7 @@ import { PageHeader } from '../../components/page/PageHeader';
 import { useAppSelector } from '../../hooks/redux';
 import { normalizeApiError } from '../../utils/apiError';
 import { formatDateTime } from '../../utils/labels';
+import { CleanupJobsCard } from './CleanupJobsCard';
 import {
   ACTION_LABEL,
   CLASSIFICATION_LABEL,
@@ -146,6 +147,8 @@ export function RetentionPage() {
         </Box>
       ))}
 
+      <CleanupJobsCard rules={data.rules} isSuperAdmin={isSuperAdmin} />
+
       <LegalHoldsCard isSuperAdmin={isSuperAdmin} />
 
       <Card variant="outlined" sx={{ overflowX: 'auto' }}>
@@ -165,7 +168,7 @@ export function RetentionPage() {
                   <TableCell>{formatDateTime(r.started_at)}</TableCell>
                   <TableCell>{r.rule_code}</TableCell>
                   <TableCell>{r.mode === 'DRY_RUN' ? 'Dry run' : 'Execution'}</TableCell>
-                  <TableCell>{r.trigger_source === 'SCHEDULE' ? 'Schedule' : 'Admin'}</TableCell>
+                  <TableCell>{r.trigger_source === 'SCHEDULE' ? 'Schedule' : r.trigger_source === 'JOB' ? 'Clean-up job' : 'Admin'}</TableCell>
                   <TableCell>
                     <Chip size="small" label={r.status === 'FAILED' ? `Failed: ${r.error_code ?? ''}` : r.status.toLowerCase()}
                       color={r.status === 'FAILED' ? 'error' : r.status === 'SUCCEEDED' ? 'success' : 'default'} />
@@ -196,6 +199,7 @@ export function ChangeRuleDialog({ rule, onClose }: { rule: RetentionRule; onClo
   const [clearHold, setClearHold] = useState(false);
   const [legalNote, setLegalNote] = useState('');
   const [reason, setReason] = useState('');
+  const [allowsJobs, setAllowsJobs] = useState(rule.allows_manual_jobs);
   const [save, { isLoading }] = useUpdateRuleMutation();
   const toast = useToast();
   const p = Number(period);
@@ -214,6 +218,7 @@ export function ChangeRuleDialog({ rule, onClose }: { rule: RetentionRule; onClo
         period_days: p,
         is_enabled: enabled,
         classification,
+        allows_manual_jobs: allowsJobs,
         ...(clearHold ? { legal_review_required: false, legal_review_note: legalNote.trim() } : {}),
         reason: reason.trim(),
       }).unwrap();
@@ -255,6 +260,13 @@ export function ChangeRuleDialog({ rule, onClose }: { rule: RetentionRule; onClo
             <Alert severity="error">
               Switching this on deletes or masks real data on the next scheduled run. Run a dry run first and check the counts.
             </Alert>
+          )}
+          {rule.jobs && (
+            <FormControlLabel
+              control={<Switch checked={allowsJobs} disabled={!rule.allows_manual_jobs && (stillHeld || (!!rule.jobs.blocked && !rule.jobs.blocked.startsWith('clean-up jobs are off')))}
+                onChange={(e) => setAllowsJobs(e.target.checked)} />}
+              label={rule.jobs.blocked && !rule.jobs.blocked.startsWith('clean-up jobs are off') ? `Clean-up jobs: ${rule.jobs.blocked}` : 'Clean-up jobs allowed (super admins queue them by date range)'}
+            />
           )}
           <TextField label="Reason (kept in the audit log)" value={reason} onChange={(e) => setReason(e.target.value)} multiline minRows={2} size="small"
             helperText="At least 10 characters" />

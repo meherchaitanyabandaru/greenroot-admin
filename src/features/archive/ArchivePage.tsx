@@ -6,19 +6,9 @@ import { useToast } from '../../components/feedback/toastContext';
 import { PageHeader } from '../../components/page/PageHeader';
 import { normalizeApiError } from '../../utils/apiError';
 import { type ArchiveQuery, financialYears, useGetArchiveQuery, useLazyDownloadArchiveQuery } from './archiveApi';
+import { download } from '../../utils/download';
 
 const inr = (n?: number | null) => (n == null ? '-' : `₹${n.toLocaleString('en-IN')}`);
-
-function download(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
 
 /**
  * Admin → Archive: orders and quotations by Indian financial year (April–March).
