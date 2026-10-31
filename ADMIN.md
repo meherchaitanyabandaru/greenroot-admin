@@ -161,3 +161,7 @@ Endpoints used by admin:
 |---|---|
 | Nursery list shows "—" for names | API returns `name` not `nursery_name`; fixed 4 occurrences in `NurseryApplicationsPage.tsx` |
 | UserDetailPanel shows "Admin -" for null `last_name` | `[first_name, last_name].filter(Boolean).join(' ') \|\| '-'` in `UserDetailPanel.tsx` |
+
+## Mango AI usage (2026-10-30)
+
+Messaging → **Mango AI** (`/mango-ai`, `features/assistant/`): AI calls and estimated USD by kind (speech to text, answers, read aloud), today and this month, against the global limits, and whether AI is on. It refreshes every minute. **Mango settings** on the same page: on/off switch and questions per person per day (0–50, default 5), via `GET/PUT /api/v1/admin/assistant/settings` (audit-logged). The cost limits stay in API environment variables. API: `GET /api/v1/admin/assistant/usage`. Test: `tests/unit/assistant`.
