@@ -40,6 +40,7 @@ const PaymentIssuesPage = lazy(() =>
 );
 const PushStatusPage = lazy(() => import('../features/push/PushStatusPage').then((m) => ({ default: m.PushStatusPage })));
 const AssistantUsagePage = lazy(() => import('../features/assistant/AssistantUsagePage').then((m) => ({ default: m.AssistantUsagePage })));
+const RetentionPage = lazy(() => import('../features/retention/RetentionPage').then((m) => ({ default: m.RetentionPage })));
 const RiskPage = lazy(() => import('../features/risk/RiskPage').then((m) => ({ default: m.RiskPage })));
 const ImagePoliciesPage = lazy(() =>
   import('../features/media/ImagePoliciesPage').then((m) => ({ default: m.ImagePoliciesPage })),
@@ -146,6 +147,7 @@ export function AppRouter() {
             <Route path="/attachments" element={<ResourceListPage resource="attachments" />} />
             <Route path="/image-policies" element={<ImagePoliciesPage />} />
             <Route path="/risk" element={<RiskPage />} />
+            <Route path="/data-retention" element={<RetentionPage />} />
             <Route path="/mango-ai" element={<AssistantUsagePage />} />
             <Route path="/notifications/devices" element={<ResourceListPage resource="notificationDevices" />} />
             <Route path="/audit" element={<AuditLogsPage />} />

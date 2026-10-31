@@ -11,6 +11,7 @@ export const baseApi = createApi({
   tagTypes: [
     'Auth',
     'Dashboard',
+    'Retention',
     'Users',
     'Plants',
     'Nurseries',
