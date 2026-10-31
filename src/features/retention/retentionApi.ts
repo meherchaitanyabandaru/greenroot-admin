@@ -9,6 +9,7 @@ export type RetentionRun = {
   period_days: number;
   eligible: number;
   held: number;
+  excluded: number;
   affected: number;
   failed: number;
   skipped: number;
@@ -19,11 +20,14 @@ export type RetentionRun = {
 };
 
 export type RetentionRule = {
+  id: number;
   rule_code: string;
   category: string;
   description: string;
   action: 'DELETE' | 'MASK' | 'REPORT';
   period_days: number;
+  period_unit: 'DAYS' | 'FINANCIAL_YEARS';
+  classification: Classification;
   min_period_days: number;
   is_enabled: boolean;
   dry_run_only: boolean;
@@ -36,6 +40,25 @@ export type RetentionRule = {
   next_run_at?: string | null;
 };
 
+export type Classification = 'LEGAL_REQUIREMENT' | 'RECOMMENDATION' | 'LEGAL_REVIEW';
+
+export const CLASSIFICATION_LABEL: Record<Classification, string> = {
+  LEGAL_REQUIREMENT: 'Legal requirement',
+  RECOMMENDATION: 'GreenRoot recommendation',
+  LEGAL_REVIEW: 'Legal review required',
+};
+
+export const periodText = (r: Pick<RetentionRule, 'period_days' | 'period_unit'>) =>
+  r.period_unit === 'FINANCIAL_YEARS' ? `${r.period_days} financial year${r.period_days === 1 ? '' : 's'}` : `${r.period_days} days`;
+
+/** Where a rule is listed on the page. */
+export function ruleSection(code: string): 'Orders' | 'Quotations' | 'Market ads' | 'Other data' {
+  if (code.startsWith('ORDER') || code === 'PAYMENTS' || code === 'DELIVERY_PROOF') return 'Orders';
+  if (code.startsWith('QUOTATIONS_')) return 'Quotations';
+  if (code.startsWith('MARKET_')) return 'Market ads';
+  return 'Other data';
+}
+
 export type RetentionSummary = {
   enabled_rules: number;
   legal_review_holds: number;
@@ -44,12 +67,30 @@ export type RetentionSummary = {
   deleted_accounts_awaiting_scrub: number;
 };
 
+export type RetentionPreview = { eligible: string[]; held: string[]; excluded: string[] };
+
+export type LegalHold = {
+  id: number;
+  entity_type: 'MARKET_AD' | 'MARKET_ENQUIRY' | 'ORDER' | 'QUOTATION' | 'PAYMENT';
+  entity_id: number;
+  entity_code?: string | null;
+  reason: string;
+  placed_by?: string | null;
+  placed_at: string;
+  released_by?: string | null;
+  released_at?: string | null;
+  release_reason?: string | null;
+};
+
+export type AuditEntry = { id: number; description?: string; user_name?: string; changed_at: string };
+
 export type RuleChange = {
   code: string;
   is_enabled?: boolean;
   period_days?: number;
   legal_review_required?: boolean;
   legal_review_note?: string;
+  classification?: Classification;
   reason: string;
 };
 
@@ -71,6 +112,26 @@ export const retentionApi = baseApi.injectEndpoints({
       query: () => ({ url: '/api/v1/admin/retention/dry-run', method: 'POST', body: {} }),
       invalidatesTags: ['Retention'],
     }),
+    getPreview: builder.query<{ preview: RetentionPreview }, string>({
+      query: (code) => `/api/v1/admin/retention/rules/${code}/preview`,
+      providesTags: ['Retention'],
+    }),
+    getRuleHistory: builder.query<{ audit_logs: AuditEntry[] }, number>({
+      query: (id) => `/api/v1/audit-logs?entity_type=retention_rule&record_id=${id}&per_page=20`,
+      providesTags: ['Retention'],
+    }),
+    getHolds: builder.query<{ holds: LegalHold[] }, void>({
+      query: () => '/api/v1/admin/retention/holds',
+      providesTags: ['Retention'],
+    }),
+    placeHold: builder.mutation<{ id: number }, { entity_type: LegalHold['entity_type']; code: string; reason: string }>({
+      query: (body) => ({ url: '/api/v1/admin/retention/holds', method: 'POST', body }),
+      invalidatesTags: ['Retention'],
+    }),
+    releaseHold: builder.mutation<unknown, { id: number; reason: string }>({
+      query: ({ id, reason }) => ({ url: `/api/v1/admin/retention/holds/${id}/release`, method: 'POST', body: { reason } }),
+      invalidatesTags: ['Retention'],
+    }),
     updateRule: builder.mutation<{ rule: RetentionRule }, RuleChange>({
       query: ({ code, ...body }) => ({ url: `/api/v1/admin/retention/rules/${code}`, method: 'PUT', body }),
       invalidatesTags: ['Retention'],
@@ -78,7 +139,10 @@ export const retentionApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useGetRetentionQuery, useGetRetentionRunsQuery, useDryRunRuleMutation, useDryRunAllMutation, useUpdateRuleMutation } = retentionApi;
+export const {
+  useGetRetentionQuery, useGetRetentionRunsQuery, useDryRunRuleMutation, useDryRunAllMutation, useUpdateRuleMutation,
+  useGetPreviewQuery, useGetRuleHistoryQuery, useGetHoldsQuery, usePlaceHoldMutation, useReleaseHoldMutation,
+} = retentionApi;
 
 export const ACTION_LABEL: Record<RetentionRule['action'], string> = { DELETE: 'Delete', MASK: 'Mask', REPORT: 'Report only' };
 
